@@ -1,0 +1,156 @@
+{
+ "actions": [],
+ "autoname": "field:company",
+ "creation": "2024-08-25 11:57:06.627337",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enable_optima_payment",
+  "column_break_gfcr",
+  "company",
+  "cheque_account_settings_section",
+  "incoming_cheque_wallet_account",
+  "column_break_xjor",
+  "bank_commission_account",
+  "column_break_yyfr",
+  "bank_fees_expense_account",
+  "optima_payment_scheduler_section",
+  "enable_auto_deposit_under_collection_in_time",
+  "enable_auto_pay_cheque_in_time",
+  "column_break_iqat",
+  "default_mode_of_payment"
+ ],
+ "fields": [
+  {
+   "default": "0",
+   "fieldname": "enable_optima_payment",
+   "fieldtype": "Check",
+   "label": "Enable Optima Payment"
+  },
+  {
+   "fieldname": "column_break_iqat",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Company",
+   "no_copy": 1,
+   "options": "Company",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_auto_pay_cheque_in_time",
+   "fieldtype": "Check",
+   "label": "Enable Auto Pay Cheque In Time"
+  },
+  {
+   "fieldname": "cheque_account_settings_section",
+   "fieldtype": "Section Break",
+   "label": "Cheque Account Settings"
+  },
+  {
+   "fieldname": "incoming_cheque_wallet_account",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Incoming Cheque Wallet Account",
+   "options": "Account",
+   "reqd": 1
+  },
+  {
+   "fieldname": "bank_commission_account",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Bank Commission Account",
+   "options": "Account",
+   "reqd": 1
+  },
+  {
+   "fieldname": "bank_fees_expense_account",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Bank Fees Expense Account",
+   "options": "Account",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_xjor",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_yyfr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_auto_deposit_under_collection_in_time",
+   "fieldtype": "Check",
+   "label": "Enable Auto Deposit Under Collection In Time"
+  },
+  {
+   "fieldname": "column_break_gfcr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "optima_payment_scheduler_section",
+   "fieldtype": "Section Break",
+   "label": "Optima Payment Scheduler"
+  },
+  {
+   "depends_on": "eval: doc.enable_auto_pay_cheque_in_time",
+   "fieldname": "default_mode_of_payment",
+   "fieldtype": "Link",
+   "label": "Default Mode Of Payment",
+   "mandatory_depends_on": "eval: doc.enable_auto_pay_cheque_in_time",
+   "options": "Mode of Payment"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-09-25 09:49:29.444220",
+ "modified_by": "Administrator",
+ "module": "Optima Payment",
+ "name": "Optima Payment Setting",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Accounts User",
+   "select": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

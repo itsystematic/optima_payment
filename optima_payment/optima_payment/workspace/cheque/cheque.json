@@ -1,0 +1,79 @@
+{
+ "charts": [
+  {
+   "chart_name": "Cheque Status",
+   "label": "Cheque Status"
+  },
+  {
+   "chart_name": "Cheque Paid Amount",
+   "label": "Cheque Paid Amount"
+  },
+  {
+   "chart_name": "Monthly Issuance Amount",
+   "label": "Monthly Issuance Amount"
+  }
+ ],
+ "content": "[{\"id\":\"VMEvpJG5WM\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Cheque</span>\",\"col\":12}},{\"id\":\"J5jVLmmiaF\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Cheque Report\",\"col\":12}},{\"id\":\"UgSGKhf6TS\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Cheque For Collection\",\"col\":4}},{\"id\":\"iC7sUkKEMf\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Cheque Deposit Under Collection\",\"col\":4}},{\"id\":\"YjE1tcx2AJ\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Deposited Cheque\",\"col\":4}},{\"id\":\"2Q51L4P3jF\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Cheque Issuance\",\"col\":3}},{\"id\":\"fipghLGive\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Endorsed Cheque\",\"col\":3}},{\"id\":\"gmkOFVpq5Z\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Rejected Cheque\",\"col\":3}},{\"id\":\"Y4pGQNOiOk\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Returned Cheque\",\"col\":3}},{\"id\":\"gu78gsCb3u\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Monthly Issuance Amount\",\"col\":6}},{\"id\":\"w2XCfDk4vg\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Cheque Paid Amount\",\"col\":6}},{\"id\":\"gTTKlzrGtq\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Cheque Status\",\"col\":12}}]",
+ "creation": "2024-09-29 08:50:50.288218",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "group-by",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Cheque",
+ "links": [],
+ "modified": "2024-09-29 09:34:15.719878",
+ "modified_by": "Administrator",
+ "module": "Optima Payment",
+ "name": "Cheque",
+ "number_cards": [
+  {
+   "label": "Cheque Deposit Under Collection",
+   "number_card_name": "Cheque Deposit Under Collection"
+  },
+  {
+   "label": "Cheque For Collection",
+   "number_card_name": "Cheque For Collection"
+  },
+  {
+   "label": "Deposited Cheque",
+   "number_card_name": "Deposited Cheque"
+  },
+  {
+   "label": "Cheque Issuance",
+   "number_card_name": "Cheque Issuance"
+  },
+  {
+   "label": "Endorsed Cheque",
+   "number_card_name": "Endorsed Cheque"
+  },
+  {
+   "label": "Rejected Cheque",
+   "number_card_name": "Rejected Cheque"
+  },
+  {
+   "label": "Returned Cheque",
+   "number_card_name": "Returned Cheque"
+  }
+ ],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 39.0,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Cheque Report",
+   "link_to": "Cheque Report",
+   "type": "Report"
+  }
+ ],
+ "title": "Cheque"
+}

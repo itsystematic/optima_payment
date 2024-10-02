@@ -2,6 +2,11 @@ app_name = "optima_payment"
 app_title = "Optima Payment"
 app_publisher = "IT Systematic"
 app_description = "App For Cheque Status"
+required_apps = [
+    "erpnext",
+    "frappe",
+    "hrms"
+]
 app_email = "sales@itsystematic.com"
 app_license = "mit"
 
@@ -26,7 +31,10 @@ app_license = "mit"
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/optima_payment/css/optima_payment.css"
-# app_include_js = "/assets/optima_payment/js/optima_payment.js"
+app_include_js = [
+    "/assets/optima_payment/js/optima_payment.js",
+    # "/assets/optima_payment/js/expense_claim.js",
+    ]
 
 # include js, css files in header of web template
 # web_include_css = "/assets/optima_payment/css/optima_payment.css"
@@ -43,8 +51,18 @@ app_license = "mit"
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-# doctype_js = {"doctype" : "public/js/doctype.js"}
-# doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
+doctype_js = {
+    "Payment Entry" : [
+        "public/js/payment_entry.js" ,
+        "public/js/controllink.js" ,
+        "public/js/form.js"
+    ],
+    "Expense Claim": "public/js/expense_claim.js",
+    "Expense Claim Type" : "public/js/expense_claim_type.js",
+}
+doctype_list_js = {
+    "Payment Entry" : "public/js/payment_entry_list.js",
+}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 
@@ -83,13 +101,13 @@ app_license = "mit"
 # ------------
 
 # before_install = "optima_payment.install.before_install"
-# after_install = "optima_payment.install.after_install"
+after_migrate = "optima_payment.migrate.after_migrate"
 
 # Uninstallation
 # ------------
 
 # before_uninstall = "optima_payment.uninstall.before_uninstall"
-# after_uninstall = "optima_payment.uninstall.after_uninstall"
+after_uninstall = "optima_payment.uninstall.after_uninstall"
 
 # Integration Setup
 # ------------------
@@ -132,39 +150,39 @@ app_license = "mit"
 # override_doctype_class = {
 # 	"ToDo": "custom_app.overrides.CustomToDo"
 # }
+override_doctype_class = {
+	"Expense Claim": "optima_payment.override.doctype_class.expense_claim.CustomExpenseClaim", # --AM
+    "Payment Entry": "optima_payment.override.doctype_class.payment_entry.CustomPaymentEntry", # --FH
+}
 
 # Document Events
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+    "Payment Entry": {
+        "on_submit" : "optima_payment.doc_events.payment_entry.payment_entry_on_submit" ,
+        "on_cancel" : "optima_payment.doc_events.payment_entry.payment_entry_on_cancel" ,
+        "on_trash" : "optima_payment.doc_events.payment_entry.payment_entry_on_trash" ,
+	},
+    "Journal Entry" :{
+        "on_cancel" :  "optima_payment.doc_events.journal_entry.journal_entry_on_cancel",
+    },
+    # "Expense Claim" : {
+        # "on_submit" : "optima_payment.doc_events.expense_claim.on_submit",
+        # "on_cancel" : "optima_payment.doc_events.expense_claim.on_cancel",
+        # "validate" : "optima_payment.doc_events.expense_claim.validate"
+    # }
+}
 
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"optima_payment.tasks.all"
-# 	],
-# 	"daily": [
-# 		"optima_payment.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"optima_payment.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"optima_payment.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"optima_payment.tasks.monthly"
-# 	],
-# }
+scheduler_events = {
+	"daily": [
+		"optima_payment.tasks.daily.optima_payment_daily"
+	]
+}
 
 # Testing
 # -------
@@ -192,7 +210,7 @@ app_license = "mit"
 # Ignore links to specified DocTypes when deleting documents
 # -----------------------------------------------------------
 
-# ignore_links_on_delete = ["Communication", "ToDo"]
+ignore_links_on_delete = ["Cheque Action Log"]
 
 # Request Events
 # ----------------
