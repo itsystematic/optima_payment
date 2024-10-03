@@ -101,7 +101,7 @@ jinja = {
 # ------------
 
 # before_install = "optima_payment.install.before_install"
-after_install = "optima.payment.install.after_install"
+after_install = "optima_payment.install.after_install"
 
 after_migrate = "optima_payment.migrate.after_migrate"
 
@@ -262,12 +262,12 @@ ignore_links_on_delete = ["Cheque Action Log"]
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
 
-fixtures = [
+# fixtures = [
 
-    {
-        "dt": "Print Format",
-        "filters": {
-            "doc_type": "Payment Entry",
-        }
-    }
-]
+#     {
+#         "dt": "Print Format",
+#         "filters": {
+#             "doc_type": "Payment Entry",
+#         }
+#     }
+# ]
