@@ -81,15 +81,6 @@ def make_return_cheque_gl(doc , posting_date=None , remarks=None) :
     finalize_gl_entries(doc, gl_entries , "Returned", posting_date=posting_date )
 
 
-@active_for_company
-def make_endorsed_cheque_gl(doc, against_payment_entry, posting_date=None):
-    gl_entries = [
-        create_gl_entry(doc, posting_date, against_payment_entry.get("paid_to"),credit=doc.paid_amount, against_voucher_type= "Payment Entry" , against_voucher= doc.receivable_cheque  ),
-        create_gl_entry(doc, posting_date, doc.paid_to, debit=doc.paid_amount, against=against_payment_entry.get("paid_to"),party=doc.party, party_type=doc.party_type,)
-    ]
-
-    finalize_gl_entries(doc, gl_entries , "Endorsed", posting_date=posting_date)
-    
 
 @active_for_company
 def make_deposit_under_collection_gl(doc, posting_date=None):

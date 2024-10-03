@@ -37,6 +37,7 @@ def add_cheque_action_log(doc , cheque_status , mode_of_payment=None , bank_fees
     
     cheque_log = frappe.get_doc({
         "doctype": "Cheque Action Log",
+        "company" : doc.company ,
         "payment_entry": doc.name,
         "cheque_status": cheque_status,
         "mode_of_payment": mode_of_payment,

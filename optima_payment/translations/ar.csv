@@ -27,4 +27,13 @@ Posting Date, تاريخ النشر
 Posting Date should be greater than, تاريخ النشر يجب ان يكون اكبر من
 Endorsed Cheque, تظهير الشيك
 Endorsed, مظهر
-Difference Amount must be zero,الفرق في القيمة يجب ان يكون صفر
+Difference Amount must be zero,الفرق في القيمة يجب ان يكون صفر,
+Collected, تم التحصيل
+Issuance, تم الاصدار
+Deposited, تم الايداع
+Issuance from endorsed, اصدار من شيك مظهر
+Is Payable Cheque, هي اوراق دفع
+Is Recievable Cheque, هي اوراق قبض
+Account Currency (From), (من)عملة الحساب
+Account Balance (From), رصيد الحساب(من)
+Get Outstanding Orders, الحصول على الاوامر المتبقية

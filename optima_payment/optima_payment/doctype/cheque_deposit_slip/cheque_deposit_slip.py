@@ -62,11 +62,39 @@ class ChequeDepositSlip(Document):
 
 
 @frappe.whitelist()
-def get_payment_entry_details(payment_entry) :
+def get_payment_details(payment_entry):
+    return frappe.db.get_value("Payment Entry" , {"name" : payment_entry} , [
+            "reference_no" ,
+            "payee_name" ,
+            "paid_amount" ,
+            "bank" ,
+            "paid_to" ,
+            "payment_type" ,
+            "posting_date" ,
+            "company"
+        ]
+    )
+    # if not payment_entry:
+    #     print("No payment entry provided")
+    #     return {}
 
-    if not payment_entry : return {}
-
-    return frappe.db.get_value("Payment Entry" , payment_entry , ['reference_no' , 'reference_date' , 'paid_amount' , 'paid_to' , "cost_center"] ,as_dict=True)
+    # try:
+    #     pe = frappe.get_doc("Payment Entry", payment_entry)
+    #     print(pe)
+        
+    #     return {
+    #         "reference_no": pe.reference_no,
+    #         "payee_name": pe.payee_name,
+    #         "paid_amount": pe.paid_amount,
+    #         "bank": pe.bank,
+    #         "paid_to": pe.paid_to,
+    #         "payment_type": pe.payment_type,
+    #         "posting_date": pe.posting_date,
+    #         "company": pe.company
+    #     }
+    # except Exception as e:
+    #     frappe.log_error(f"Error fetching payment entry details: {str(e)}")
+    #     return {}
 
 
 @frappe.whitelist()

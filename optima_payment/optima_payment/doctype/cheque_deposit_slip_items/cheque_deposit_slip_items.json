@@ -8,7 +8,7 @@
  "field_order": [
   "payment_entry",
   "cheque_no",
-  "beneficiary_name",
+  "payee_name",
   "bank_name",
   "no_of_days",
   "amount",
@@ -84,25 +84,15 @@
    "reqd": 1
   },
   {
-   "fetch_from": "payment_entry.beneficiary_name",
-   "fieldname": "beneficiary_name",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Payee Name",
-   "no_copy": 1,
-   "read_only": 1
-  },
-  {
-   "fetch_from": "payment_entry.bank_name",
    "fieldname": "bank_name",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Bank Name",
    "no_copy": 1,
+   "options": "Bank",
    "read_only": 1
   },
   {
-   "fetch_from": "payment_entry.reference_no",
    "fieldname": "cheque_reference_no",
    "fieldtype": "Data",
    "label": "Cheque Reference No.",
@@ -110,10 +100,18 @@
    "read_only": 1
   },
   {
-   "fetch_from": "payment_entry.reference_date",
    "fieldname": "cheque_reference_date",
    "fieldtype": "Data",
    "label": "Cheque Reference Date.",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fetch_if_empty": 1,
+   "fieldname": "payee_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Payee Name",
    "no_copy": 1,
    "read_only": 1
   }
@@ -121,7 +119,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-09-30 09:09:16.263905",
+ "modified": "2024-10-03 16:44:39.035147",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Cheque Deposit Slip Items",

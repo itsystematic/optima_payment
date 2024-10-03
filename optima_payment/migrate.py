@@ -1,18 +1,18 @@
 
 import frappe
 from click import secho
-from optima_payment.app_setup import (get_custom_fields,get_property_setter)
+from optima_payment.app_setup import get_custom_fields,get_property_setter
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 from frappe import make_property_setter
 
 
 def after_migrate():
-    create_custom_fields(get_custom_fields(), update=False)    
+    custom_fields = get_custom_fields()
+    create_custom_fields(custom_fields, update=True)    
     add_additional_property_setter()
     update_fields_in_database()
     secho("Setup Optima Payment Setting Successfully", fg="green")
 
-        
 
 
 def add_additional_property_setter():

@@ -8,7 +8,6 @@ from optima_payment.cheque.cases import (
     make_collect_cheque_gl  , 
     make_return_cheque_gl ,
     make_reject_cheque_gl,
-    make_endorsed_cheque_gl ,
     make_deposit_under_collection_gl ,
     make_return_to_holder_gl ,
 )
@@ -86,10 +85,9 @@ def payment_entry_on_cancel(doc , event) :
 
 def cancel_cheque(doc , posting_date = None) :
     cheque_status_logs = frappe.get_all("Cheque Action Log" ,{"payment_entry" : doc.name ,"is_cancelled" : 0} ,["cheque_status" , "bank_fees_amount" , "mode_of_payment"] , order_by="creation desc")
-
     for cheque_log in cheque_status_logs :
         if cheque_log.get("cheque_status") == "Encashment" : make_pay_cheque_gl(doc , cheque_log.get("mode_of_payment") , posting_date)
-        elif cheque_log.get("cheque_status") == "Endorsed" : make_endorsed_cheque_gl(doc, cheque_log.get("mode_of_payment") ,posting_date)
+        elif cheque_log.get("cheque_status") == "Endorsed" : make_endorsed_cheque_gl(doc ,posting_date)
         elif cheque_log.get("cheque_status") == "Deposit Under Collection" : make_deposit_under_collection_gl(doc , posting_date)
         elif cheque_log.get("cheque_status") == "Collected" : make_collect_cheque_gl(doc, cheque_log.get("mode_of_payment") ,cheque_log.get("bank_fees_amount") , posting_date )
         elif cheque_log.get("cheque_status") == "Rejected" : make_reject_cheque_gl(doc, cheque_log.get("mode_of_payment") ,cheque_log.get("bank_fees_amount") , posting_date )

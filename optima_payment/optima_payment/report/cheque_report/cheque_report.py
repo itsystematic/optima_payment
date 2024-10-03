@@ -49,8 +49,8 @@ def get_columns(filters) :
 			"width": 150
 		},
 		{
-			"label": _("Beneficiary Name"),
-			"fieldname": "beneficiary_name",
+			"label": _("Payee Name"),
+			"fieldname": "payee_name",
 			"fieldtype": "Data",
 			"width": 200
 		},
@@ -102,7 +102,7 @@ def get_data(filters) :
 			pe.party_type,
 			pe.party,
 			pe.bank_name ,
-			pe.beneficiary_name , 
+			pe.payee_name , 
 			pe.paid_amount
 		FROM `tabPayment Entry` pe
 		LEFT JOIN `tabMode of Payment` mop on mop.name = pe.mode_of_payment

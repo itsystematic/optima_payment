@@ -92,15 +92,17 @@ doctype_list_js = {
 # ----------
 
 # add methods and filters to jinja environment
-# jinja = {
-# 	"methods": "optima_payment.utils.jinja_methods",
-# 	"filters": "optima_payment.utils.jinja_filters"
-# }
+jinja = {
+	"methods": "optima_payment.cheque.utils.money_to_words",
+	# "filters": "optima_payment.utils.jinja_filters"
+}
 
 # Installation
 # ------------
 
 # before_install = "optima_payment.install.before_install"
+after_install = "optima.payment.install.after_install"
+
 after_migrate = "optima_payment.migrate.after_migrate"
 
 # Uninstallation
@@ -260,3 +262,12 @@ ignore_links_on_delete = ["Cheque Action Log"]
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
 
+fixtures = [
+
+    {
+        "dt": "Print Format",
+        "filters": {
+            "doc_type": "Payment Entry",
+        }
+    }
+]

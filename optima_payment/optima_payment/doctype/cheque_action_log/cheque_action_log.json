@@ -6,10 +6,12 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "payment_entry",
-  "bank_fees_amount",
   "posting_date",
+  "company",
+  "bank_fees_amount",
+  "is_cancelled",
   "column_break_ynml",
+  "payment_entry",
   "cheque_status",
   "mode_of_payment"
  ],
@@ -46,12 +48,26 @@
    "fieldname": "posting_date",
    "fieldtype": "Date",
    "label": "Posting Date"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "label": "Company",
+   "options": "Company"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_cancelled",
+   "fieldtype": "Check",
+   "label": "Is Cancelled"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-30 09:26:25.383339",
+ "modified": "2024-10-03 09:42:27.783414",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Cheque Action Log",

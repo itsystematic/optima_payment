@@ -42,9 +42,11 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
         ])
 
     }
+
+
     reset_field_of_endorsed_cheque() {
         if (this.mode_of_payment_doc.is_payable_cheque == 0) {
-            const fields = ['beneficiary_name', 'bank_name', 'reference_no', 'reference_date', 'paid_amount', "received_amount"];
+            const fields = ['payee_name', 'bank_name', 'reference_no', 'reference_date', 'paid_amount', "received_amount"];
 
             this.frm.set_value('is_endorsed_cheque', 0);
             fields.forEach(field => {
@@ -62,7 +64,7 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
                 "pay_mode_of_payment": "",
                 "bank_fees_amount": "",
                 "receivable_cheque" : "",
-                "beneficiary_name" : "" ,
+                "payee_name" : "" ,
                 'bank_name' : "" ,
                 "is_endorsed_cheque": 0 ,
                 "multi_expense" : 0 ,
@@ -84,18 +86,19 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
         this.frm.set_query("mode_of_payment", (doc) => {
             let custom_filters = {};
             
-            if (doc.multi_expense == 1  && doc.payment_type == "Pay") {
+            if ((doc.multi_expense == 1  && doc.payment_type == "Pay") || doc.payment_type == "Internal Transfer") {
                 custom_filters = { "is_payable_cheque": 0, "is_receivable_cheque": 0 };
-            } else if (doc.multi_expense == 0) {
+            } else if (doc.multi_expense == 0 && ["Pay" , "Receive"].includes(doc.payment_type)) {
                 custom_filters = doc.payment_type === "Receive" ? { "is_payable_cheque": 0 } : { "is_receivable_cheque": 0 };
-            }
+            } 
+
             return {
                 filters: custom_filters
             }
         })
 
         // In Endoresed Cheque
-        this.frm.set_query("receivable_cheque", function (doc) {
+        this.frm.set_query("receivable_cheque", function () {
             return {
                 filters: {
                     "docstatus": 1,
@@ -152,9 +155,16 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
     handle_fields_is_endorsed_cheque() {
 
         let doc = this.frm.doc;
+        
+        if (!this.mode_of_payment_doc) {
+            this.mode_of_payment_doc = {};
+        }
+
         let fields = [
-            { field: "beneficiary_name", property: "read_only", value: doc.is_endorsed_cheque },
+            { field: "payee_name", property: "read_only", value: doc.is_endorsed_cheque  },
+            { field: "payee_name", property: "hidden", value: !["Bank" , "Cheque"].includes(this.mode_of_payment_doc.type)},
             { field: "bank_name", property: "read_only", value: doc.is_endorsed_cheque },
+            { field: "bank_name", property: "hidden", value: !["Bank" , "Cheque"].includes(this.mode_of_payment_doc.type) },
             { field: "reference_no", property: "read_only", value: doc.is_endorsed_cheque },
             { field: "reference_date", property: "read_only", value: doc.is_endorsed_cheque },
             { field: "paid_amount", property: "read_only", value: doc.is_endorsed_cheque },
@@ -177,11 +187,9 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
 
     async get_bank_fees_amount(fieldname , mode_of_payment) {
         let bank_fees_amount = 0.00 ;
-        if (this.frm.doc.bank_name ) {
-            bank_fees_amount =  await frappe.db.get_value("Mode of Payment" , mode_of_payment, fieldname).then((r) => {
-                return r.message[fieldname]
-            });
-        }
+        bank_fees_amount =  await frappe.db.get_value("Mode of Payment" , mode_of_payment, fieldname).then((r) => {
+            return r.message[fieldname]
+        });
         return bank_fees_amount
     }
 
@@ -323,7 +331,8 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
             {
                 label: __('Mode of Payment'), fieldname: 'mode_of_payment',
                 fieldtype: 'Link', options: "Mode of Payment",
-                depends_on: 'eval: doc.has_bank_fees == 1' , mandatory_depends_on: 'eval: doc.has_bank_fees == 1 ;',
+                reqd: 1 ,
+                // depends_on: 'eval: doc.has_bank_fees == 1' , mandatory_depends_on: 'eval: doc.has_bank_fees == 1 ;',
                 get_query: () => {
                     return {
                         filters: {
@@ -336,6 +345,7 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
                     let mode_of_payment = cur_dialog.get_value("mode_of_payment");
                     let bank_fees_amount = await me.get_bank_fees_amount("cheque_collection_fee" , mode_of_payment);
                     cur_dialog.set_value("bank_fees_amount" , bank_fees_amount);
+                    // cur_dialog.refresh();
                 }
             },
             { 
@@ -343,7 +353,7 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
                 fieldname: 'bank_fees_amount', 
                 fieldtype: 'Currency', 
                 default : 0.00 ,
-                read_only: 1,
+                // read_only: 1,
                 depends_on: 'eval: doc.has_bank_fees == 1 ;', 
                 mandatory_depends_on: 'eval: doc.has_bank_fees == 1 ;' 
             },
@@ -389,7 +399,7 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
                 fieldname: 'bank_fees_amount',
                 fieldtype: 'Currency',
                 default :  0.00 ,
-                read_only : 1,
+                // read_only : 1,
                 depends_on: 'eval: doc.has_bank_fees == 1 ;',
                 mandatory_depends_on: 'eval: doc.has_bank_fees == 1 ;',
 

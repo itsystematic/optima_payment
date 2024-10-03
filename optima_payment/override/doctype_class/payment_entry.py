@@ -13,28 +13,32 @@ from erpnext.accounts.general_ledger import (
 from optima_payment import active_for_company
 from erpnext.accounts.utils import cancel_exchange_gain_loss_journal
 
-def get_custom_class() -> type:
-    """
-    Returns the custom class name based on installed apps
+# def get_custom_class() -> type:
+#     """
+#     Returns the custom class name based on installed apps
 
-    Returns:
-        type: The custom class name
-    """
-    if "hrms" in frappe.get_installed_apps():
-        from hrms.overrides.employee_payment_entry import EmployeePaymentEntry
-        return EmployeePaymentEntry
-    else :
-        from erpnext.accounts.doctype.payment_entry.payment_entry import  PaymentEntry
-        return PaymentEntry
-    
+#     Returns:
+#         type: The custom class name
+#     """
+#     if "hrms" in frappe.get_installed_apps():
+#         from hrms.overrides.employee_payment_entry import EmployeePaymentEntry
+#         return EmployeePaymentEntry
+#     else :
+#         from erpnext.accounts.doctype.payment_entry.payment_entry import  PaymentEntry
+#         return PaymentEntry
+if "hrms" in frappe.get_installed_apps():
+    from hrms.overrides.employee_payment_entry import EmployeePaymentEntry
+    PAYMENTENTRY = EmployeePaymentEntry
+else :
+    from erpnext.accounts.doctype.payment_entry.payment_entry import  PaymentEntry
+    PAYMENTENTRY = PaymentEntry
 
-class CustomPaymentEntry(get_custom_class()):
+class CustomPaymentEntry(PAYMENTENTRY):
     def validate(self):	
         super().validate()
         self.validate_company_expenses()
     
     
-    @active_for_company
     def on_submit(self):
         if self.difference_amount and self.get("multi_expense") == 0:
             frappe.throw(_("Difference Amount must be zero"))
@@ -45,18 +49,18 @@ class CustomPaymentEntry(get_custom_class()):
         self.update_payment_schedule()
         self.set_status()
         
-    def build_gl_map(self):
-        if self.payment_type in ("Receive", "Pay") and not self.get("party_account_field"):
-            self.setup_party_account_field()
+    # def build_gl_map(self):
+    #     if self.payment_type in ("Receive", "Pay") and not self.get("party_account_field"):
+    #         self.setup_party_account_field()
 
-        gl_entries = []
-        self.add_party_gl_entries(gl_entries)
-        self.add_bank_gl_entries(gl_entries)
-        self.add_deductions_gl_entries(gl_entries)
-        self.add_tax_gl_entries(gl_entries)
-        add_regional_gl_entries(gl_entries, self)
+    #     gl_entries = []
+    #     self.add_party_gl_entries(gl_entries)
+    #     self.add_bank_gl_entries(gl_entries)
+    #     self.add_deductions_gl_entries(gl_entries)
+    #     self.add_tax_gl_entries(gl_entries)
+    #     add_regional_gl_entries(gl_entries, self)
     
-        return gl_entries
+    #     return gl_entries
     
     # @active_for_company
     def add_party_gl_entries(self, gl_entries):
@@ -139,7 +143,6 @@ class CustomPaymentEntry(get_custom_class()):
             gl_entries.append(gle)
    
    
-    @active_for_company
     def add_bank_gl_entries(self, gl_entries):
         if self.payment_type in ("Pay", "Internal Transfer"):
             self._add_pay_gl_entry(gl_entries)
@@ -261,7 +264,7 @@ class CustomPaymentEntry(get_custom_class()):
         return gl_entries
             
     def make_company_expense(self,gl_entries): 
-        if self.get("company_expense") :
+        if self.get("company_expense") and self.multi_expense == 1:
             for account in self.company_expense :
                 gl_entries.append(
                     self.get_gl_dict(
