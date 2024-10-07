@@ -56,4 +56,3 @@ def auto_deposit_under_collection_in_time(optima_payment_setting) :
         payment_entry_doc = frappe.get_doc("Payment Entry" , payment_entry)
         make_deposit_under_collection_gl(payment_entry_doc ,payment_entry_doc.reference_date)
 
-    

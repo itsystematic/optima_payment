@@ -2,6 +2,8 @@ __version__ = "15.0.0"
 
 
 import frappe
+from erpnext.controllers import accounts_controller
+from optima_payment.cheque.utils import optima_get_advance_payment_entries
 
 def active_for_company(fn) :
     
@@ -26,3 +28,8 @@ def get_applicable_campanies_optima_payment(company=None) :
         list_setting_doc.append( frappe.get_doc("Optima Payment Setting" , optima_payment_setting))
     
     return list_setting_doc
+
+
+# Overwrite get_advance_payment_entries
+# TO Skip Cheque Status ( Return , Reject )
+accounts_controller.get_advance_payment_entries = optima_get_advance_payment_entries

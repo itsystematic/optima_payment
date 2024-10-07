@@ -19,22 +19,22 @@ def make_pay_cheque_gl(doc, mode_of_payment=None, posting_date=None):
 
 
 @active_for_company
-def make_collect_cheque_gl(doc, mode_of_payment, bank_fees_amount=0.0, posting_date=None):
+def make_collect_cheque_gl(doc, mode_of_payment, bank_fees_commission=0.0, posting_date=None):
     default_account = frappe.db.get_value("Optima Payment Setting" , doc.company , "incoming_cheque_wallet_account")
     mode_of_payment_account = get_bank_cash_account(mode_of_payment, doc.get("company")).get("account")
-    bank_fees_amount = float(bank_fees_amount) 
+    bank_fees_commission = float(bank_fees_commission) 
 
     gl_entries = [
         create_gl_entry(doc, posting_date, mode_of_payment_account, debit=doc.get("paid_amount"), against=doc.get("party")),
         create_gl_entry(doc, posting_date, default_account, credit=doc.get("paid_amount"), against=doc.get("party"))
     ]
 
-    if bank_fees_amount:
-        bank_fees_expense_account = frappe.db.get_value("Optima Payment Setting", doc.get("company"), "bank_fees_expense_account")
-        gl_entries.append(create_gl_entry(doc, posting_date, bank_fees_expense_account, debit=bank_fees_amount, against=doc.party))
-        gl_entries.append(create_gl_entry(doc, posting_date, mode_of_payment_account, credit=bank_fees_amount, against=doc.party))
+    if bank_fees_commission:
+        bank_fees_expense_account = frappe.db.get_value("Optima Payment Setting", doc.get("company"), "bank_commission_account")
+        gl_entries.append(create_gl_entry(doc, posting_date, bank_fees_expense_account, debit=bank_fees_commission, against=doc.party))
+        gl_entries.append(create_gl_entry(doc, posting_date, mode_of_payment_account, credit=bank_fees_commission, against=doc.party))
 
-    finalize_gl_entries(doc, gl_entries ,"Collected" , mode_of_payment , bank_fees_amount, posting_date=posting_date)
+    finalize_gl_entries(doc, gl_entries ,"Collected" , mode_of_payment , bank_fees_commission, posting_date=posting_date)
 
 
 @active_for_company

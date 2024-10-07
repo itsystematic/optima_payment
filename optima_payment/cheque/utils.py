@@ -150,3 +150,60 @@ def in_words(integer: int, in_million=True) -> str:
     except OverflowError:
         ret = num2words(integer, lang="en" , ordinal=True)
     return ret.replace("-", " ")
+
+
+from erpnext.controllers.accounts_controller import get_common_query
+
+def optima_get_advance_payment_entries(
+	party_type,
+	party,
+	party_account,
+	order_doctype,
+	order_list=None,
+	include_unallocated=True,
+	against_all_orders=False,
+	limit=None,
+	condition=None,
+):
+	payment_entries = []
+	payment_entry = frappe.qb.DocType("Payment Entry")
+
+	if order_list or against_all_orders:
+		q = get_common_query(
+			party_type,
+			party,
+			party_account,
+			limit,
+			condition,
+		)
+		payment_ref = frappe.qb.DocType("Payment Entry Reference")
+
+		q = q.inner_join(payment_ref).on(payment_entry.name == payment_ref.parent)
+		q = q.select(
+			(payment_ref.allocated_amount).as_("amount"),
+			(payment_ref.name).as_("reference_row"),
+			(payment_ref.reference_name).as_("against_order"),
+		)
+
+		q = q.where(payment_ref.reference_doctype == order_doctype)
+		if order_list:
+			q = q.where(payment_ref.reference_name.isin(order_list))
+
+		allocated = list(q.run(as_dict=True))
+		payment_entries += allocated
+	if include_unallocated:
+		q = get_common_query(
+			party_type,
+			party,
+			party_account,
+			limit,
+			condition,
+		)
+		q = q.select((payment_entry.unallocated_amount).as_("amount"))
+		q = q.where(payment_entry.unallocated_amount > 0)
+		q = q.where(~payment_entry.cheque_status.isin(['Returned' , 'Rejected']))
+
+		unallocated = list(q.run(as_dict=True))
+		payment_entries += unallocated
+    
+	return payment_entries

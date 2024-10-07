@@ -15,11 +15,11 @@ def pay_cheque(posting_date , docname , mode_of_payment) :
     make_pay_cheque_gl(payment_entry , mode_of_payment , posting_date)
 
 @frappe.whitelist() 
-def collect_cheque(posting_date , docname , has_bank_fees , mode_of_payment , bank_fees_amount=None) :
+def collect_cheque(posting_date , docname , has_bank_commissions , mode_of_payment , bank_fees_commission=None) :
 
     payment_entry = frappe.get_doc("Payment Entry", docname)
-    bank_fees_amount = float(bank_fees_amount) if has_bank_fees == "1" else 0.0
-    make_collect_cheque_gl(payment_entry, mode_of_payment ,bank_fees_amount , posting_date)
+    bank_fees_commission = float(bank_fees_commission) if has_bank_commissions == "1" else 0.0
+    make_collect_cheque_gl(payment_entry, mode_of_payment ,bank_fees_commission , posting_date)
 
 
 @frappe.whitelist()

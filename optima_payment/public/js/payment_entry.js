@@ -153,9 +153,7 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
     }
 
     handle_fields_is_endorsed_cheque() {
-
         let doc = this.frm.doc;
-        
         if (!this.mode_of_payment_doc) {
             this.mode_of_payment_doc = {};
         }
@@ -326,7 +324,7 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
     collect_cheque_dialog() {
         let me = this;
         let fields = [
-            { label: __('Has Bank Fees'), fieldname: 'has_bank_fees', fieldtype: 'Check' },
+            { label: __('Has Bank Commissions'), fieldname: 'has_bank_commissions', fieldtype: 'Check' },
             { fieldtype: "Column Break" },
             {
                 label: __('Mode of Payment'), fieldname: 'mode_of_payment',
@@ -344,18 +342,18 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
                 onchange: async  () => {
                     let mode_of_payment = cur_dialog.get_value("mode_of_payment");
                     let bank_fees_amount = await me.get_bank_fees_amount("cheque_collection_fee" , mode_of_payment);
-                    cur_dialog.set_value("bank_fees_amount" , bank_fees_amount);
+                    cur_dialog.set_value("bank_fees_commission" , bank_fees_amount);
                     // cur_dialog.refresh();
                 }
             },
             { 
-                label: __('Bank Fees Amount'), 
-                fieldname: 'bank_fees_amount', 
+                label: __('Bank Fees Commission'), 
+                fieldname: 'bank_fees_commission', 
                 fieldtype: 'Currency', 
                 default : 0.00 ,
                 // read_only: 1,
-                depends_on: 'eval: doc.has_bank_fees == 1 ;', 
-                mandatory_depends_on: 'eval: doc.has_bank_fees == 1 ;' 
+                depends_on: 'eval: doc.has_bank_commissions == 1 ;', 
+                mandatory_depends_on: 'eval: doc.has_bank_commissions == 1 ;' 
             },
         ]
         this.create_frappe_prompt(fields, "optima_payment.cheque.api.collect_cheque", __("Collect Cheque"), __("Collect"))
