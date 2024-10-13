@@ -39,7 +39,7 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
         frappe.run_serially([
             () => me.get_mode_of_payment_options() ,
             () => me.reset_field_of_endorsed_cheque(),
-            () => me.show_or_hide_multi_expense()
+            () => me.show_or_hide_related_fields()
         ])
 
     }
@@ -57,13 +57,19 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
         }
     }
 
-    show_or_hide_multi_expense() {
-        if (this.mode_of_payment_doc.type == "Cheque") {
-            this.frm.set_df_property('multi_expense', 'hidden', 1);
-        }else {
-            this.frm.set_df_property('multi_expense', 'hidden', 0);
-        }
-    }
+    show_or_hide_related_fields() {
+        const fieldsToShow = ['multi_expense'];
+        const fieldsToHide = ['payee_name', 'bank_name'];
+        const showMultiExpense = this.mode_of_payment_doc.type !== "Cheque";
+    
+        fieldsToShow.forEach(field => {
+            this.frm.set_df_property(field, 'hidden', showMultiExpense ? 0 : 1);
+        });
+        fieldsToHide.forEach(field => {
+            this.frm.set_df_property(field, 'hidden', showMultiExpense ? 1 : 0);
+            this.frm.set_df_property(field, 'reqd', showMultiExpense ? 0 : 1);
+        });
+    }   
     // Reset Fields
     reset_fields_of_cheque() {
 
