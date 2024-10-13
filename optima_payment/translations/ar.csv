@@ -7,18 +7,18 @@ Company Expense, مصروفات الشركة
 Cheque Details, تفاصيل الشيك
 Beneficiary Name,
 Pay Cheque, شيك مدفوع
-Deposit Under Collection, تحت التحصيل
+Deposit Under Collection, ايداع تحت التحصيل
 Collect, تحصيل
 Collect Cheque, شيك محصل
 Reject Cheque, شيك مرفوض
 Return To Holder, مرتد الي العميل
 Redeposit, اعادةايداع
-For Collection, للتحصيل
+For Collection, شيك للتحصيل 
 Return To Holder, اعادة الي المالك
 Return Cheque, شيك مرتد
 No Payment Entry found for this Receivable Cheque, لا توجد سندات استلام تخص هذا الشيك المستلم
 Deposit, ايداع
-Rejected, رفض
+Rejected, شيك مرفوض
 Pay, دفع
 Bank Fees Amount, مبلغ العمولة البنكية
 Payee Name, اسم المستفيد
@@ -37,3 +37,5 @@ Is Recievable Cheque, هي اوراق قبض
 Account Currency (From), (من)عملة الحساب
 Account Balance (From), رصيد الحساب(من)
 Get Outstanding Orders, الحصول على الاوامر المتبقية
+Return, ارتداد
+Returned, شيك مرتد
