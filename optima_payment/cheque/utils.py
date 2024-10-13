@@ -201,7 +201,7 @@ def optima_get_advance_payment_entries(
 		)
 		q = q.select((payment_entry.unallocated_amount).as_("amount"))
 		q = q.where(payment_entry.unallocated_amount > 0)
-		q = q.where(~payment_entry.cheque_status.isin(['Returned' , 'Rejected']))
+		q = q.where(~payment_entry.cheque_status.isin(['Returned' , 'Rejected' , 'Return To Holder']))
 
 		unallocated = list(q.run(as_dict=True))
 		payment_entries += unallocated

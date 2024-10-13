@@ -39,6 +39,7 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
         frappe.run_serially([
             () => me.get_mode_of_payment_options() ,
             () => me.reset_field_of_endorsed_cheque(),
+            () => me.show_or_hide_multi_expense()
         ])
 
     }
@@ -53,6 +54,14 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
                 this.frm.set_value(field, null);
                 this.frm.set_df_property(field, 'read_only', 0);
             });
+        }
+    }
+
+    show_or_hide_multi_expense() {
+        if (this.mode_of_payment_doc.type == "Cheque") {
+            this.frm.set_df_property('multi_expense', 'hidden', 1);
+        }else {
+            this.frm.set_df_property('multi_expense', 'hidden', 0);
         }
     }
     // Reset Fields

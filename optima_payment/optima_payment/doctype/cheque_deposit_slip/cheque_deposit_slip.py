@@ -10,6 +10,7 @@ class ChequeDepositSlip(Document):
     
     def validate(self) :
         self.validate_company()
+        self.validate_dupicated_payment_entry()
         self.validate_payment_entry()
 
 
@@ -19,12 +20,20 @@ class ChequeDepositSlip(Document):
             frappe.throw(_("Yout Must Enable in Optima Payment Setting For This Company {0}").format(self.company)) 
 
 
+    def validate_dupicated_payment_entry(self) :
+        list_of_payment_entry = list(map(lambda x : x.get("payment_entry") , self.cheque_deposit_slip_items))
+
+        if len(list_of_payment_entry) != len(set(list_of_payment_entry)) :
+            frappe.throw(_("Duplicate Payment Entry"))
+
+
+
     def validate_payment_entry(self) :
 
         for item in self.cheque_deposit_slip_items :
             payment_entry_doc = frappe.get_doc("Payment Entry" , item.get("payment_entry")) 
 
-            if payment_entry_doc.get("cheque_status") != "For Collection" :
+            if payment_entry_doc.get("cheque_status") != "Deposit Under Collection" :
                 frappe.throw(_("You Must Remove cheque {0} in row {1}").format(frappe.bold(item.get("payment_entry")) ,frappe.bold(item.get("idx"))))
         
             if payment_entry_doc.get("docstatus") != 1 :

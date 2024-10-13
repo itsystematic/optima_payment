@@ -19,7 +19,7 @@ optima_payment.ChequeDepositSlip = class ChequeDepositSlip extends frappe.ui.for
             return {
                 query: "optima_payment.optima_payment.doctype.cheque_deposit_slip.cheque_deposit_slip.get_payment_entries",
                 filters: {
-                    // "names": payment_entry,
+                    "names": payment_entry,
                     "company": doc.company
                 }
             }
@@ -89,37 +89,36 @@ optima_payment.ChequeDepositSlip = class ChequeDepositSlip extends frappe.ui.for
     }
 
 
-    payment_entry(doc, cdt, cdn) {
-        console.log('heeeeeeeeeeeer');
-        let me = this;
-        let row = frappe.get_doc(cdt, cdn);
-        if (row.payment_entry) {
-            frappe.call({
-                method: "optima_payment.optima_payment.doctype.cheque_deposit_slip.cheque_deposit_slip.get_payment_details",
-                args: {
-                    payment_entry: row.payment_entry
-                },
-                callback: (r) => {
-                    if (r.message) {
-                        console.log(r.message);
-                        frappe.model.set_value(cdt, cdn, {
-                            "cheque_no": r.message.reference_no,
-                            "payee_name": r.message.payee_name,
-                            "amount": r.message.paid_amount,
-                            "bank_name": r.message.bank,
-                            "paid_to": r.message.paid_to,
-                            "payment_type": r.message.payment_type,
-                            "posting_date": r.message.posting_date,
-                            "company": r.message.company
-                        });
-                        me.calculate_total_amount();
-                    } else {
-                        frappe.msgprint(__("Failed to fetch payment entry details. Please try again."));
-                    }
-                }
-            });
-        }
-    }
+    // payment_entry(doc, cdt, cdn) {
+    //     let me = this;
+    //     let row = frappe.get_doc(cdt, cdn);
+    //     if (row.payment_entry) {
+    //         frappe.call({
+    //             method: "optima_payment.optima_payment.doctype.cheque_deposit_slip.cheque_deposit_slip.get_payment_details",
+    //             args: {
+    //                 payment_entry: row.payment_entry
+    //             },
+    //             callback: (r) => {
+    //                 if (r.message) {
+    //                     console.log(r.message);
+    //                     frappe.model.set_value(cdt, cdn, {
+    //                         "cheque_no": r.message.reference_no,
+    //                         "payee_name": r.message.payee_name,
+    //                         "amount": r.message.paid_amount,
+    //                         "bank_name": r.message.bank,
+    //                         "paid_to": r.message.paid_to,
+    //                         "payment_type": r.message.payment_type,
+    //                         "posting_date": r.message.posting_date,
+    //                         "company": r.message.company
+    //                     });
+    //                     me.calculate_total_amount();
+    //                 } else {
+    //                     frappe.msgprint(__("Failed to fetch payment entry details. Please try again."));
+    //                 }
+    //             }
+    //         });
+    //     }
+    // }
 
 
     calculate_total_amount() {
