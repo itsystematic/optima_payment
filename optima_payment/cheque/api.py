@@ -61,7 +61,6 @@ def get_receivable_cheque(name) :
             "reference_no", 
             "reference_date", 
             "bank_name", 
-            "beneficiary_name", 
             "received_amount",
             "paid_to as paid_from",
             "payee_name",
