@@ -10,7 +10,7 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
         this.show_or_hide_is_endorsed_cheque();
     }
     refresh() {
-        this.reset_fields_of_cheque();
+        // this.reset_fields_of_cheque();
         this.handle_fields_is_endorsed_cheque();
         this.handle_fields_multi_expense();
         this.add_cheques_buttons();
@@ -84,18 +84,16 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
     }
     // Reset Fields
     reset_fields_of_cheque() {
-        if ( this.frm.is_new()) {
-            this.frm.set_value({
-                "cheque_status": "",
-                "pay_mode_of_payment": "",
-                "bank_fees_amount": "",
-                "receivable_cheque" : "",
-                "payee_name" : "" ,
-                'bank_name' : "" ,
-                "is_endorsed_cheque": 0 ,
-                "multi_expense" : 0 ,
-            })
-        }
+        this.frm.set_value({
+            "cheque_status": "",
+            "pay_mode_of_payment": "",
+            "bank_fees_amount": "",
+            "receivable_cheque" : "",
+            "payee_name" : "" ,
+            'bank_name' : "" ,
+            "is_endorsed_cheque": 0 ,
+            "multi_expense" : 0 ,
+        })
     }
 
     payment_type() {
