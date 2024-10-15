@@ -120,6 +120,7 @@ def get_custom_fields():
                 "fieldtype": "Check",
                 "insert_after": "accounts",
                 "label": "Is Payable Cheque",
+                "default": 0,
                 "depends_on": "eval: doc.type == 'Cheque' && doc.is_receivable_cheque == 0 ;",
             },
             {
@@ -127,6 +128,7 @@ def get_custom_fields():
                 "fieldtype": "Check",
                 "insert_after": "is_payable_cheque",
                 "label": "Is Receivable Cheque",
+                "default": 0,
                 "depends_on": "eval: doc.type == 'Cheque' && doc.is_payable_cheque == 0 ;",
             },
             {
