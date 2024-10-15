@@ -56,7 +56,6 @@ def deposit_under_collection(docname , posting_date) :
 # 
 @frappe.whitelist()
 def get_receivable_cheque(name) :
-
     return frappe.db.get_values("Payment Entry" , name , [
             "paid_amount", 
             "reference_no", 
@@ -64,7 +63,8 @@ def get_receivable_cheque(name) :
             "bank_name", 
             "beneficiary_name", 
             "received_amount",
-            "paid_to as paid_from"
+            "paid_to as paid_from",
+            "payee_name",
         ] ,as_dict=True
     )
 

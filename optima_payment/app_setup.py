@@ -219,7 +219,7 @@ def get_custom_fields():
                 "fieldtype": "Check",
                 "label": "Is Endorsed Cheque",
                 "insert_after": "mode_of_payment",
-                "depends_on": "eval: doc.mode_of_payment == 'Payable Cheque'",
+                "depends_on": "eval: doc.payment_type == 'Pay'",
                 "default": 0
             },
             {
@@ -228,7 +228,7 @@ def get_custom_fields():
                 "options": "Payment Entry",
                 "label": "Receivable Cheque",
                 "insert_after": "is_endorsed_cheque",
-                "depends_on": "eval: doc.is_endorsed_cheque == 1 && doc.mode_of_payment == 'Payable Cheque'",
+                "depends_on": "eval: doc.is_endorsed_cheque == 1",
             },
             {
                 "label": "Company Expenses",
