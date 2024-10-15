@@ -83,18 +83,18 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
 
     }
     // Reset Fields
-    reset_fields_of_cheque() {
-        this.frm.set_value({
-            "cheque_status": "",
-            "pay_mode_of_payment": "",
-            "bank_fees_amount": "",
-            "receivable_cheque" : "",
-            "payee_name" : "" ,
-            'bank_name' : "" ,
-            "is_endorsed_cheque": 0 ,
-            "multi_expense" : 0 ,
-        })
-    }
+    // reset_fields_of_cheque() {
+    //     this.frm.set_value({
+    //         "cheque_status": "",
+    //         "pay_mode_of_payment": "",
+    //         "bank_fees_amount": "",
+    //         "receivable_cheque" : "",
+    //         "payee_name" : "" ,
+    //         'bank_name' : "" ,
+    //         "is_endorsed_cheque": 0 ,
+    //         "multi_expense" : 0 ,
+    //     })
+    // }
 
     payment_type() {
         if (this.frm.doc.payment_type == "Receive") {
