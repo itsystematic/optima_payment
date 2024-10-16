@@ -26,7 +26,7 @@ class ChequeActionLog(Document):
             posting_date = getdate(cheque_log[0].get("posting_date"))
             new_posting_date = getdate(self.posting_date)
             if new_posting_date < posting_date :
-                frappe.throw(_("Posting Date must be Greater than {0}").format(posting_date))
+                frappe.throw(_("Posting Date should be greater than {0}").format(posting_date))
 
 
 

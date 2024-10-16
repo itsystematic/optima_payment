@@ -33,15 +33,15 @@ Issuance, تم الاصدار
 Deposited, تم الايداع
 Issuance from endorsed, اصدار من شيك مظهر
 Is Payable Cheque,  هل هو أوراق الدفع
-Is Recievable Cheque, هل هو أوراق القبض
+Is Receivable Cheque,  هل هو أوراق القبض
 Account Currency (From), (من)عملة الحساب
 Account Balance (From), رصيد الحساب(من)
 Get Outstanding Orders, الحصول على الاوامر المتبقية
 Return, ارتداد
 Returned, شيك مرتد
 Has Bank Commissions, لديه عمولات بنكية
-Cheque Collection Fee , عمولة تحصيل الشيك
-Cheque Rejection Fee , عمولة رفض الشيك
+Cheque Collection Fee, عمولة تحصيل الشيك
+Cheque Rejection Fee, عمولة رفض الشيك
 Optima Payment Setting, إعداد الدفع أوبتيما
 Enable Optima Payment, تمكين الدفع أوبتيما
 Cheque Account Settings, إعدادات حسابات الشيكات
@@ -51,4 +51,10 @@ Bank Fees Expense Account, حساب مصروفات الشيكات البنكيه
 Optima Payment Scheduler, أوبتيما جدولة الدفع
 Enable Auto Deposit Under Collection In Time, تمكين الإيداع التلقائي ضمن تحت التحصيل في تاريخ استحقاق الشيك
 Enable Auto Pay Cheque In Time, تمكين تسجيل الصرف التلقائي للشيكات في تاريخ استحقاق الشيك
-Posting Date must be Greater than {0}, يجب أن يكون تاريخ النشر أكبر من {0}
+Posting Date should be greater than {0}, يجب أن يكون تاريخ النشر أكبر من {0}
+Bank Fees Commission, عموله التحصيلات البنكيه
+Default Mode Of Payment,  طريقة الدفع الافتراضية
+Issuance From Endorsed, مُصدر من شيك مظهر
+Pay Cheque, سداد الشيك
+Encashment, شيك مسدد
+Credit ({0}), دائن ({0})
