@@ -59,6 +59,7 @@ doctype_js = {
     ],
     "Expense Claim": "public/js/expense_claim.js",
     "Expense Claim Type" : "public/js/expense_claim_type.js",
+    "Bank": "public/js/bank.js" #--WS
 }
 doctype_list_js = {
     "Payment Entry" : "public/js/payment_entry_list.js",

@@ -264,6 +264,22 @@ def get_custom_fields():
                 "options": "Purchase Invoice",
             }
         ],
+        "Bank": [
+            # --WS
+                        {
+                "label": "Print Formats",
+                "fieldname": "bank_formats",
+                "fieldtype": "Section Break",
+                "insert_after": "data_import_configuration_section",
+            },
+            {
+                "fieldname": "bank_print_format",
+                "fieldtype": "Table",
+                "label": "Bank Print Format",
+                "options": "Bank Print Format Items",
+                "insert_after": "bank_formats",
+            }
+        ]
     }
     return custom_fields
 

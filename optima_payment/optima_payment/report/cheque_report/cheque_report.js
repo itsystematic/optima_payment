@@ -27,7 +27,7 @@ frappe.query_reports["Cheque Report"] = {
 		},
 		{
 			fieldname: "reference_no",
-			label: __("Cheque No"),
+			label: __("Reference No"),
 			fieldtype: "Data"
 		},
 		{
@@ -39,23 +39,26 @@ frappe.query_reports["Cheque Report"] = {
 				"For Collection" ,
 				"Collected" ,
 				"Returned" ,
-				"Return To Customer" ,
 				"Return To Holder" , 
 				"Deposit Under Collection" , 
 				"Endorsed" ,
 				"Rejected" , 
-				"Cancelled" , 
-				"Deposited" , 
+				"Cancelled" ,  
 				"Encashment",
 				"Issuance" ,
 				"Issuance From Endorsed"
 			]
+			// remove "Return To Customer" , "Deposited"
 		},
 		{
 			fieldname: "bank_name" ,
 			label: __("Bank Name"),
-			fieldtype: "Link",
-			options: "Bank"
+			fieldtype: "MultiSelectList",
+			get_data: function (txt) {
+				return frappe.db.get_link_options("Bank", txt, {
+					
+				});
+			},
 		},
 
 		{
