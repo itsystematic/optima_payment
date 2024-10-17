@@ -6,61 +6,74 @@ from frappe import _
 
 
 def execute(filters=None):
-	columns = get_columns(filters)
-	data = get_data(filters)
-	chart = get_dashboard_chart(data)
-	return columns, data , None , None
+    columns = get_columns(filters)
+    data = get_data(filters)
+    chart = get_dashboard_chart(data)
+    return columns, data , None , None
 
 
 def get_columns(filters) :
-	columns = [
-		{
-			"fieldname": "name",
-			"label": _("Payment Entry"),
-			"fieldtype": "Link",
-			"options": "Payment Entry",
-			"width": 220
-		},
-		{
-			"fieldname": "reference_no",
-			"label": _("Cheque No"),
-			"fieldtype": "Data",
-			"width": 130
-		},
-		{
-			"fieldname": "reference_date",
-			"label": _("Cheque Date"),
-			"fieldtype": "Date",
-			"width": 130
-		},
-		{
-			"fieldname" : "cheque_status",
-			"label": _("Cheque Status"),
-			"fieldtype": "Data",
-			"width": 200
-		},
-		{"label": _("Party Type"), "fieldname": "party_type", "width": 110},
-		{"label": _("Party"), "fieldname": "party", "width": 250},
-		{
-			"label": _("Bank Name"),
-			"fieldname": "bank_name",
-			"fieldtype": "Link",
-			"options" : "Bank" ,
-			"width": 150
-		},
-		{
-			"label": _("Payee Name"),
-			"fieldname": "payee_name",
-			"fieldtype": "Data",
-			"width": 200
-		},
-		{
-			"label": _("Amount"),
-			"fieldname": "paid_amount",
-			"fieldtype": "Currency",
-			"width": 140
-		}
-	]
+    columns = [
+        {
+        "fieldname": "posting_date",
+        "label": _("Posting Date"),
+        "fieldtype": "Date",
+        "width": 120
+        },
+        {
+            "fieldname": "name",
+            "label": _("Vourcher No"),
+            "fieldtype": "Link",
+            "options": "Payment Entry",
+            "width": 220
+        },
+        {"label": _("Party Type"), "fieldname": "party_type", "width": 110},
+        {"label": _("Party"), "fieldname": "party", "width": 250},
+        {
+            "label": _("Amount"),
+            "fieldname": "paid_amount",
+            "fieldtype": "Currency",
+            "width": 140
+        },
+        {
+            "label": _("Bank Name"),
+            "fieldname": "bank_name",
+            "fieldtype": "Link",
+            "options" : "Bank" ,
+            "width": 150
+        },
+        {
+            "label": _("Payee Name"),
+            "fieldname": "payee_name",
+            "fieldtype": "Data",
+            "width": 200
+        },
+        {
+            "fieldname": "reference_no",
+            "label": _("Reference No"),
+            "fieldtype": "Data",
+            "width": 130
+        },
+         {
+            "fieldname": "reference_date",
+            "label": _("Reference Date"),
+            "fieldtype": "Date",
+            "width": 130
+        },
+        {
+            "fieldname" : "cheque_status",
+            "label": _("Cheque Status"),
+            "fieldtype": "Data",
+            "width": 200
+        },
+        {
+            'fieldname': 'remarks',
+            'label': _('Remarks'),
+            'fieldtype': 'Data',
+            'width': 200
+        }
+        
+    ]
 
 	return columns
 
