@@ -20,18 +20,18 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
 
 
     receivable_cheque() {
-        let me = this ;
+        let me = this;
         if (this.frm.doc.receivable_cheque) {
             frappe.call({
-                method : "optima_payment.cheque.api.get_receivable_cheque",
-                args : {
-                    name : me.frm.doc.receivable_cheque
+                method: "optima_payment.cheque.api.get_receivable_cheque",
+                args: {
+                    name: me.frm.doc.receivable_cheque
                 },
-                callback:(r) => {
-                    if(r.message) {
+                callback: (r) => {
+                    if (r.message) {
                         me.frm.set_value(r.message[0]);
                     }
-                    
+
                 }
             })
         }
@@ -39,26 +39,26 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
 
 
     mode_of_payment() {
-        let me = this ;
+        let me = this;
         frappe.run_serially([
-            () => me.get_mode_of_payment_options() ,
+            () => me.get_mode_of_payment_options(),
             () => me.reset_field_of_endorsed_cheque(),
             () => me.show_or_hide_related_fields(),
-            ()=> me.show_or_hide_is_endorsed_cheque()
+            () => me.show_or_hide_is_endorsed_cheque()
         ])
 
     }
 
-    show_or_hide_is_endorsed_cheque(){
-        if(this.mode_of_payment_doc.is_payable_cheque == 1){
+    show_or_hide_is_endorsed_cheque() {
+        if (this.mode_of_payment_doc.is_payable_cheque == 1) {
             this.frm.set_df_property('is_endorsed_cheque', 'hidden', 0);
-        }else{
+        } else {
             this.frm.set_df_property('is_endorsed_cheque', 'hidden', 1);
         }
     }
     reset_field_of_endorsed_cheque() {
         if (this.mode_of_payment_doc.is_payable_cheque == 0) {
-            const fields = ['payee_name', 'bank_name', 'reference_no', 'reference_date', 'paid_amount', "received_amount","payee_name"];
+            const fields = ['payee_name', 'bank_name', 'reference_no', 'reference_date', 'paid_amount', "received_amount", "payee_name"];
 
             this.frm.set_value('is_endorsed_cheque', 0);
             this.frm.set_df_property('is_endorsed_cheque', 'hidden', 1);
@@ -101,7 +101,7 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
             this.frm.doc.multi_expense = 0;
             this.frm.set_df_property('is_endorsed_cheque', 'hidden', 1);
             this.multi_expense();
-        }else if(this.frm.doc.payment_type == "Pay"){ 
+        } else if (this.frm.doc.payment_type == "Pay") {
             this.frm.set_df_property('is_endorsed_cheque', 'hidden', 0);
         }
     }
@@ -111,14 +111,11 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
     setup_query_filters() {
         // Case One In multi Expense 
         this.frm.set_query("mode_of_payment", (doc) => {
-            let custom_filters = {};
-            
-            if ((doc.multi_expense == 1  && doc.payment_type == "Pay") || doc.payment_type == "Internal Transfer") {
-                custom_filters = { "is_payable_cheque": 0, "is_receivable_cheque": 0 };
-            } else if (doc.multi_expense == 0 && ["Pay" , "Receive"].includes(doc.payment_type)) {
-                custom_filters = doc.payment_type === "Receive" ? { "is_payable_cheque": 0 } : { "is_receivable_cheque": 0 };
-            } 
 
+            let custom_filters = doc.payment_type === "Receive" ? { "is_payable_cheque": 0 } : { "is_receivable_cheque": 0 };
+            if ((doc.multi_expense == 1 && doc.payment_type === "Pay") || doc.payment_type === "Internal Transfer") {
+                custom_filters = { "is_payable_cheque": 0, "is_receivable_cheque": 0 };
+            }
             return {
                 filters: custom_filters
             }
@@ -152,9 +149,9 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
             return {
                 filters: {
                     // "name": "Party Type",
-                    "name": ["in", ["Supplier", "Shareholder" , "Employee"]],
+                    "name": ["in", ["Supplier", "Shareholder", "Employee"]],
                 }
-			};
+            };
         });
     }
 
@@ -172,9 +169,9 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
     // ===Methods===
 
     is_endorsed_cheque(doc) {
-        
+
         if (!doc.is_endorsed_cheque) {
-            this.frm.set_value("receivable_cheque" , "");
+            this.frm.set_value("receivable_cheque", "");
         }
         this.handle_fields_is_endorsed_cheque();
     }
@@ -186,16 +183,16 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
         }
 
         let fields = [
-            { field: "payee_name", property: "read_only", value: doc.is_endorsed_cheque  },
-            { field: "payee_name", property: "hidden", value: !["Bank" , "Cheque"].includes(this.mode_of_payment_doc.type)},
+            { field: "payee_name", property: "read_only", value: doc.is_endorsed_cheque },
+            { field: "payee_name", property: "hidden", value: !["Bank", "Cheque"].includes(this.mode_of_payment_doc.type) },
             { field: "bank_name", property: "read_only", value: doc.is_endorsed_cheque },
-            { field: "bank_name", property: "hidden", value: !["Bank" , "Cheque"].includes(this.mode_of_payment_doc.type) },
+            { field: "bank_name", property: "hidden", value: !["Bank", "Cheque"].includes(this.mode_of_payment_doc.type) },
             { field: "reference_no", property: "read_only", value: doc.is_endorsed_cheque },
             { field: "reference_date", property: "read_only", value: doc.is_endorsed_cheque },
             { field: "paid_amount", property: "read_only", value: doc.is_endorsed_cheque },
             { field: "received_amount", property: "read_only", value: doc.is_endorsed_cheque },
-            { field: "party_type", property: "reqd", value: doc.is_endorsed_cheque  ? 1 : 0 },
-            { field: "party", property: "reqd", value: doc.is_endorsed_cheque  ? 1 : 0 },
+            { field: "party_type", property: "reqd", value: doc.is_endorsed_cheque ? 1 : 0 },
+            { field: "party", property: "reqd", value: doc.is_endorsed_cheque ? 1 : 0 },
         ]
 
         this.update_property_values(fields);
@@ -203,16 +200,16 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
 
 
     async get_mode_of_payment_options() {
-        if (this.frm.doc.mode_of_payment ) {
+        if (this.frm.doc.mode_of_payment) {
             this.mode_of_payment_doc = await frappe.db.get_doc("Mode of Payment", this.frm.doc.mode_of_payment);
         } else {
             this.mode_of_payment_doc = {};
         }
     }
 
-    async get_bank_fees_amount(fieldname , mode_of_payment) {
-        let bank_fees_amount = 0.00 ;
-        bank_fees_amount =  await frappe.db.get_value("Mode of Payment" , mode_of_payment, fieldname).then((r) => {
+    async get_bank_fees_amount(fieldname, mode_of_payment) {
+        let bank_fees_amount = 0.00;
+        bank_fees_amount = await frappe.db.get_value("Mode of Payment", mode_of_payment, fieldname).then((r) => {
             return r.message[fieldname]
         });
         return bank_fees_amount
@@ -235,7 +232,7 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
             });
         }
     }
-    
+
 
     //  RECIEVE SECTION
 
@@ -292,7 +289,7 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
         let me = this;
         if (["Deposit Under Collection", "Deposited"].includes(this.frm.doc.cheque_status)) {
             this.frm.add_custom_button(__("Reject"), async () => {
-                let fields =  this.get_dialog_fields_return_reject();
+                let fields = this.get_dialog_fields_return_reject();
                 this.create_frappe_prompt(fields, "optima_payment.cheque.api.reject_cheque", __("Reject Cheque"), __("Reject"))
             }).css({
                 color: 'white',
@@ -356,7 +353,7 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
             {
                 label: __('Mode of Payment'), fieldname: 'mode_of_payment',
                 fieldtype: 'Link', options: "Mode of Payment",
-                reqd: 1 ,
+                reqd: 1,
                 // depends_on: 'eval: doc.has_bank_fees == 1' , mandatory_depends_on: 'eval: doc.has_bank_fees == 1 ;',
                 get_query: () => {
                     return {
@@ -365,22 +362,22 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
                             type: ["in", ["Bank", "Cash"]],
                         },
                     };
-                } ,
-                onchange: async  () => {
+                },
+                onchange: async () => {
                     let mode_of_payment = cur_dialog.get_value("mode_of_payment");
-                    let bank_fees_amount = await me.get_bank_fees_amount("cheque_collection_fee" , mode_of_payment);
-                    cur_dialog.set_value("bank_fees_commission" , bank_fees_amount);
+                    let bank_fees_amount = await me.get_bank_fees_amount("cheque_collection_fee", mode_of_payment);
+                    cur_dialog.set_value("bank_fees_commission", bank_fees_amount);
                     // cur_dialog.refresh();
                 }
             },
-            { 
-                label: __('Bank Fees Commission'), 
-                fieldname: 'bank_fees_commission', 
-                fieldtype: 'Currency', 
-                default : 0.00 ,
+            {
+                label: __('Bank Fees Commission'),
+                fieldname: 'bank_fees_commission',
+                fieldtype: 'Currency',
+                default: 0.00,
                 // read_only: 1,
-                depends_on: 'eval: doc.has_bank_commissions == 1 ;', 
-                mandatory_depends_on: 'eval: doc.has_bank_commissions == 1 ;' 
+                depends_on: 'eval: doc.has_bank_commissions == 1 ;',
+                mandatory_depends_on: 'eval: doc.has_bank_commissions == 1 ;'
             },
         ]
         this.create_frappe_prompt(fields, "optima_payment.cheque.api.collect_cheque", __("Collect Cheque"), __("Collect"))
@@ -413,17 +410,17 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
                         },
                     };
                 },
-                onchange: async  () => {
+                onchange: async () => {
                     let mode_of_payment = cur_dialog.get_value("mode_of_payment");
-                    let bank_fees_amount = await me.get_bank_fees_amount("cheque_rejection_fee" , mode_of_payment);
-                    cur_dialog.set_value("bank_fees_amount" , bank_fees_amount);
+                    let bank_fees_amount = await me.get_bank_fees_amount("cheque_rejection_fee", mode_of_payment);
+                    cur_dialog.set_value("bank_fees_amount", bank_fees_amount);
                 }
             },
             {
                 label: __('Bank Fees Amount'),
                 fieldname: 'bank_fees_amount',
                 fieldtype: 'Currency',
-                default :  0.00 ,
+                default: 0.00,
                 // read_only : 1,
                 depends_on: 'eval: doc.has_bank_fees == 1 ;',
                 mandatory_depends_on: 'eval: doc.has_bank_fees == 1 ;',
