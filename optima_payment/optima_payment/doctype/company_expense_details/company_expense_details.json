@@ -15,7 +15,7 @@
   "accounting_dimensions_section",
   "cost_center",
   "section_break_4",
-  "description",
+  "remarks",
   "section_break_6",
   "amount",
   "column_break_8"
@@ -34,16 +34,6 @@
   {
    "fieldname": "section_break_4",
    "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "description",
-   "fieldtype": "Text",
-   "in_list_view": 1,
-   "label": "Description",
-   "oldfieldname": "description",
-   "oldfieldtype": "Small Text",
-   "print_width": "300px",
-   "width": "300px"
   },
   {
    "fieldname": "section_break_6",
@@ -117,11 +107,21 @@
    "fieldtype": "Float",
    "label": "Exchange Rate",
    "print_hide": 1
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Text",
+   "in_list_view": 1,
+   "label": "Remarks",
+   "oldfieldname": "description",
+   "oldfieldtype": "Small Text",
+   "print_width": "300px",
+   "width": "300px"
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2024-10-20 14:12:04.794612",
+ "modified": "2024-10-20 15:02:37.569907",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Company Expense Details",
