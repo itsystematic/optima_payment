@@ -1,0 +1,54 @@
+{
+ "cards": [
+  {
+   "card": "Cheque Issuance"
+  },
+  {
+   "card": "Cheque For Collection"
+  },
+  {
+   "card": "Cheque Deposit Under Collection"
+  },
+  {
+   "card": "Rejected Cheque"
+  },
+  {
+   "card": "Returned Cheque"
+  },
+  {
+   "card": "Endorsed Cheque"
+  },
+  {
+   "card": "Total Incoming Payment"
+  },
+  {
+   "card": "Total Outgoing Payment"
+  }
+ ],
+ "charts": [
+  {
+   "chart": "Monthly Issuance Amount",
+   "width": "Half"
+  },
+  {
+   "chart": "Cheque Paid Amount",
+   "width": "Half"
+  },
+  {
+   "chart": "Cheque Status",
+   "width": "Full"
+  }
+ ],
+ "creation": "2024-10-22 15:10:56.618741",
+ "dashboard_name": "Cheque",
+ "docstatus": 0,
+ "doctype": "Dashboard",
+ "idx": 0,
+ "is_default": 0,
+ "is_standard": 1,
+ "modified": "2024-10-22 15:31:44.714684",
+ "modified_by": "Administrator",
+ "module": "Optima Payment",
+ "name": "Cheque",
+ "owner": "Administrator"
+}
