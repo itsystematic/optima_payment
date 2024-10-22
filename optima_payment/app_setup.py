@@ -322,6 +322,13 @@ def get_property_setter():
             "property_type": "Data",
             "value": json.dumps(MAIN_ORDER_FIELDS),
             "doctype_or_field": "DocType",
-        }
+        },
+        {
+            "doctype": "Payment Entry",
+            "fieldname": "status",
+            "property": "in_standard_filter",
+            "property_type": "Check",
+            "value": 1,
+    },
     ]
     return property_setter
