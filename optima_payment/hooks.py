@@ -265,10 +265,11 @@ ignore_links_on_delete = ["Cheque Action Log"]
 
 # fixtures = [
 
-#     {
-#         "dt": "Print Format",
-#         "filters": {
-#             "doc_type": "Payment Entry",
-#         }
-#     }
-# ]
+    {
+        "dt": "Property Setter",
+        "filters": {
+            "doc_type": "Purchase invoice",
+            "property": "links_order",
+        }
+    }
+]
