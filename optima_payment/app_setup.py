@@ -295,13 +295,13 @@ def get_property_setter():
         #     "for_doctype": True,
         #     "validate_fields_for_doctype": False,
         # },
-        {
-            "doctype": "Payment Entry",
-            "property": "reqd",
-            "fieldname": "cost_center",
-            "value": 1,
-            "property_type": "Check",
-        },
+        # {
+        #     "doctype": "Payment Entry",
+        #     "property": "reqd",
+        #     "fieldname": "cost_center",
+        #     "value": 0,
+        #     "property_type": "Check",
+        # },
         {
             "doctype": "Payment Entry",
             "property": "allow_on_submit",

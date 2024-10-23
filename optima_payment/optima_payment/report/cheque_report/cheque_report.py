@@ -15,10 +15,10 @@ def execute(filters=None):
 def get_columns(filters) :
     columns = [
         {
-        "fieldname": "posting_date",
-        "label": _("Posting Date"),
-        "fieldtype": "Date",
-        "width": 120
+            "fieldname": "posting_date",
+            "label": _("Posting Date"),
+            "fieldtype": "Date",
+            "width": 120
         },
         {
             "fieldname": "name",
@@ -54,7 +54,7 @@ def get_columns(filters) :
             "fieldtype": "Data",
             "width": 130
         },
-         {
+        {
             "fieldname": "reference_date",
             "label": _("Reference Date"),
             "fieldtype": "Date",
@@ -81,8 +81,11 @@ def get_columns(filters) :
 def get_conditions(filters) :
     conditions = ""
 
-    if filters.get("from_date") and filters.get("to_date"):
-        conditions += " AND pe.reference_date BETWEEN '{0}' AND '{1}' ".format(filters.get("from_date"), filters.get("to_date"))
+    if filters.get("reference_start_date") and filters.get("reference_end_date"):
+        conditions += " AND pe.reference_date BETWEEN '{0}' AND '{1}' ".format(filters.get("reference_start_date"), filters.get("reference_end_date"))
+
+    if filters.get("posting_start_date") and filters.get("posting_end_date"):
+        conditions += " AND pe.posting_date BETWEEN '{0}' AND '{1}' ".format(filters.get("posting_start_date"), filters.get("posting_end_date"))
 
     if filters.get("company"):
         conditions += " AND pe.company = '{0}' ".format(filters.get("company"))
