@@ -8,17 +8,11 @@
   "enable_optima_payment",
   "column_break_gfcr",
   "company",
-  "cheque_account_settings_section",
-  "incoming_cheque_wallet_account",
-  "column_break_xjor",
-  "bank_commission_account",
-  "column_break_yyfr",
-  "bank_fees_expense_account",
+  "section_break_yner",
+  "cheque_accounts",
   "optima_payment_scheduler_section",
   "enable_auto_deposit_under_collection_in_time",
-  "enable_auto_pay_cheque_in_time",
-  "column_break_iqat",
-  "default_mode_of_payment"
+  "enable_auto_pay_cheque_in_time"
  ],
  "fields": [
   {
@@ -26,10 +20,6 @@
    "fieldname": "enable_optima_payment",
    "fieldtype": "Check",
    "label": "Enable Optima Payment"
-  },
-  {
-   "fieldname": "column_break_iqat",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "company",
@@ -48,43 +38,6 @@
    "label": "Enable Auto Pay Cheque In Time"
   },
   {
-   "fieldname": "cheque_account_settings_section",
-   "fieldtype": "Section Break",
-   "label": "Cheque Account Settings"
-  },
-  {
-   "fieldname": "incoming_cheque_wallet_account",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Incoming Cheque Wallet Account",
-   "options": "Account",
-   "reqd": 1
-  },
-  {
-   "fieldname": "bank_commission_account",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Bank Commission Account",
-   "options": "Account",
-   "reqd": 1
-  },
-  {
-   "fieldname": "bank_fees_expense_account",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Bank Fees Expense Account",
-   "options": "Account",
-   "reqd": 1
-  },
-  {
-   "fieldname": "column_break_xjor",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "column_break_yyfr",
-   "fieldtype": "Column Break"
-  },
-  {
    "default": "0",
    "fieldname": "enable_auto_deposit_under_collection_in_time",
    "fieldtype": "Check",
@@ -100,17 +53,21 @@
    "label": "Optima Payment Scheduler"
   },
   {
-   "depends_on": "eval: doc.enable_auto_pay_cheque_in_time",
-   "fieldname": "default_mode_of_payment",
-   "fieldtype": "Link",
-   "label": "Default Mode Of Payment",
-   "mandatory_depends_on": "eval: doc.enable_auto_pay_cheque_in_time",
-   "options": "Mode of Payment"
+   "fieldname": "section_break_yner",
+   "fieldtype": "Section Break",
+   "label": "Cheque Account Settings"
+  },
+  {
+   "fieldname": "cheque_accounts",
+   "fieldtype": "Table",
+   "label": "Cheque Accounts",
+   "options": "Cheque Accounts",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-25 09:49:29.444220",
+ "modified": "2024-10-23 11:48:27.378289",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Optima Payment Setting",

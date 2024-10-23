@@ -39,3 +39,4 @@ def insert_accounting_shortcut():
     """, auto_commit=True)
 
 # insert_accounting_shortcut()
+

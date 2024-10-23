@@ -3,7 +3,7 @@ from frappe.utils import getdate
 from erpnext.accounts.general_ledger import make_gl_entries
 from optima_payment.optima_payment.doctype.cheque_action_log.cheque_action_log import add_cheque_action_log
 
-
+# Main Function
 
 def create_gl_entry(
     doc, 

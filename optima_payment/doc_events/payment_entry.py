@@ -38,7 +38,6 @@ def payment_entry_on_submit(doc, event):
     status = ""
     mode_of_payment = frappe.get_doc("Mode of Payment", doc.mode_of_payment)
 
-    print(mode_of_payment.get("type"))
     if mode_of_payment.get("type") != "Cheque" : return 
         
     if mode_of_payment.get("is_payable_cheque") == 1 and doc.get("payment_type") == "Pay"  and doc.multi_expense == 0: 
@@ -52,7 +51,7 @@ def payment_entry_on_submit(doc, event):
         
     if doc.is_endorsed_cheque == 1:
         update_cheque_status(doc.receivable_cheque, "Endorsed")
-    print(status)
+
     doc.db_set("cheque_status", status)
         
 def update_cheque_status(name, status, bank_fees_amount=0, posting_date=None):
@@ -80,7 +79,6 @@ def payment_entry_on_cancel(doc , event) :
     mode_of_payment = frappe.get_doc("Mode of Payment" , doc.get("mode_of_payment"))
 
     if mode_of_payment.get("is_payable_cheque") == 1 or mode_of_payment.get("is_receivable_cheque") == 1 :
-        print("cancel cheque")
         cancel_cheque(doc , nowdate())
 
     

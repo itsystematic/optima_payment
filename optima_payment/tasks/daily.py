@@ -1,6 +1,6 @@
 import frappe
 from frappe.utils import today
-from optima_payment import get_applicable_campanies_optima_payment
+from optima_payment import get_applicable_campanies_optima_payment , get_cheque_account
 from optima_payment.cheque.cases import make_pay_cheque_gl , make_deposit_under_collection_gl
 
 def optima_payment_daily() :
@@ -35,7 +35,8 @@ def auto_pay_cheque_in_time(optima_payment_setting) :
     for payment_entry in list_of_payment_entry :
 
         payment_entry_doc = frappe.get_doc("Payment Entry" , payment_entry)
-        make_pay_cheque_gl(payment_entry_doc , optima_payment_setting.default_mode_of_payment , payment_entry_doc.reference_date)
+        default_mode_of_payment = get_cheque_account(payment_entry_doc , "default_mode_of_payment")
+        make_pay_cheque_gl(payment_entry_doc , default_mode_of_payment , payment_entry_doc.reference_date)
         
 
 def auto_deposit_under_collection_in_time(optima_payment_setting) :
