@@ -6,29 +6,21 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "print_format",
-  "default"
+  "print_format"
  ],
  "fields": [
   {
    "fieldname": "print_format",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Print Format",
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "default",
-   "fieldtype": "Check",
-   "in_list_view": 1,
-   "label": "Default"
+   "options": "Print Format"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-10-16 09:36:21.823025",
+ "modified": "2024-10-20 09:08:10.765658",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Bank Print Format Items",

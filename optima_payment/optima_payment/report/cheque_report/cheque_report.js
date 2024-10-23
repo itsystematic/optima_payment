@@ -12,18 +12,61 @@ frappe.query_reports["Cheque Report"] = {
 			reqd: 1
 		},
 		{
-			fieldname: "from_date",
-			label: __("From Date"),
-			fieldtype: "Date",
+			fieldname: "filter_based_on",
+			label: __("Filter Based On"),
+			fieldtype: "Select",
+			options: ["Posting Date", "Reference Date"],
+			default: ["Reference Date"],
 			reqd: 1,
-			default : frappe.datetime.add_months(frappe.datetime.get_today(), -2)
+			on_change: function () {
+				let filter_based_on = frappe.query_report.get_filter_value("filter_based_on");
+
+				frappe.query_report.toggle_filter_display("posting_start_date",filter_based_on === "Reference Date");
+				frappe.query_report.toggle_filter_display("posting_end_date", filter_based_on === "Reference Date");
+
+				frappe.query_report.toggle_filter_display(
+					"reference_start_date",
+					filter_based_on === "Posting Date"
+				);
+				frappe.query_report.toggle_filter_display(
+					"reference_end_date",
+					filter_based_on === "Posting Date"
+				);
+
+				frappe.query_report.refresh();
+			}
 		},
 		{
-			fieldname: "to_date",
-			label: __("To Date"),
+			fieldname: "posting_start_date",
+			label: __("From Posting Date"),
 			fieldtype: "Date",
 			reqd: 1,
-			default : frappe.datetime.get_today()
+			default : frappe.datetime.add_months(frappe.datetime.get_today(), -2),
+			depends_on: "eval:doc.filter_based_on == 'Posting Date'",
+		},
+		{
+			fieldname: "posting_end_date",
+			label: __("To Posting Date"),
+			fieldtype: "Date",
+			reqd: 1,
+			default : frappe.datetime.get_today(),
+			depends_on: "eval:doc.filter_based_on == 'Posting Date'",
+		},
+		{
+			fieldname: "reference_start_date",
+			label: __("From Reference Date"),
+			fieldtype: "Date",
+			reqd: 1,
+			default : frappe.datetime.add_months(frappe.datetime.get_today(), -2),
+			depends_on: "eval:doc.filter_based_on == 'Reference Date'",
+		},
+		{
+			fieldname: "reference_end_date",
+			label: __("To Reference Date"),
+			fieldtype: "Date",
+			reqd: 1,
+			default : frappe.datetime.get_today(),
+			depends_on: "eval:doc.filter_based_on == 'Reference Date'",
 		},
 		{
 			fieldname: "reference_no",

@@ -33,7 +33,7 @@ app_license = "mit"
 # app_include_css = "/assets/optima_payment/css/optima_payment.css"
 app_include_js = [
     "/assets/optima_payment/js/optima_payment.js",
-    # "/assets/optima_payment/js/expense_claim.js",
+    "/assets/optima_payment/js/custom_print.js",
     ]
 
 # include js, css files in header of web template
@@ -271,5 +271,11 @@ fixtures = [
             "doc_type": "Purchase invoice",
             "property": "links_order",
         }
+    },
+    {
+        "dt": "Workspace",
+        "filters": [
+            ["name", "in", ["Accounting"]] 
+        ]
     }
 ]

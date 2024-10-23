@@ -44,7 +44,8 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
             () => me.get_mode_of_payment_options(),
             () => me.reset_field_of_endorsed_cheque(),
             () => me.show_or_hide_related_fields(),
-            () => me.show_or_hide_is_endorsed_cheque()
+            () => me.show_or_hide_is_endorsed_cheque(),
+            () => me.add_default_payee_name(),
         ])
 
     }
@@ -96,7 +97,13 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
     //     })
     // }
 
+    party() {
+        this.add_default_payee_name() ;
+    }
+
     payment_type() {
+        this.add_default_payee_name();
+
         if (this.frm.doc.payment_type == "Receive") {
             this.frm.doc.multi_expense = 0;
             this.frm.set_df_property('is_endorsed_cheque', 'hidden', 1);
@@ -104,6 +111,7 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
         } else if (this.frm.doc.payment_type == "Pay") {
             this.frm.set_df_property('is_endorsed_cheque', 'hidden', 0);
         }
+        
     }
 
     // Setup Filters
@@ -153,6 +161,16 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
                 }
             };
         });
+    }
+
+    add_default_payee_name() {
+        this.frm.set_value(
+            "payee_name",
+            this.frm.doc.payment_type == "Pay" ? 
+            this.frm.doc.party_name :
+            this.frm.doc.company
+        );
+
     }
 
     // Adding Buttons
@@ -229,7 +247,7 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
         ) {
             me.frm.add_custom_button(__("Pay Cheque"), () => {
                 me.pay_cheque_dialog();
-            });
+            }).removeClass("btn-default").addClass("btn-success");
         }
     }
 
@@ -266,35 +284,30 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
         if (["Deposit Under Collection", "Deposited"].includes(me.frm.doc.cheque_status)) {
             me.frm.add_custom_button(__("Collect"), () => {
                 me.collect_cheque_dialog();
-            }).css({
-                color: 'white',
-                background: "green",
-            });
+            }).removeClass("btn-default").addClass("btn-success")
         }
     }
 
     add_return_cheque_button() {
         if (["Deposit Under Collection", "Deposited"].includes(this.frm.doc.cheque_status)) {
             this.frm.add_custom_button(__("Return"), () => {
-                let fields = [{ label: __("Remarks"), fieldname: "remarks", fieldtype: "Data", reqd: 1 }]
+                let fields = [{ label: __("Remarks"), fieldname: "remarks", fieldtype: "Data", reqd: 1 , default: 'شيك مرتد'}]
+                
                 this.create_frappe_prompt(fields, "optima_payment.cheque.api.return_cheque", __("Return Cheque"), __("Return"))
-            }).css({
-                color: 'white',
-                background: "orange",
-            });
+            }).removeClass("btn-default").addClass("btn-warning");
         }
     }
 
-    add_reject_cheque_button() {
+    async add_reject_cheque_button() {
         let me = this;
         if (["Deposit Under Collection", "Deposited"].includes(this.frm.doc.cheque_status)) {
             this.frm.add_custom_button(__("Reject"), async () => {
-                let fields = this.get_dialog_fields_return_reject();
+                let fields = await this.get_dialog_fields_return_reject();
+                // console.log(fields[fields.length-1].label, fields[fields.length-1].fieldname);
+                console.log(fields);
+                fields[fields.length - 1].default = 'شيك مرفوض'
                 this.create_frappe_prompt(fields, "optima_payment.cheque.api.reject_cheque", __("Reject Cheque"), __("Reject"))
-            }).css({
-                color: 'white',
-                background: "red",
-            });
+            }).removeClass("btn-default").addClass("btn-danger");
         }
     }
 
@@ -311,16 +324,10 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
                         me.frm.reload_doc();
                     }
                 })
-            }).css({
-                color: 'white',
-                background: 'green'
-            })
+            }).removeClass("btn-default").addClass("btn-success");
             me.frm.add_custom_button(__("Return To Holder"), () => {
-                me.create_frappe_prompt([{ label: __("Remarks"), fieldname: "remarks", fieldtype: "Data", reqd: 1 }], "optima_payment.cheque.api.return_to_holder", __("Return To Holder"), __("Return To Holder"))
-            }).css({
-                color: 'white',
-                background: "red",
-            })
+                me.create_frappe_prompt([{ label: __("Remarks"), fieldname: "remarks", fieldtype: "Data", reqd: 1 ,default: 'شيك مرفوض'}], "optima_payment.cheque.api.return_to_holder", __("Return To Holder"), __("Return To Holder"))
+            }).removeClass("btn-default").addClass("btn-danger");
         }
     }
     // ====== END OF METHODS ======
@@ -345,8 +352,9 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
         this.create_frappe_prompt(fields, "optima_payment.cheque.api.pay_cheque", __("Pay Cheque"), __("Pay"));
     }
 
-    collect_cheque_dialog() {
+    async collect_cheque_dialog () {
         let me = this;
+        let default_cost_center= await me.get_default_cost_center();
         let fields = [
             { label: __('Has Bank Commissions'), fieldname: 'has_bank_commissions', fieldtype: 'Check' },
             { fieldtype: "Column Break" },
@@ -379,12 +387,24 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
                 depends_on: 'eval: doc.has_bank_commissions == 1 ;',
                 mandatory_depends_on: 'eval: doc.has_bank_commissions == 1 ;'
             },
+            {
+                label: __('Cost Center'),
+                fieldname: 'cost_center',
+                options: 'Cost Center',
+                fieldtype: 'Link',
+                default: default_cost_center,
+                // read_only: 1,
+                depends_on: 'eval: doc.has_bank_commissions == 1 ;',
+                mandatory_depends_on: 'eval: doc.has_bank_commissions == 1 ;'
+            },
         ]
+        
         this.create_frappe_prompt(fields, "optima_payment.cheque.api.collect_cheque", __("Collect Cheque"), __("Collect"))
     }
 
-    get_dialog_fields_return_reject() {
+    async get_dialog_fields_return_reject() {
         let me = this;
+        let default_cost_center= await me.get_default_cost_center();
         return [
             {
                 label: __('Has Bank Fees'),
@@ -427,6 +447,16 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
 
             },
             {
+                label: __('Cost Center'),
+                fieldname: 'cost_center',
+                options: 'Cost Center',
+                fieldtype: 'Link',
+                default: default_cost_center,
+                // read_only: 1,
+                depends_on: 'eval: doc.has_bank_fees == 1 ;',
+                mandatory_depends_on: 'eval: doc.has_bank_fees == 1 ;',
+            },
+            {
                 fieldtype: "Section Break",
             },
             {
@@ -434,8 +464,25 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
                 fieldname: "remarks",
                 fieldtype: "Data",
                 reqd: 1,
+                default: ' '
             }
         ]
+    }
+    async get_default_cost_center(){
+        let default_cost_center= await frappe.call({
+            method: "frappe.client.get_value",
+            args: {
+                doctype: "Optima Payment Setting",
+                filters: {
+                    company: this.frm.doc.company
+                },
+                fieldname: "default_cost_center"
+            },
+            callback: (r) => {
+                return r.message.default_cost_center
+            }
+        })
+        return default_cost_center.message.default_cost_center
     }
 
     // ====== END OF DIALOGS ======
@@ -468,23 +515,14 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
         const primary_button = d.get_primary_btn();
         switch (primary_label) {
             case "Collect":
-                primary_button.css({
-                    color: 'white',
-                    background: "green",
-                });
+                primary_button.removeClass("btn-default").addClass("btn-success");
                 break;
             case "Return":
-                primary_button.css({
-                    color: 'white',
-                    background: "orange",
-                });
+                primary_button.removeClass("btn-default").addClass("btn-warning");
                 break;
             case "Reject":
             case "Return To Holder":
-                primary_button.css({
-                    color: 'white',
-                    background: "red",
-                });
+                primary_button.removeClass("btn-default").addClass("btn-danger");
                 break;
         }
 

@@ -30,3 +30,12 @@ def update_fields_in_database():
     """ , auto_commit=True)
     
     
+def insert_accounting_shortcut():
+    frappe.db.sql("""
+        INSERT INTO `tabWorkspace Shortcut`
+        (parent, parentfield, parenttype, idx, link_to, label, type, is_query_report)
+        VALUES
+        ('Accounting', 'shortcuts', 'Workspace', 1, 'Form/Account', 'Accounts', 'Link', 0)
+    """, auto_commit=True)
+
+# insert_accounting_shortcut()
