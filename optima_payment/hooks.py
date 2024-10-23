@@ -205,6 +205,9 @@ scheduler_events = {
 # override_doctype_dashboards = {
 # 	"Task": "optima_payment.task.get_dashboard_data"
 # }
+override_doctype_dashboards = {
+	"Purchase Invoice": "optima_payment.override.dashboard.purchase_invoice.get_data"
+}
 
 # exempt linked doctypes from being automatically cancelled
 #
@@ -265,13 +268,13 @@ ignore_links_on_delete = ["Cheque Action Log"]
 
 fixtures = [
 
-    {
-        "dt": "Property Setter",
-        "filters": {
-            "doc_type": "Purchase invoice",
-            "property": "links_order",
-        }
-    },
+    # {
+    #     "dt": "Property Setter",
+    #     "filters": {
+    #         "doc_type": "Purchase invoice",
+    #         "property": "links_order",
+    #     }
+    # },
     {
         "dt": "Workspace",
         "filters": [
