@@ -263,7 +263,7 @@ ignore_links_on_delete = ["Cheque Action Log"]
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
 
-# fixtures = [
+fixtures = [
 
     {
         "dt": "Property Setter",
