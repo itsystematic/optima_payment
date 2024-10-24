@@ -302,7 +302,7 @@ class CustomPaymentEntry(PAYMENTENTRY):
                             "party_type": account.party_type or None,
                             "debit": account.amount,
                             "cost_center": account.cost_center or None,
-                            "remarks": account.description or None,
+                            "remarks": account.remarks or None,
                         },
                         item=self,
                     )
