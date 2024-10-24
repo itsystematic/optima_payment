@@ -31,7 +31,7 @@ class ChequeActionLog(Document):
 
 
 @frappe.whitelist()
-def add_cheque_action_log(doc , cheque_status , mode_of_payment=None , bank_fees_amount =0.00, posting_date = None) :
+def add_cheque_action_log(doc , cheque_status , mode_of_payment=None , bank_fees_amount =0.00, posting_date = None, cost_center = None) :
 
     if doc.docstatus == 2 : return 
     
@@ -42,7 +42,8 @@ def add_cheque_action_log(doc , cheque_status , mode_of_payment=None , bank_fees
         "cheque_status": cheque_status,
         "mode_of_payment": mode_of_payment,
         "bank_fees_amount": bank_fees_amount,
-        "posting_date": posting_date
+        "posting_date": posting_date,
+        "cost_center": cost_center
     })
     cheque_log.flags.ignore_permissions = True
     cheque_log.flags.ignore_mandatory = True

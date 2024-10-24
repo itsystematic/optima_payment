@@ -26,6 +26,7 @@ def active_for_company(fn) :
 
 def get_applicable_campanies_optima_payment(company=None) :
 
+    
     list_setting_doc = []
     conditions = {"enable_optima_payment" : 1}
 
@@ -42,8 +43,6 @@ def get_cheque_account(doc:frappe._dict , fieldname:str ) -> str|None :
     """ Main Function To GET Account by Currency in Optima Payment Setting """
 
     default_currency = doc.paid_to_account_currency if doc.payment_type == "Receive" else doc.paid_from_account_currency
-
-    # print(frappe.boot.)
     return frappe.db.get_value("Cheque Accounts" , {"parent" : doc.company , "default_currency" : default_currency} , fieldname)
 
 

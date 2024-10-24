@@ -53,7 +53,7 @@ frappe.ui.form.on("Optima Payment Setting", {
         frm.set_query("default_mode_of_payment" ,"cheque_accounts",  (doc, cdt ,cdn)  =>  {
             let current_row = frappe.get_doc(cdt , cdn);
             return {
-                query : "optima_payment.optima_payment.doctype.optima_payment_setting.optima_payment_setting.get_mode_of_payment",
+                query : "optima_payment.cheque.api.get_mode_of_payment",
                 filters : {
                     company : doc.company ,
                     default_currency : current_row.default_currency
