@@ -64,6 +64,9 @@ def reverse_party_gl(party_gl_entries:list[dict] , posting_date , remarks , gl_e
             "credit": gl_entry.debit,
             "credit_in_account_currency" : gl_entry.debit_in_account_currency,
             "cost_center": gl_entry.cost_center,
+            "against_voucher" : gl_entry.against_voucher,
+            "against_voucher_type":gl_entry.against_voucher_type ,
+            "project" : gl_entry.project ,
             "remarks" : remarks if remarks else "Return Invoice By Cheque {0}".format(gl_entry.voucher_name),
         })
         gl_entries.append(gl_entry)
