@@ -13,7 +13,8 @@
   "column_break_ynml",
   "payment_entry",
   "cheque_status",
-  "mode_of_payment"
+  "mode_of_payment",
+  "cost_center"
  ],
  "fields": [
   {
@@ -62,12 +63,18 @@
    "fieldname": "is_cancelled",
    "fieldtype": "Check",
    "label": "Is Cancelled"
+  },
+  {
+   "fieldname": "cost_center",
+   "fieldtype": "Link",
+   "label": "Cost Center",
+   "options": "Cost Center"
   }
  ],
  "in_create": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-10-03 09:42:27.783414",
+ "modified": "2024-10-23 15:45:40.583829",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Cheque Action Log",

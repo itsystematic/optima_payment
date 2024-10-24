@@ -38,7 +38,6 @@ def payment_entry_on_submit(doc, event):
     status = ""
     mode_of_payment = frappe.get_doc("Mode of Payment", doc.mode_of_payment)
 
-    print(mode_of_payment.get("type"))
     if mode_of_payment.get("type") != "Cheque" : return 
         
     if mode_of_payment.get("is_payable_cheque") == 1 and doc.get("payment_type") == "Pay"  and doc.multi_expense == 0: 
@@ -52,7 +51,7 @@ def payment_entry_on_submit(doc, event):
         
     if doc.is_endorsed_cheque == 1:
         update_cheque_status(doc.receivable_cheque, "Endorsed")
-    print(status)
+
     doc.db_set("cheque_status", status)
         
 def update_cheque_status(name, status, bank_fees_amount=0, posting_date=None):
@@ -80,10 +79,8 @@ def payment_entry_on_cancel(doc , event) :
     mode_of_payment = frappe.get_doc("Mode of Payment" , doc.get("mode_of_payment"))
 
     if mode_of_payment.get("is_payable_cheque") == 1 or mode_of_payment.get("is_receivable_cheque") == 1 :
-        print("cancel cheque")
         cancel_cheque(doc , nowdate())
 
-    
 
 
 def cancel_cheque(doc , posting_date = None) :
@@ -92,8 +89,8 @@ def cancel_cheque(doc , posting_date = None) :
         if cheque_log.get("cheque_status") == "Encashment" : make_pay_cheque_gl(doc , cheque_log.get("mode_of_payment") , posting_date)
         # elif cheque_log.get("cheque_status") == "Endorsed" : make_endorsed_cheque_gl(doc ,posting_date)
         elif cheque_log.get("cheque_status") == "Deposit Under Collection" : make_deposit_under_collection_gl(doc , posting_date)
-        elif cheque_log.get("cheque_status") == "Collected" : make_collect_cheque_gl(doc, cheque_log.get("mode_of_payment") ,cheque_log.get("bank_fees_amount") , posting_date )
-        elif cheque_log.get("cheque_status") == "Rejected" : make_reject_cheque_gl(doc, cheque_log.get("mode_of_payment") ,cheque_log.get("bank_fees_amount") , posting_date )
+        elif cheque_log.get("cheque_status") == "Collected" : make_collect_cheque_gl(doc, cheque_log.get("mode_of_payment") ,cheque_log.get("bank_fees_amount") , posting_date , cheque_log.get("cost_center"))
+        elif cheque_log.get("cheque_status") == "Rejected" : make_reject_cheque_gl(doc, cheque_log.get("mode_of_payment") ,cheque_log.get("bank_fees_amount") , posting_date ,cheque_log.get("cost_center"))
         elif cheque_log.get("cheque_status") == "Returned" : make_return_cheque_gl(doc, posting_date)
         elif cheque_log.get("cheque_status") == "Return To Holder" : make_return_to_holder_gl(doc ,posting_date)
 

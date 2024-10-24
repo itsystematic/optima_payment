@@ -23,12 +23,15 @@ frappe.ui.form.ControlLink = class ControlLink extends frappe.ui.form.ControlLin
 					let doctype = me.get_options();
 					let name = me.get_input_value();
 					me.$link.toggle(true);
-					console.log(doctype)
-					if (me.doc.doctype == "Payment Entry" && doctype == "Party Type") {
-						me.$link_open.attr("href", "/app/" + name.toLowerCase());
+					if ('doc' in me) {
+						if (me.doc.doctype == "Payment Entry" && doctype == "Party Type") {
+							me.$link_open.attr("href", "/app/" + name.toLowerCase());
+						} else {
+							me.$link_open.attr("href", frappe.utils.get_form_link(doctype, name));
+						}	
 					} else {
 						me.$link_open.attr("href", frappe.utils.get_form_link(doctype, name));
-					}			
+					}
 				}
 
 				if (!me.$input.val()) {

@@ -304,7 +304,6 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
             this.frm.add_custom_button(__("Reject"), async () => {
                 let fields = await this.get_dialog_fields_return_reject();
                 // console.log(fields[fields.length-1].label, fields[fields.length-1].fieldname);
-                console.log(fields);
                 fields[fields.length - 1].default = 'شيك مرفوض'
                 this.create_frappe_prompt(fields, "optima_payment.cheque.api.reject_cheque", __("Reject Cheque"), __("Reject"))
             }).removeClass("btn-default").addClass("btn-danger");
@@ -341,10 +340,16 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
                 label: 'Mode of Payment', fieldname: 'mode_of_payment', fieldtype: 'Link', options: 'Mode of Payment', reqd: 1,
                 get_query: () => {
                     return {
-                        filters: {
-                            company: this.frm.doc.company,
-                            type: "Bank",
+                        query : "optima_payment.cheque.api.get_mode_of_payment",
+                        filters : {
+                            company : this.frm.doc.company ,
+                            default_currency : this.get_default_currency() ,
+                            type : "Bank",
                         }
+                        // filters: {
+                        //     company: this.frm.doc.company,
+                        //     type: "Bank",
+                        // }
                     }
                 }
             }
@@ -354,7 +359,8 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
 
     async collect_cheque_dialog () {
         let me = this;
-        let default_cost_center= await me.get_default_cost_center();
+        let default_cost_center=  me.get_default_cost_center();
+
         let fields = [
             { label: __('Has Bank Commissions'), fieldname: 'has_bank_commissions', fieldtype: 'Check' },
             { fieldtype: "Column Break" },
@@ -365,10 +371,12 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
                 // depends_on: 'eval: doc.has_bank_fees == 1' , mandatory_depends_on: 'eval: doc.has_bank_fees == 1 ;',
                 get_query: () => {
                     return {
-                        filters: {
-                            company: me.frm.doc.company,
+                        query : "optima_payment.cheque.api.get_mode_of_payment",
+                        filters : {
+                            company : me.frm.doc.company ,
+                            default_currency : me.get_default_currency() ,
                             type: ["in", ["Bank", "Cash"]],
-                        },
+                        }
                     };
                 },
                 onchange: async () => {
@@ -395,7 +403,15 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
                 default: default_cost_center,
                 // read_only: 1,
                 depends_on: 'eval: doc.has_bank_commissions == 1 ;',
-                mandatory_depends_on: 'eval: doc.has_bank_commissions == 1 ;'
+                mandatory_depends_on: 'eval: doc.has_bank_commissions == 1 ;',
+                get_query: () => {
+                    return {
+                        filters : {
+                            company: me.frm.doc.company,
+                            is_group: 0
+                        }
+                    }
+                }
             },
         ]
         
@@ -404,7 +420,7 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
 
     async get_dialog_fields_return_reject() {
         let me = this;
-        let default_cost_center= await me.get_default_cost_center();
+        let default_cost_center=  me.get_default_cost_center();
         return [
             {
                 label: __('Has Bank Fees'),
@@ -424,10 +440,12 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
                 mandatory_depends_on: 'eval: doc.has_bank_fees == 1 ;',
                 get_query: () => {
                     return {
-                        filters: {
-                            company: me.frm.doc.company,
-                            type: "Bank"
-                        },
+                        query : "optima_payment.cheque.api.get_mode_of_payment",
+                        filters : {
+                            company : me.frm.doc.company ,
+                            default_currency : me.get_default_currency() ,
+                            type: "Bank",
+                        }
                     };
                 },
                 onchange: async () => {
@@ -468,21 +486,16 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
             }
         ]
     }
-    async get_default_cost_center(){
-        let default_cost_center= await frappe.call({
-            method: "frappe.client.get_value",
-            args: {
-                doctype: "Optima Payment Setting",
-                filters: {
-                    company: this.frm.doc.company
-                },
-                fieldname: "default_cost_center"
-            },
-            callback: (r) => {
-                return r.message.default_cost_center
-            }
-        })
-        return default_cost_center.message.default_cost_center
+    get_default_cost_center(){
+
+        let company_settings = frappe.boot[`default_cost_center_${this.frm.doc.company}`];
+        let default_currency = this.get_default_currency();
+        return company_settings[default_currency] ;
+    }
+
+
+    get_default_currency() {
+        return this.frm.doc.payment_type == "Receive" ? this.frm.doc.paid_to_account_currency  : this.frm.doc.paid_from_account_currency ;
     }
 
     // ====== END OF DIALOGS ======
@@ -505,6 +518,8 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
                     method: method,
                     args: values,
                     callback: (r) => {
+                        console.log(r);
+                        console.log(fields);
                         me.frm.reload_doc();
                     }
                 })

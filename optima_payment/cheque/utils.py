@@ -3,7 +3,7 @@ from frappe.utils import getdate
 from erpnext.accounts.general_ledger import make_gl_entries
 from optima_payment.optima_payment.doctype.cheque_action_log.cheque_action_log import add_cheque_action_log
 
-
+# Main Function
 
 def create_gl_entry(
     doc, 
@@ -13,7 +13,8 @@ def create_gl_entry(
     against=None, party=None, 
     party_type=None , remarks=None,
     against_voucher =None, 
-    against_voucher_type= None 
+    against_voucher_type= None ,
+    cost_center = None
 ):
     """Helper to create GL entry dict."""
     return doc.get_gl_dict({
@@ -27,17 +28,24 @@ def create_gl_entry(
         "party": party,
         "party_type": party_type,
         "remarks": remarks,
-        "cost_center" : doc.cost_center ,
+        "cost_center" : cost_center if cost_center else doc.cost_center ,
         "project" : doc.project ,
         "against_voucher" : against_voucher,
         "against_voucher_type":against_voucher_type
     }, item=doc)
 
 
-def finalize_gl_entries(doc , gl_entries, cheque_status=None , mode_of_payment=None , bank_fess_amount=0.00 ,reverse=False, posting_date=None):
+def finalize_gl_entries(doc , gl_entries, cheque_status=None , mode_of_payment=None , bank_fess_amount=0.00 ,reverse=False, posting_date=None,cost_center=None ) :
     """Finalize GL entries based on the document status and add cheque action log."""
     make_gl_entries(gl_entries, adv_adj=0, merge_entries=False, cancel=0 if doc.get("docstatus") == 1 or reverse ==True else 1)
-    add_cheque_action_log(doc , cheque_status , mode_of_payment , bank_fess_amount, posting_date)
+    add_cheque_action_log(
+        doc , 
+        cheque_status , 
+        mode_of_payment , 
+        bank_fess_amount, 
+        posting_date, 
+        cost_center
+    )
 
 
 
@@ -55,6 +63,7 @@ def reverse_party_gl(party_gl_entries:list[dict] , posting_date , remarks , gl_e
             "debit_in_account_currency" : gl_entry.credit_in_account_currency ,
             "credit": gl_entry.debit,
             "credit_in_account_currency" : gl_entry.debit_in_account_currency,
+            "cost_center": gl_entry.cost_center,
             "remarks" : remarks if remarks else "Return Invoice By Cheque {0}".format(gl_entry.voucher_name),
         })
         gl_entries.append(gl_entry)
