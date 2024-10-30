@@ -13,6 +13,14 @@ class ChequeDepositSlip(Document):
         self.validate_dupicated_payment_entry()
         self.validate_payment_entry()
 
+    def on_submit(self) :
+        self.validate()
+        # self.make_payment_entry_gl(reverse=False)
+        # self.update_cheque_status("Deposited")
+        self.link_cheque_deposit_slip_with_paymententry()
+        
+    def on_cancel(self) :
+        self.unlink_cheque_deposit_slip_with_paymententry()
 
     def validate_company(self) :
 
@@ -42,13 +50,28 @@ class ChequeDepositSlip(Document):
             if payment_entry_doc.get("payment_type") != "Receive" :
                 frappe.throw(_("Cheque Must be Receive"))
 
-    
+    def link_cheque_deposit_slip_with_paymententry(self):
+        for item in self.cheque_deposit_slip_items:
+            payment_entry_doc = frappe.get_doc("Payment Entry", item.get("payment_entry"))
+            if payment_entry_doc.docstatus == 1: 
+                frappe.db.set_value("Payment Entry", 
+                                payment_entry_doc.name, 
+                                "cheque_deposit_slip", 
+                                self.name, 
+                                update_modified=False)
+            else:
+                payment_entry_doc.cheque_deposit_slip = self.name
+                payment_entry_doc.save()
 
-    def on_submit(self) :
+    def unlink_cheque_deposit_slip_with_paymententry(self):
+            for item in self.cheque_deposit_slip_items:
+                frappe.db.set_value("Payment Entry",
+                                item.get("payment_entry"),
+                                "cheque_deposit_slip",
+                                None,
+                                update_modified=False)
 
-        self.validate()
-        # self.make_payment_entry_gl(reverse=False)
-        # self.update_cheque_status("Deposited")
+
 
 
     def make_payment_entry_gl(self , reverse) :
@@ -119,6 +142,9 @@ def get_payment_entries(doctype, txt, searchfield, start, page_len, filters):
         items_tule = tuple(filters.get("names"))
         conditions += "AND name NOT IN {0}  ".format( items_tule if len(items_tule) > 1 else f"('{items_tule[0]}')" )
 
+    if filters.get("cheque_deposit_slip"):
+        conditions += "AND cheque_deposit_slip =null "
+        
     conditions += "AND reference_no LIKE %(txt)s " if txt else ""
 
     sql_query =  frappe.db.sql("""
@@ -128,11 +154,11 @@ def get_payment_entries(doctype, txt, searchfield, start, page_len, filters):
         WHERE docstatus = 1 
             AND payment_type = "Receive" 
             AND cheque_status = "Deposit Under Collection"
+            AND cheque_deposit_slip IS NULL
             {conditions}
     """.format(conditions=conditions), 
     {
         'txt': "%{}%".format(txt),
     })
-
 
     return sql_query

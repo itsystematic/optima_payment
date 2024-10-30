@@ -50,12 +50,12 @@ def add_cheque_action_log(doc , cheque_status , mode_of_payment=None , bank_fees
     cheque_log.save()
 
 
-    fields_updated = {"cheque_status" : cheque_status }
+    # fields_updated = {"cheque_status" : cheque_status }
 
-    if mode_of_payment and doc.docstatus == 1 : fields_updated["pay_mode_of_payment"] = mode_of_payment
-    if bank_fees_amount and doc.docstatus == 1 : fields_updated["bank_fees_amount"] = bank_fees_amount
+    # if mode_of_payment and doc.docstatus == 1 : fields_updated["pay_mode_of_payment"] = mode_of_payment
+    # if bank_fees_amount and doc.docstatus == 1 : fields_updated["bank_fees_amount"] = bank_fees_amount
 
-    doc.db_set(fields_updated)
+    # doc.db_set(fields_updated)
 
 
 
