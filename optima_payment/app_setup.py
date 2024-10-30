@@ -152,8 +152,8 @@ def get_custom_fields():
                 "fieldtype": "Data",
                 "insert_after": "reference_no",
                 "label": "Payee Name",
-                "no_copy": 1,
-                "hidden": 1,
+                "no_copy": 0,
+                "hidden": 0,
             },
             {
                 "fieldname": "cheque_deposit_slip",
@@ -169,8 +169,8 @@ def get_custom_fields():
                 "insert_after": "reference_date",
                 "label": "Bank Name",
                 "options": "Bank",
-                "no_copy": 1,
-                "hidden": 1,
+                "no_copy": 0,
+                "hidden": 0,
             },
             {
                 "fieldname": "cheque_details",
