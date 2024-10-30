@@ -6,9 +6,9 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
 
 
     // ===INITIALIZE===
-    on_load() {
-        this.show_or_hide_is_endorsed_cheque();
-    }
+    // on_load() {
+    //     // this.show_or_hide_is_endorsed_cheque();
+    // }
     refresh() {
         // this.reset_fields_of_cheque();
         this.handle_fields_is_endorsed_cheque();
@@ -51,14 +51,14 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
     }
 
     show_or_hide_is_endorsed_cheque() {
-        if (this.mode_of_payment_doc.is_payable_cheque == 1) {
+        if (this.mode_of_payment_doc.is_payable_cheque == 0) {
             this.frm.set_df_property('is_endorsed_cheque', 'hidden', 0);
         } else {
             this.frm.set_df_property('is_endorsed_cheque', 'hidden', 1);
         }
     }
     reset_field_of_endorsed_cheque() {
-        if (this.mode_of_payment_doc.is_payable_cheque == 0) {
+        if (this.mode_of_payment_doc.is_payable_cheque == 0 && this.frm.is_new()) {
             const fields = ['payee_name', 'bank_name', 'reference_no', 'reference_date', 'paid_amount', "received_amount", "payee_name"];
 
             this.frm.set_value('is_endorsed_cheque', 0);
@@ -200,11 +200,12 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
             this.mode_of_payment_doc = {};
         }
 
+        console.log(this.mode_of_payment_doc.type)
         let fields = [
             { field: "payee_name", property: "read_only", value: doc.is_endorsed_cheque },
-            { field: "payee_name", property: "hidden", value: !["Bank", "Cheque"].includes(this.mode_of_payment_doc.type) },
+            { field: "payee_name", property: "hidden", value: !["Bank", "Cheque"].includes(this.mode_of_payment_doc.type) && !doc.docstatus == 1},
             { field: "bank_name", property: "read_only", value: doc.is_endorsed_cheque },
-            { field: "bank_name", property: "hidden", value: !["Bank", "Cheque"].includes(this.mode_of_payment_doc.type) },
+            { field: "bank_name", property: "hidden", value: !["Bank", "Cheque"].includes(this.mode_of_payment_doc.type) && !doc.docstatus == 1},
             { field: "reference_no", property: "read_only", value: doc.is_endorsed_cheque },
             { field: "reference_date", property: "read_only", value: doc.is_endorsed_cheque },
             { field: "paid_amount", property: "read_only", value: doc.is_endorsed_cheque },
@@ -275,7 +276,7 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
         if (me.frm.doc.cheque_status == "For Collection") {
             me.frm.add_custom_button(__("Deposit Under Collection"), () => {
                 me.create_frappe_prompt([], "optima_payment.cheque.api.deposit_under_collection", __("Deposit Under Collection"), __("Deposit"))
-            })
+            }).removeClass("btn-default").addClass("btn-success")
         }
     }
 

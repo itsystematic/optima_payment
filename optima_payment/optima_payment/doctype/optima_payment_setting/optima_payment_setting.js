@@ -36,7 +36,8 @@ frappe.ui.form.on("Optima Payment Setting", {
                     root_type: ["in", ["Liability", "Asset"]],
                     is_group: 0,
                     company : doc.company ,
-                    account_currency : current_row.default_currency
+                    account_currency : current_row.default_currency,
+                    account_type : "Bank",
                 },
             };
         });
@@ -56,7 +57,8 @@ frappe.ui.form.on("Optima Payment Setting", {
                 query : "optima_payment.cheque.api.get_mode_of_payment",
                 filters : {
                     company : doc.company ,
-                    default_currency : current_row.default_currency
+                    default_currency : current_row.default_currency,
+                    type: "Bank"
                 }
                 // filters: [
                 //     ["enabled" , "=" , 1],
