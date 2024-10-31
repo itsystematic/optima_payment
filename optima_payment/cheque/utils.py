@@ -52,21 +52,26 @@ def finalize_gl_entries(doc , gl_entries, cheque_status=None , mode_of_payment=N
 def create_party_gl(doc , posting_date=None , remarks=None , gl_entries=[]) :
     party_gl_entries = []
     doc.add_party_gl_entries(party_gl_entries)
-    reverse_party_gl(party_gl_entries , posting_date , remarks , gl_entries)
+    reverse_gl_manually(party_gl_entries , posting_date , remarks , gl_entries)
 
 
-def reverse_party_gl(party_gl_entries:list[dict] , posting_date , remarks , gl_entries) :
-    for gl_entry in party_gl_entries :
+def create_advance_gl(doc , posting_date=None , remarks=None , gl_entries=[]) :
+    advance_gl_entries = []
+    doc.add_advance_gl_entries(advance_gl_entries , None)
+    reverse_gl_manually(advance_gl_entries , posting_date , remarks , gl_entries)
+
+def reverse_gl_manually(gl_entries_for_action:list[dict] , posting_date , remarks , gl_entries) :
+    for gl_entry in gl_entries_for_action :
         gl_entry.update({
             "posting_date" : posting_date if posting_date else getdate(),
             "debit": gl_entry.credit,
             "debit_in_account_currency" : gl_entry.credit_in_account_currency ,
             "credit": gl_entry.debit,
             "credit_in_account_currency" : gl_entry.debit_in_account_currency,
-            "cost_center": gl_entry.cost_center,
-            "against_voucher" : gl_entry.against_voucher,
-            "against_voucher_type":gl_entry.against_voucher_type ,
-            "project" : gl_entry.project ,
+            #"cost_center": gl_entry.cost_center,
+            #"against_voucher" : gl_entry.against_voucher,
+            #"against_voucher_type":gl_entry.against_voucher_type ,
+            #"project" : gl_entry.project ,
             "remarks" : remarks if remarks else "Return Invoice By Cheque {0}".format(gl_entry.voucher_name),
         })
         gl_entries.append(gl_entry)

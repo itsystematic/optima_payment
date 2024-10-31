@@ -160,7 +160,7 @@ def get_custom_fields():
                 "fieldtype": "Link",
                 "label": "Cheque Deposit Slip",
                 "options": "Cheque Deposit Slip",
-                "insert_after": "reference_no",
+                "insert_after": "mode_of_payment",
                 "read_only": 1,
             },
             {

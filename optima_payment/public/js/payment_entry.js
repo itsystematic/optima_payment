@@ -164,12 +164,15 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
     }
 
     add_default_payee_name() {
-        this.frm.set_value(
-            "payee_name",
-            this.frm.doc.payment_type == "Pay" ? 
-            this.frm.doc.party_name :
-            this.frm.doc.company
-        );
+
+        if (this.mode_of_payment_doc.type == "Cheque") {
+            this.frm.set_value(
+                "payee_name",
+                this.frm.doc.payment_type == "Pay" ? 
+                this.frm.doc.party_name :
+                this.frm.doc.company
+            );
+        }
 
     }
 
@@ -200,7 +203,6 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
             this.mode_of_payment_doc = {};
         }
 
-        console.log(this.mode_of_payment_doc.type)
         let fields = [
             { field: "payee_name", property: "read_only", value: doc.is_endorsed_cheque },
             { field: "payee_name", property: "hidden", value: !["Bank", "Cheque"].includes(this.mode_of_payment_doc.type) && !doc.docstatus == 1},
@@ -307,6 +309,9 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends fra
                 // console.log(fields[fields.length-1].label, fields[fields.length-1].fieldname);
                 fields[fields.length - 1].default = 'شيك مرفوض'
                 this.create_frappe_prompt(fields, "optima_payment.cheque.api.reject_cheque", __("Reject Cheque"), __("Reject"))
+                if (this.frm.doc.cheque_deposit_slip){
+                    this.frm.doc.cheque_deposit_slip == ''
+                }
             }).removeClass("btn-default").addClass("btn-danger");
         }
     }

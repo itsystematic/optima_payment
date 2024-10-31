@@ -32,6 +32,8 @@ def reject_cheque(docname , posting_date ,remarks ,cost_center, mode_of_payment=
     payment_entry = frappe.get_doc("Payment Entry", docname)
     bank_fees_amount = float(bank_fees_amount) if has_bank_fees == "1" else 0.0
     make_reject_cheque_gl(payment_entry, mode_of_payment, bank_fees_amount , posting_date ,cost_center, remarks)
+    if payment_entry.cheque_deposit_slip :
+        payment_entry.db_set("cheque_deposit_slip" , None)
     
 
 @frappe.whitelist()
@@ -44,6 +46,8 @@ def redeposit_cheque(docname):
 def return_to_holder(docname, posting_date, remarks):
     payment_entry = frappe.get_doc("Payment Entry", docname)
     make_return_to_holder_gl(payment_entry, posting_date, remarks)
+    if payment_entry.cheque_deposit_slip :
+        payment_entry.db_set("cheque_deposit_slip" , None)
 
 
 @frappe.whitelist()

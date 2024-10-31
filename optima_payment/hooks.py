@@ -33,7 +33,6 @@ app_license = "mit"
 # app_include_css = "/assets/optima_payment/css/optima_payment.css"
 app_include_js = [
     "/assets/optima_payment/js/optima_payment.js",
-    "/assets/optima_payment/js/custom_print.js",
     ]
 
 # include js, css files in header of web template
@@ -48,7 +47,7 @@ app_include_js = [
 # webform_include_css = {"doctype": "public/css/doctype.css"}
 
 # include js in page
-# page_js = {"page" : "public/js/file.js"}
+page_js = {"print" : "public/js/print_view.js"}
 
 # include js in doctype views
 doctype_js = {
