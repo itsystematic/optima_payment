@@ -7,9 +7,12 @@ optima_payment.ChequeDepositSlip = class ChequeDepositSlip extends frappe.ui.for
 
     refresh() {
         this.setup_queries();
-        this.setup_custom_buttons();
+        // this.setup_custom_buttons();
     }
 
+    validate() {
+        this.calculate_total_amount();
+    }
     setup_queries() {
         let me = this;
 
@@ -43,31 +46,31 @@ optima_payment.ChequeDepositSlip = class ChequeDepositSlip extends frappe.ui.for
         })
     }
 
-    setup_custom_buttons() {
-        let me = this;
+    // setup_custom_buttons() {
+    //     let me = this;
 
-        if (me.frm.doc.docstatus > 0) {
-            me.frm.add_custom_button(
-                __("Ledger"),
-                function () {
-                    frappe.route_options = {
-                        voucher_no: me.frm.doc.name,
-                        from_date: me.frm.doc.posting_date,
-                        to_date: moment(me.frm.doc.modified).format("YYYY-MM-DD"),
-                        company: me.frm.doc.company,
-                        group_by: "",
-                        show_cancelled_entries: me.frm.doc.docstatus === 2,
-                    };
-                    frappe.set_route("query-report", "General Ledger");
-                },
-                __("View")
-            );
+    //     if (me.frm.doc.docstatus > 0) {
+    //         me.frm.add_custom_button(
+    //             __("Ledger"),
+    //             function () {
+    //                 frappe.route_options = {
+    //                     voucher_no: me.frm.doc.name,
+    //                     from_date: me.frm.doc.posting_date,
+    //                     to_date: moment(me.frm.doc.modified).format("YYYY-MM-DD"),
+    //                     company: me.frm.doc.company,
+    //                     group_by: "",
+    //                     show_cancelled_entries: me.frm.doc.docstatus === 2,
+    //                 };
+    //                 frappe.set_route("query-report", "General Ledger");
+    //             },
+    //             __("View")
+    //         );
 
-            // me.frm.add_custom_button(__("Update Cheque Status") ,() => {
-            //     me.cheque_status_dialog();
-            // })
-        }
-    }
+    //         // me.frm.add_custom_button(__("Update Cheque Status") ,() => {
+    //         //     me.cheque_status_dialog();
+    //         // })
+    //     }
+    // }
 
 
     get_dialog_data() {

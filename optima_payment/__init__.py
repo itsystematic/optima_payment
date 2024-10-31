@@ -11,6 +11,7 @@ __version__ = "15.0.0"
 """
 
 import frappe
+from frappe import _
 from erpnext.controllers import accounts_controller
 from optima_payment.cheque.utils import optima_get_advance_payment_entries
 
@@ -43,7 +44,16 @@ def get_cheque_account(doc:frappe._dict , fieldname:str ) -> str|None :
     """ Main Function To GET Account by Currency in Optima Payment Setting """
 
     default_currency = doc.paid_to_account_currency if doc.payment_type == "Receive" else doc.paid_from_account_currency
-    return frappe.db.get_value("Cheque Accounts" , {"parent" : doc.company , "default_currency" : default_currency} , fieldname)
+    account = frappe.db.get_value("Cheque Accounts" , {"parent" : doc.company , "default_currency" : default_currency} , fieldname)
+
+    if not account : 
+        frappe.throw(_("You Must Define {0} wiht Currency {1} in Optima Payment Setting For This Company {2}").format(
+                frappe.bold(fieldname.replace("_" , " ").title()) ,
+                frappe.bold(default_currency) ,
+                frappe.bold(doc.company)
+            )
+        )
+    return account
 
 
 # Overwrite get_advance_payment_entries

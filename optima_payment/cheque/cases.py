@@ -1,7 +1,12 @@
 # import frappe
 from frappe import _
 from optima_payment import active_for_company , get_cheque_account
-from optima_payment.cheque.utils import create_gl_entry , finalize_gl_entries , create_party_gl
+from optima_payment.cheque.utils import ( 
+    create_gl_entry , 
+    finalize_gl_entries , 
+    create_party_gl ,
+    create_advance_gl
+)
 from erpnext.accounts.doctype.sales_invoice.sales_invoice import get_bank_cash_account
 
 
@@ -84,6 +89,7 @@ def make_return_cheque_gl(doc , posting_date=None , remarks=None) :
         create_gl_entry(doc, posting_date, doc.get("paid_to"), credit=doc.paid_amount, against=doc.party ,remarks=remarks) ,
     ]
     create_party_gl(doc , posting_date , remarks , gl_entries)
+    create_advance_gl(doc, posting_date , remarks , gl_entries)
     finalize_gl_entries(doc, gl_entries , "Returned", posting_date=posting_date )
 
 
@@ -108,6 +114,6 @@ def make_return_to_holder_gl(doc , posting_date , remarks=None) :
         create_gl_entry(doc, posting_date, doc.get("paid_to"), credit=doc.paid_amount, against=doc.party ,remarks=remarks) ,
     ]
     create_party_gl(doc , posting_date , remarks , gl_entries)
-
+    create_advance_gl(doc, posting_date , remarks , gl_entries)
     finalize_gl_entries(doc, gl_entries , "Return To Holder", posting_date=posting_date )
 
