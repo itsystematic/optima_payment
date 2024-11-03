@@ -17,11 +17,17 @@ frappe.ui.form.on("Expense Claim", {
 		});
 
     },
+	onload(frm){
+		frm.trigger("get_expense_approver");
+	},
     calculate_total_advance_amount(frm) {
         frm.set_value("total_advance_amount", 0.00);
         frm.events.calculate_grand_total(frm);
     },
     employee(frm){
+		frm.trigger("get_expense_approver");
+	},
+	get_expense_approver(frm){
 		if(frm.doc.employee){
 			frappe.call({
 				method: "frappe.client.get",
@@ -36,8 +42,12 @@ frappe.ui.form.on("Expense Claim", {
 				}
 			})
 		}
+		else{
+			if (!frm.doc.employee){
+				frm.set_value("expense_approver", null);
+			}
+		}
 	}
-
 })
 
 frappe.ui.form.on("Expense Claim Detail", {
