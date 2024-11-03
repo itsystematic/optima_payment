@@ -34,10 +34,11 @@ frappe.pages["print"].on_page_load = function (wrapper) {
 frappe.ui.form.PrintView = class PrintView extends frappe.ui.form.PrintView {
     constructor(wrapper) {
         super(wrapper);
-        this.print_format_names = []
+        this.print_format_names = ["Cheque Recieve Note"]
     }
 
     async fetch_bank_print_formats(frm) {
+        if (frm.doctype !== "Payment Entry") return;
         try {
             const frm_mode_of_payment = frm.doc.mode_of_payment;
             const mode_of_payment = await frappe.db.get_doc("Mode of Payment", frm_mode_of_payment);
@@ -48,7 +49,11 @@ frappe.ui.form.PrintView = class PrintView extends frappe.ui.form.PrintView {
             };
             const bank_name = frm.doc.bank_name; // Get the bank name from the form
             const bank = await frappe.db.get_doc("Bank", bank_name); // Await fetching the bank document
-            this.print_format_names = bank.bank_print_format.map(row => row.print_format); // Extract print formats
+            this.print_format_names = [
+                ...this.print_format_names,
+                ...bank.bank_print_format.map(row => row.print_format)
+            ];
+            // Extract print formats
         } catch (error) {
             console.log(error); // Show error message if something goes wrong
         }
@@ -65,13 +70,20 @@ frappe.ui.form.PrintView = class PrintView extends frappe.ui.form.PrintView {
             options: "Print Format",
             label: __("Print Format"),
             get_query: () => {
-                if (this.frm.doc.mode_of_payment.includes("Cheque")) {
-                    return {
-                        filters: { doc_type: this.frm.doctype, name: ["in", this.print_format_names] }
-
-                    };
+                if (this.frm.doctype === "Payment Entry") {
+                    if (this.frm.doc.mode_of_payment.includes("Cheque")) {
+                        return {
+                            filters: { doc_type: this.frm.doctype, name: ["in", this.print_format_names] }
+                        };
+                    }
                 }
-                return { filters: { doc_type: this.frm.doctype, name: ["NOT LIKE", "SA-%"] } };
+                return {
+                    filters: [
+                        ["doc_type", "=", this.frm.doctype],
+                        ["name", "NOT LIKE", "SA-%"],
+                        ["name", "!=", "Cheque Recieve Note"]
+                    ]
+                };
             },
             change: () => this.refresh_print_format(),
         }).$input;
@@ -117,7 +129,8 @@ frappe.ui.form.PrintView = class PrintView extends frappe.ui.form.PrintView {
         if (this.frm.doc.doctype === "Payment Entry") {
             if (this.frm.doc.mode_of_payment.includes("Cheque")) {
                 console.log('Cheque');
-                this.print_format_selector.empty(this.print_format_names.length > 0 ? this.print_format_names[0] : this.frm.meta.default_print_format);
+                this.print_format_selector.empty();
+                this.print_format_selector.val(this.print_format_names.length > 0 ? this.print_format_names[0] : this.frm.meta.default_print_format);
             }
             else {
                 console.log('Not Cheque');
