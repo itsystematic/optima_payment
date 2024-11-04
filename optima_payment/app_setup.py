@@ -337,5 +337,13 @@ def get_property_setter():
             "property_type": "Check",
             "value": 1,
         },
+        {
+            "doctype": "Payment Entry",
+            "doctype_or_field": "DocField",
+            "fieldname": "cheque_status",
+            "property": "in_standard_filter",
+            "property_type": "Check",
+            "value": 1,
+        }
     ]
     return property_setter
