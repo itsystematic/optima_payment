@@ -279,7 +279,7 @@ fixtures = [
     {
         "dt": "Workspace",
         "filters": [
-            ["name", "in", ["Accounting", "ERPNext Settings"]] 
+            ["name", "in", ["Accounting", "ERPNext Settings", "Financial Reports"]] 
         ]
     }
 ]
