@@ -41,7 +41,7 @@ frappe.query_reports["Cheque Report"] = {
 			label: __("From Posting Date"),
 			fieldtype: "Date",
 			reqd: 1,
-			default : frappe.datetime.add_months(frappe.datetime.get_today(), -2),
+			default : frappe.datetime.add_months(frappe.datetime.get_today(), -1),
 			depends_on: "eval:doc.filter_based_on == 'Posting Date'",
 		},
 		{
@@ -57,7 +57,7 @@ frappe.query_reports["Cheque Report"] = {
 			label: __("From Reference Date"),
 			fieldtype: "Date",
 			reqd: 1,
-			default : frappe.datetime.add_months(frappe.datetime.get_today(), -2),
+			default : frappe.datetime.add_months(frappe.datetime.get_today(), -1),
 			depends_on: "eval:doc.filter_based_on == 'Reference Date'",
 		},
 		{
