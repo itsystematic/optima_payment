@@ -24,7 +24,7 @@ optima_payment.ChequeDepositSlip = class ChequeDepositSlip extends frappe.ui.for
                 filters: {
                     "names": payment_entry,
                     "company": doc.company,
-                    // "cheque_deposit_slip": ["is", "not set"] 
+                    // "cheque_deposit_slip": ["is", "not set"]
                 }
             }
         })

@@ -269,17 +269,18 @@ ignore_links_on_delete = ["Cheque Action Log"]
 
 fixtures = [
 
-    # {
-    #     "dt": "Print Format",
-    #     "filters": {
-    #         "doc_type": "Cheque Deposit Slip",
-    #         # "property": "links_order",
-    #     }
-    # },
     {
-        "dt": "Workspace",
-        "filters": [
-            ["name", "in", ["Accounting", "ERPNext Settings", "Financial Reports"]] 
-        ]
-    }
+        "dt": "Print Format",
+        "filters": {
+            "doc_type": "Payment Entry",
+            "name": "Payment Entry",
+            # "property": "links_order",
+        }
+    },
+    # {
+    #     "dt": "Workspace",
+    #     "filters": [
+    #         ["name", "in", ["Accounting", "ERPNext Settings", "Financial Reports"]] 
+    #     ]
+    # }
 ]

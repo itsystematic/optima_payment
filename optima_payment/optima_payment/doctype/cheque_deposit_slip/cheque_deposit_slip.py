@@ -142,10 +142,7 @@ def get_payment_entries(doctype, txt, searchfield, start, page_len, filters):
         items_tule = tuple(filters.get("names"))
         conditions += "AND name NOT IN {0}  ".format( items_tule if len(items_tule) > 1 else f"('{items_tule[0]}')" )
 
-    if filters.get("cheque_deposit_slip"):
-        conditions += "AND cheque_deposit_slip =null "
-        
-    conditions += "AND reference_no LIKE %(txt)s " if txt else ""
+    conditions += "AND (reference_no LIKE %(txt)s OR name LIKE %(txt)s) " if txt else ""
 
     sql_query =  frappe.db.sql("""
         SELECT 
@@ -160,5 +157,4 @@ def get_payment_entries(doctype, txt, searchfield, start, page_len, filters):
     {
         'txt': "%{}%".format(txt),
     })
-
     return sql_query

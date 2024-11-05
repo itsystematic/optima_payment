@@ -1,7 +1,4 @@
 
-
-
-
 frappe.ui.form.on("Expense Claim", {
     refresh(frm){
 		frm.set_query("purchase_invoice", "expenses", function(doc,cdt ,cdn) {
@@ -20,10 +17,6 @@ frappe.ui.form.on("Expense Claim", {
 	onload(frm){
 		frm.trigger("get_expense_approver");
 	},
-    calculate_total_advance_amount(frm) {
-        frm.set_value("total_advance_amount", 0.00);
-        frm.events.calculate_grand_total(frm);
-    },
     employee(frm){
 		frm.trigger("get_expense_approver");
 	},
@@ -47,14 +40,21 @@ frappe.ui.form.on("Expense Claim", {
 				frm.set_value("expense_approver", null);
 			}
 		}
+	} ,
+
+	calculate_total_advance_amount(frm) {
+		let total_advance_amount = frm.doc.advances.map(d => d.allocated_amount ? d.allocated_amount : 0).reduce((a, b) => a + b, 0);
+		console.log("hello in ")
+		console.log(total_advance_amount)
+		frm.set_value("total_advance_amount", 0.00);
 	}
 })
 
 frappe.ui.form.on("Expense Claim Detail", {
-    amount(frm, cdt, cdn){
+    async amount(frm, cdt, cdn){
         let current_row = locals[cdt][cdn];
         if (frm.doc.amount && frm.doc.purchase_invoice){
-            frm.call({
+            await frm.call({
                 method : "optima_payment.doc_events.expense_claim.validate_outstanding_amount" ,
                 args : {
                     purchase_invoice : current_row.purchase_invoice ,
@@ -69,14 +69,24 @@ frappe.ui.form.on("Expense Claim Detail", {
         let current_row = locals[cdt][cdn];
         frappe.db.get_value('Purchase Invoice' , current_row.purchase_invoice , 'outstanding_amount')
             .then(r => {
-                current_row.amount = r.message.outstanding_amount ;
-                current_row.sanctioned_amount = r.message.outstanding_amount ;
+				frappe.model.set_value(cdt,cdn , {
+					"outstanding_amount" : r.message.outstanding_amount ,
+					"sanctioned_amount" : r.message.outstanding_amount
+				});
                 refresh_field("expenses");
-                cur_frm.cscript.calculate_total(frm.doc,cdt,cdn);
+                // cur_frm.events.calculate_total(frm.doc,cdt,cdn);
                 // cur_frm.events.calculate_grand_total(frm);
-                cur_frm.events.calculate_total_advance_amount(frm);
+                //cur_frm.events.calculate_total_advance_amount(frm);
             })
     },
+
+	expenses_remove(frm, cdt, cdn){
+		//cur_frm.events.calculate_total_advance_amount(frm);
+		cur_frm.events.calculate_total(frm);
+		cur_frm.events.calculate_total_advance_amount(frm);
+		cur_frm.events.calculate_grand_total(frm);
+		cur_frm.events.update_employee_advance_claimed_amount(frm) ;
+	}
 
 });
 // Off Original Event and Make New Event 
@@ -116,4 +126,5 @@ frappe.ui.form.on("Expense Claim Advance", {
 			});
 		}
 	},
+
 });

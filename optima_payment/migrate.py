@@ -30,13 +30,31 @@ def update_fields_in_database():
     """ , auto_commit=True)
     
     
-def insert_accounting_shortcut():
-    frappe.db.sql("""
-        INSERT INTO `tabWorkspace Shortcut`
-        (parent, parentfield, parenttype, idx, link_to, label, type, is_query_report)
-        VALUES
-        ('Accounting', 'shortcuts', 'Workspace', 1, 'Form/Account', 'Accounts', 'Link', 0)
-    """, auto_commit=True)
+    # inserting throw database does not work for workspaces cusomization, we used fixtures instead, --FH
+    # it throws name error when injecting values into workspace child tables
+# def insert_accounting_shortcut():
+#     frappe.db.sql("""
+#         INSERT INTO `tabWorkspace Shortcut`
+#         (parent, parentfield, parenttype, idx, link_to, label, type, is_query_report)
+#         VALUES
+#         ('Accounting', 'shortcuts', 'Workspace', 1, 'Form/Account', 'Accounts', 'Link', 0)
+#     """, auto_commit=True)
 
+# def insert_optima_payment_settings_in_accounting_workspace() -> None:
+#     frappe.db.sql("""
+#         INSERT INTO `tabWorkspace Link`
+#         (parent, parentfield, parenttype, idx, link_to, label, type, link_type)
+#         VALUES
+#         ('Accounting', 'links', 'Workspace', 60, 'Optima Payment Setting', 'Optima Payment Settings', 'Link', "DocType")
+#     """, auto_commit=True)
+
+
+# def insert_optima_payment_settings_in_erpnext_settings_workspace() -> None:
+#     frappe.db.sql("""
+#         INSERT INTO `tabWorkspace Link`
+#         (parent, parentfield, parenttype, link_to, label, type, link_type)
+#         VALUES
+#         ('ERPNext Settings', 'links', 'Workspace', 'Optima Payment Setting', 'Optima Payment Settings', 'Link', "DocType")
+#     """, auto_commit=True)
 # insert_accounting_shortcut()
 

@@ -197,14 +197,14 @@ def get_custom_fields():
             #     "read_only": 1,
             #     "no_copy": 1,
             # },
-            # {
-            #     "fieldname": "bank_fees_amount",
-            #     "fieldtype": "Currency",
-            #     "insert_after": "pay_mode_of_payment",
-            #     "label": "Bank Fees Amount",
-            #     "read_only": 1,
-            #     "no_copy": 1,
-            # },
+            {
+                "fieldname": "bank_fees_amount",
+                "fieldtype": "Currency",
+                "insert_after": "cheque_status",
+                "label": "Bank Fees Amount",
+                "read_only": 1,
+                "no_copy": 1,
+            },
             # {
             #     "fieldname": "against_payment_entry",
             #     "fieldtype": "Link",
@@ -236,7 +236,8 @@ def get_custom_fields():
                 "options": "Payment Entry",
                 "label": "Receivable Cheque",
                 "insert_after": "is_endorsed_cheque",
-                "depends_on": "eval: doc.is_endorsed_cheque == 1",
+                "depends_on": "eval: doc.is_endorsed_cheque == 1 && doc.payment_type == 'Pay'; ",
+                "mandatory_depends_on": "eval: doc.is_endorsed_cheque == 1 && doc.payment_type == 'Pay'; ",
             },
             {
                 "label": "Company Expenses",
@@ -257,6 +258,7 @@ def get_custom_fields():
                 "fieldtype": "Float",
                 "label": "Total Amount",
                 "insert_after": "company_expense",
+                "read_only": 1,
                 #  "precision": "",
             },
             #  END --FH
