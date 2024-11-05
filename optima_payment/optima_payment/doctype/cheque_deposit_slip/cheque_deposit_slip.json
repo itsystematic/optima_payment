@@ -13,6 +13,7 @@
   "naming_series",
   "company",
   "depositors_name",
+  "depositors_full_name",
   "amended_from",
   "section_break_yaob",
   "cheque_deposit_slip_items",
@@ -102,12 +103,19 @@
    "label": "Naming Series",
    "options": "CDS-.#####",
    "reqd": 1
+  },
+  {
+   "fetch_from": "depositors_name.employee_name",
+   "fieldname": "depositors_full_name",
+   "fieldtype": "Data",
+   "label": "Depositor's Full Name",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-10-22 13:59:34.307150",
+ "modified": "2024-11-05 11:56:22.340894",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Cheque Deposit Slip",
