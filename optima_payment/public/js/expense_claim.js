@@ -43,9 +43,6 @@ frappe.ui.form.on("Expense Claim", {
 	} ,
 
 	calculate_total_advance_amount(frm) {
-		let total_advance_amount = frm.doc.advances.map(d => d.allocated_amount ? d.allocated_amount : 0).reduce((a, b) => a + b, 0);
-		console.log("hello in ")
-		console.log(total_advance_amount)
 		frm.set_value("total_advance_amount", 0.00);
 	}
 })
@@ -70,18 +67,15 @@ frappe.ui.form.on("Expense Claim Detail", {
         frappe.db.get_value('Purchase Invoice' , current_row.purchase_invoice , 'outstanding_amount')
             .then(r => {
 				frappe.model.set_value(cdt,cdn , {
-					"outstanding_amount" : r.message.outstanding_amount ,
+					"amount" : r.message.outstanding_amount ,
 					"sanctioned_amount" : r.message.outstanding_amount
 				});
                 refresh_field("expenses");
-                // cur_frm.events.calculate_total(frm.doc,cdt,cdn);
-                // cur_frm.events.calculate_grand_total(frm);
-                //cur_frm.events.calculate_total_advance_amount(frm);
             })
     },
 
 	expenses_remove(frm, cdt, cdn){
-		//cur_frm.events.calculate_total_advance_amount(frm);
+
 		cur_frm.events.calculate_total(frm);
 		cur_frm.events.calculate_total_advance_amount(frm);
 		cur_frm.events.calculate_grand_total(frm);
