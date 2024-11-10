@@ -34,7 +34,7 @@ frappe.pages["print"].on_page_load = function (wrapper) {
 frappe.ui.form.PrintView = class PrintView extends frappe.ui.form.PrintView {
     constructor(wrapper) {
         super(wrapper);
-        this.print_format_names = ["Cheque Recieve Note"]
+        this.print_format_names = ["Payment Entry"]
     }
 
     async fetch_bank_print_formats(frm) {
@@ -81,7 +81,6 @@ frappe.ui.form.PrintView = class PrintView extends frappe.ui.form.PrintView {
                     filters: [
                         ["doc_type", "=", this.frm.doctype],
                         ["name", "NOT LIKE", "SA-%"],
-                        ["name", "!=", "Cheque Recieve Note"]
                     ]
                 };
             },
@@ -125,21 +124,19 @@ frappe.ui.form.PrintView = class PrintView extends frappe.ui.form.PrintView {
             this.sidebar
         );
     }
-    set_default_print_format() {
-        if (this.frm.doc.doctype === "Payment Entry") {
-            if (this.frm.doc.mode_of_payment.includes("Cheque")) {
-                console.log('Cheque');
-                this.print_format_selector.empty();
-                this.print_format_selector.val(this.print_format_names.length > 0 ? this.print_format_names[0] : this.frm.meta.default_print_format);
-            }
-            else {
-                console.log('Not Cheque');
-                this.print_format_selector.empty();
-                this.print_format_selector.val(this.frm.meta.default_print_format);
-            }
-        } else {
-            this.print_format_selector.empty();
-            this.print_format_selector.val(this.frm.meta.default_print_format);
-        }
-    }
+    // set_default_print_format() {
+    //     if (this.frm.doc.doctype === "Payment Entry") {
+    //         if (this.frm.doc.mode_of_payment.includes("Cheque")) {
+    //             this.print_format_selector.empty();
+    //             this.print_format_selector.val(this.frm.meta.default_print_format);
+    //         }
+    //         else {
+    //             this.print_format_selector.empty();
+    //             this.print_format_selector.val(this.frm.meta.default_print_format);
+    //         }
+    //     } else {
+    //         this.print_format_selector.empty();
+    //         this.print_format_selector.val(this.frm.meta.default_print_format);
+    //     }
+    // }
 };

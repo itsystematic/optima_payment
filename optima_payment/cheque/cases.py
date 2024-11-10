@@ -31,8 +31,8 @@ def make_collect_cheque_gl(doc, mode_of_payment, bank_fees_commission=0.0, posti
     bank_fees_commission = float(bank_fees_commission) 
 
     gl_entries = [
-        create_gl_entry(doc, posting_date, mode_of_payment_account, debit=doc.get("paid_amount"), against=doc.get("party")),
-        create_gl_entry(doc, posting_date, default_account, credit=doc.get("paid_amount"), against=doc.get("party"))
+        create_gl_entry(doc, posting_date, mode_of_payment_account, debit=doc.base_paid_amount , debit_in_account_currency=doc.paid_amount,against=doc.get("party")),
+        create_gl_entry(doc, posting_date, default_account, credit=doc.base_paid_amount, credit_in_account_currency=doc.paid_amount, against=doc.get("party"))
     ]
 
     if bank_fees_commission:
@@ -100,8 +100,8 @@ def make_deposit_under_collection_gl(doc, posting_date=None):
     incoming_cheque_wallet_account = get_cheque_account(doc , "incoming_cheque_wallet_account")
 
     gl_entries = [
-        create_gl_entry(doc, posting_date, incoming_cheque_wallet_account, debit=doc.paid_amount, against=doc.party),
-        create_gl_entry(doc, posting_date, doc.get("paid_to"), credit=doc.paid_amount, against=doc.party)
+        create_gl_entry(doc, posting_date, incoming_cheque_wallet_account, debit=doc.base_paid_amount ,debit_in_account_currency=doc.paid_amount, against=doc.party),
+        create_gl_entry(doc, posting_date, doc.get("paid_to"), credit=doc.base_paid_amount,credit_in_account_currency=doc.paid_amount, against=doc.party)
     ]
 
     finalize_gl_entries(doc, gl_entries ,"Deposit Under Collection", posting_date=posting_date)

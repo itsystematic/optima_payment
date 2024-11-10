@@ -5,7 +5,10 @@ from frappe.custom.doctype.property_setter.property_setter import delete_propert
 from optima_payment.app_setup import (get_custom_fields,get_property_setter)
 
 
-def after_uninstall():
+def after_app_uninstall(app_name):
+
+    if app_name != "optima_payment" : return
+
     delete_custom_fields(get_custom_fields())
     delete_custom_property_setter()
     secho("Uninstall Optima Payment Complete Successfully", fg="green")
