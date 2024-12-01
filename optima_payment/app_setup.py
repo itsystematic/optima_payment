@@ -12,8 +12,12 @@ MAIN_ORDER_FIELDS = [
     "posting_date",
     "company",
     "mode_of_payment",
+    "cheque_deposit_slip",
     "is_endorsed_cheque",
     "receivable_cheque",
+    "company_expenses",
+    "company_expense",
+    "total_amount",
     "party_section",
     "party_type",
     "party",
@@ -85,9 +89,6 @@ MAIN_ORDER_FIELDS = [
     "cheque_status",
     "pay_mode_of_payment",
     "bank_fees_amount",
-    "company_expenses",
-    "company_expense",
-    "total_amount",
     "accounting_dimensions_section",
     "project",
     "dimension_col_break",
@@ -243,7 +244,8 @@ def get_custom_fields():
                 "label": "Company Expenses",
                 "fieldname": "company_expenses",
                 "fieldtype": "Section Break",
-                "insert_after": "bank_fees_amount",
+                # "insert_after": "bank_fees_amount",
+                "insert_after": "receivable_cheque",
                 "depends_on": "eval: doc.multi_expense == 1",
             },
             {
@@ -346,6 +348,6 @@ def get_property_setter():
             "property": "in_standard_filter",
             "property_type": "Check",
             "value": 1,
-        }
+        },
     ]
     return property_setter

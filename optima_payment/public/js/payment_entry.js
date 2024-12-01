@@ -18,6 +18,7 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends (
             "is_endorsed_cheque": {
                 hidden:
                     me.frm.doc.payment_type == "Receive" ||
+                    (me.frm.doc.payment_type == "Pay" && me.mode_of_payment_doc.type != "Cheque") ||
                     me.mode_of_payment_doc.receivable_cheque == 1 ||
                     me.frm.doc.multi_expense == 1,
             },
@@ -62,6 +63,8 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends (
     update_property_values(fieldnames_to_be_altered) {
         Object.keys(fieldnames_to_be_altered).forEach((fieldname) => {
             let property_to_be_altered = fieldnames_to_be_altered[fieldname];
+            // console.log("fieldname", fieldname);
+            // console.log("fieldProperty is: ", property_to_be_altered)
             Object.keys(property_to_be_altered).forEach((property) => {
                 let value = property_to_be_altered[property];
                 this.frm.set_df_property(fieldname, property, value);
