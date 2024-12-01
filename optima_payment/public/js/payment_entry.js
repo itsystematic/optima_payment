@@ -63,8 +63,6 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends (
     update_property_values(fieldnames_to_be_altered) {
         Object.keys(fieldnames_to_be_altered).forEach((fieldname) => {
             let property_to_be_altered = fieldnames_to_be_altered[fieldname];
-            // console.log("fieldname", fieldname);
-            // console.log("fieldProperty is: ", property_to_be_altered)
             Object.keys(property_to_be_altered).forEach((property) => {
                 let value = property_to_be_altered[property];
                 this.frm.set_df_property(fieldname, property, value);
@@ -137,12 +135,13 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends (
         });
 
         // In Endoresed Cheque
-        this.frm.set_query("receivable_cheque", function () {
+        this.frm.set_query("receivable_cheque", function (doc) {
             return {
                 filters: {
                     docstatus: 1,
                     payment_type: "Receive",
                     cheque_status: "For Collection",
+                    paid_to_account_currency: doc.paid_from_account_currency,
                 },
             };
         });
