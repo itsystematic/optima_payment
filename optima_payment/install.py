@@ -1,7 +1,7 @@
+from os import listdir
 from click import secho
 from frappe.core.doctype.data_import.data_import import import_doc
 from frappe import get_app_path
-from os import listdir
 
 def after_app_install(app_name) :
 

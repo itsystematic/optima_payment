@@ -55,6 +55,7 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends (
             "party": { reqd: me.frm.doc.is_endorsed_cheque ? 1 : 0 },
             "reference_date": { read_only: me.frm.doc.is_endorsed_cheque },
             "reference_no": { read_only: me.frm.doc.is_endorsed_cheque },
+            "paid_from" : { read_only : me.frm.doc.is_endorsed_cheque ? 1 :0 }
         };
 
         me.update_property_values(fieldnames_to_be_altered);

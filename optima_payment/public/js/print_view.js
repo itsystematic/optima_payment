@@ -40,8 +40,15 @@ frappe.ui.form.PrintView = class PrintView extends frappe.ui.form.PrintView {
     async fetch_bank_print_formats(frm) {
         if (frm.doctype !== "Payment Entry") return;
         try {
-            const frm_mode_of_payment = frm.doc.mode_of_payment;
-            const mode_of_payment = await frappe.db.get_doc("Mode of Payment", frm_mode_of_payment);
+            if (frm.doc.mode_of_payment) {
+                const frm_mode_of_payment = frm.doc.mode_of_payment;
+                var mode_of_payment = await frappe.db.get_doc("Mode of Payment", frm_mode_of_payment);
+            }
+            else {
+                var mode_of_payment = {
+                    type: ""
+                }
+            }
             this.type = mode_of_payment.type;
             if (this.type !== "Cheque") {
                 this.type = "";

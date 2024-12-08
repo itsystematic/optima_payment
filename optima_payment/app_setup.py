@@ -290,6 +290,14 @@ def get_custom_fields():
                 "insert_after": "bank_formats",
             },
         ],
+        "Letter Head": [
+            {
+                "fieldname": "is_box",
+                "fieldtype": "Check",
+                "label": "Box",
+                "insert_after": "is_default",
+            }
+        ],
     }
     return custom_fields
 
