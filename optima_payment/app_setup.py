@@ -1,7 +1,7 @@
 # create custom fields for mode of payment and payment entry in optima payment
 # create property setter for payment entry in optima payment
 import json
-
+from optima_payment import if_hrms_app_installed
 MAIN_ORDER_FIELDS = [
     "type_of_payment",
     "naming_series",
@@ -265,15 +265,7 @@ def get_custom_fields():
             },
             #  END --FH
         ],
-        "Expense Claim Detail": [
-            # --AM
-            {
-                "fieldname": "purchase_invoice",
-                "fieldtype": "Link",
-                "label": "Purchase Invoice",
-                "options": "Purchase Invoice",
-            }
-        ],
+
         "Bank": [
             # --WS
             {
@@ -299,7 +291,23 @@ def get_custom_fields():
             }
         ],
     }
+
+    add_hrms_fields(custom_fields)
+
     return custom_fields
+
+@if_hrms_app_installed
+def add_hrms_fields(custom_fields:dict):
+
+    custom_fields["Expense Claim Detail"] = [
+        {
+            "fieldname": "purchase_invoice",
+            "fieldtype": "Link",
+            "label": "Purchase Invoice",
+            "options": "Purchase Invoice",
+        }
+    ]
+
 
 
 def get_property_setter():

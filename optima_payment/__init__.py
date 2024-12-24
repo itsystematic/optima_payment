@@ -56,6 +56,17 @@ def get_cheque_account(doc:frappe._dict , fieldname:str ) -> str|None :
     return account
 
 
+
+def if_hrms_app_installed(function):
+	"""Decorator to check if lending app is installed"""
+
+	def wrapper(*args, **kwargs):
+		if "hrms" in frappe.get_installed_apps():
+			return function(*args, **kwargs)
+		return
+
+	return wrapper
+
 # Overwrite get_advance_payment_entries
 # TO Skip Cheque Status ( Return , Reject )
 accounts_controller.get_advance_payment_entries = optima_get_advance_payment_entries

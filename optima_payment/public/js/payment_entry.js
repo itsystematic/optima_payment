@@ -155,7 +155,7 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends (
                 return {
                     filters: {
                         disabled: 0,
-                        root_type: ["in", ["Expense", "Liability"]],
+                        root_type: ["in", ["Expense"]],
                         is_group: 0,
                         company: doc.company,
                     },
