@@ -267,18 +267,18 @@ ignore_links_on_delete = ["Cheque Action Log"]
 # }
 
 fixtures = [
-    # {
-    #     "dt" : "Role" ,
-    #     "filters" : [
-    #         ["name", "in", ["Optima Payment Settings"]]
-    #     ]
-    # },
-    # {
-    #     "dt" : "Custom DocPerm" ,
-    #     "filters" : [
-    #         ["role", "in", ["Optima Payment Settings"]]
-    #     ]
-    # }
+    {
+        "dt" : "Role" ,
+        "filters" : [
+            ["name", "in", ["Optima Payment User", "Optima Payment Manger"]]
+        ]
+    },
+    {
+        "dt" : "Custom DocPerm" ,
+        "filters" : [
+            ["role", "in", ["Optima Payment User", "Optima Payment Manger"]]
+        ]
+    }
 
     # {
     #     "dt": "Print Format",
