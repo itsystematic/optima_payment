@@ -14,7 +14,7 @@ def after_app_install(app_name) :
     custom_fields = get_custom_fields()
     create_custom_fields(custom_fields, update=True)    
     add_additional_property_setter()
-    add_standard_data()
+    #add_standard_data()
 
     secho("Data Restored Successfully" , fg="green")
 
