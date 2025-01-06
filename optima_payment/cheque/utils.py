@@ -180,6 +180,7 @@ def optima_get_advance_payment_entries(
 	party_account,
 	order_doctype,
 	order_list=None,
+    default_advance_account=None,
 	include_unallocated=True,
 	against_all_orders=False,
 	limit=None,
@@ -193,6 +194,7 @@ def optima_get_advance_payment_entries(
 			party_type,
 			party,
 			party_account,
+            default_advance_account,
 			limit,
 			condition,
 		)
@@ -216,6 +218,7 @@ def optima_get_advance_payment_entries(
 			party_type,
 			party,
 			party_account,
+            default_advance_account,
 			limit,
 			condition,
 		)
