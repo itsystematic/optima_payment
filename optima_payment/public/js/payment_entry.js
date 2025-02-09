@@ -662,6 +662,7 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends (
 
     // Change Mandatory
     multi_expense() {
+        this.frm.set_value({ party_type: ''});
         this.handle_fields();
     }
 };
