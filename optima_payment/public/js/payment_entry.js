@@ -656,8 +656,8 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends (
         this.frm.doc.company_expense.forEach(function (d) {
             total += d.amount;
         });
-        this.frm.set_value({ paid_amount: total, total_amount: total });
-        refresh_field(["total_amount", "paid_amount"]);
+        this.frm.set_value({ paid_amount: total, received_amount: total, total_amount: total });
+        refresh_field(["total_amount", "paid_amount", "received_amount"]);
     }
 
     // Change Mandatory
