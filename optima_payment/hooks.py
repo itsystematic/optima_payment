@@ -57,7 +57,8 @@ doctype_js = {
     ],
     "Expense Claim": "public/js/expense_claim.js",
     "Expense Claim Type" : "public/js/expense_claim_type.js",
-    "Bank": "public/js/bank.js" #--WS
+    "Bank": "public/js/bank.js", #--WS
+    "Bank Guarantee" : "public/js/bank_guarantee.js"
 }
 doctype_list_js = {
     "Payment Entry" : "public/js/payment_entry_list.js",
@@ -156,6 +157,7 @@ after_app_uninstall = "optima_payment.uninstall.after_app_uninstall"
 override_doctype_class = {
 	"Expense Claim": "optima_payment.override.doctype_class.expense_claim.CustomExpenseClaim", # --AM
     "Payment Entry": "optima_payment.override.doctype_class.payment_entry.CustomPaymentEntry", # --FH
+    "Bank Guarantee": "optima_payment.override.doctype_class.bank_guarantee.CustomBankGuarantee",
 }
 
 # Document Events
