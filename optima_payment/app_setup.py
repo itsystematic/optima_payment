@@ -710,6 +710,22 @@ def get_property_setter():
         # },
         {
             "doctype": "Payment Entry",
+            "property": "depends_on",
+            "fieldname": "reference_no",
+            "property_type": "Data",
+            "value": "eval: doc.paid_from",
+            "doctype_or_field": "DocField",
+        },
+        {
+            "doctype": "Payment Entry",
+            "property": "depends_on",
+            "fieldname": "reference_date",
+            "property_type": "Data",
+            "value": "eval: doc.paid_from",
+            "doctype_or_field": "DocField",
+        },
+        {
+            "doctype": "Payment Entry",
             "property": "allow_on_submit",
             "fieldname": "cost_center",
             "value": 1,
