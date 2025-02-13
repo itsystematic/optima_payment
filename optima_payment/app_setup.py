@@ -114,6 +114,7 @@ MAIN_ORDER_FIELDS = [
 ]
 
 BANK_GUARANTEE_FIELDS_ORDER = [
+    "recent_transaction_date",
     "bank_guarantee_purpose",
     "bg_type",
     "reference_doctype",
@@ -163,15 +164,14 @@ BANK_GUARANTEE_FIELDS_ORDER = [
     "section_break_14",
     "name_of_beneficiary",
     "charges",
+    "fixed_deposit_number",
     "margin_money",
     "column_break_19",
     "bank_guarantee_number",
-    "fixed_deposit_number",
+    "remarks",
     "amended_from",
     "custom_section_break_sluyu",
     "more_information",
-    "margin_details",
-    # "column_break_123",
 ]
 
 def get_custom_fields():
@@ -405,6 +405,23 @@ def get_custom_fields():
                 "options": "Account",
                 "insert_after": "default_receiving_insurance_account",
             },
+            {
+                "fieldname": "lost_expense_Bank_guarantee_account",
+                "fieldtype": "Link",
+                "label": "Lost Expense Bank Guarantee Account",
+                "options": "Account",
+                "insert_after": "bank_fees_account",
+            },
+        ],
+        "GL Entry": [
+            {
+                "fieldname": "is_bank_guarantee_comission_entry",
+                "fieldtype": "Check",
+                "label": "Bank Guarantee Comission Entry",
+                "insert_after": "transaction_exchange_rate",
+                "default": 0,
+                "hidden": 1
+            }
         ],
         "Bank Guarantee": [
             {
@@ -419,6 +436,7 @@ def get_custom_fields():
                 "fieldtype": "Currency",
                 "label": "Bank Guarantee Amount",
                 "reqd": 1,
+                "no_copy":1,
                 "read_only": 1,
                 "depends_on": "eval: doc.bank_guarantee_percent != 0",
             },
@@ -446,6 +464,7 @@ def get_custom_fields():
                 "label": "Cost Center",
                 "insert_after": "project",
                 "options": "Cost Center",
+                "reqd": 1,
             },
             {
                 "fieldname": "bank_guarantee_account",
@@ -639,6 +658,12 @@ def get_custom_fields():
                 "label": "Bank Guarantee Percent",
             },
             {
+                "fieldname": "remarks",
+                "fieldtype": "Small Text",
+                "label": "Remarks",
+                "print_hide": 1
+            },
+            {
                 "fieldname": "recent_transaction_date",
                 "fieldtype": "Date",
                 "hidden": 1
@@ -662,7 +687,6 @@ def add_hrms_fields(custom_fields: dict):
             "options": "Purchase Invoice",
         }
     ]
-
 
 
 def get_property_setter():
@@ -803,10 +827,10 @@ def get_property_setter():
         },
         {
             "doctype": "Bank Guarantee",
-            "property": "mandatory_depends_on",
-            "property_type": "Data",
+            "property": "reqd",
+            "property_type": "Check",
             "fieldname": "project",
-            "value": "eval:doc.custom_guarantee_type == 'Final'",
+            "value": 1,
             "doctype_or_field": "DocField",
         },
         {

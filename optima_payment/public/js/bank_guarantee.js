@@ -1,30 +1,11 @@
 cur_frm.add_fetch("bank_account", "bank_guarantee_account", "bank_guarantee_account");
 frappe.ui.form.on('Bank Guarantee', {
-    // setup(frm) {
-    //     frm.set_query("reference_docname", function(doc) {
-    //         // let filters = [];
-    //         // frappe.call({
-    //         //     method: "optima_payment.override.doctype_class.bank_guarantee.get_reference_docname",
-    //         //     callback: function(r) {
-    //         //         if (r.message) {
-    //         //             filters = r.message
-    //         //         }
-    //         //     }
-    //         // })
-    //         // console.log(filters)
-    //         return {
-    //             filters: {
-    //                 name: ["in", ["SAL-ORD-2025-00002"]]
-    //             }
-    //         }
-    //     });
-    // },
     refresh(frm) {
-        frm.set_query("reference_docname", function (doc) {
-            return {
-                query: "optima_payment.override.doctype_class.bank_guarantee.get_reference_docname",
-            }
-        })
+        // frm.set_query("reference_docname", function (doc) {
+        //     return {
+        //         query: "optima_payment.override.doctype_class.bank_guarantee.get_reference_docname",
+        //     }
+        // })
         frm.trigger("custom_button");
         frm.trigger("set_beneficiary_name");
     },
