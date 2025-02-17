@@ -221,8 +221,8 @@ class CustomBankGuarantee(Document):
     def make_row_in_gl( 
         self, 
         account,
-        credit_or_debit,amount,
-        cost_center:str = None ,
+        credit_or_debit,
+        amount,
         gl_entries:list =[] ,
         posting_date=None,
         is_bank_guarantee_comission_entry = False ,
@@ -231,12 +231,12 @@ class CustomBankGuarantee(Document):
         gl_entries.append(
             self.get_gl_dict(
                 {
-                account: account ,
+                    "account": account ,
                     credit_or_debit: amount,
                     credit_or_debit + "_in_account_currency": amount , 
                     "project": self.project ,
-                    posting_date : posting_date,
-                    is_bank_guarantee_comission_entry : is_bank_guarantee_comission_entry
+                    "posting_date" : posting_date,
+                    "is_bank_guarantee_comission_entry" : is_bank_guarantee_comission_entry
                 },
         ))
     
