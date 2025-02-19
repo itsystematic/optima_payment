@@ -22,7 +22,6 @@ frappe.query_reports["Bank Guarantee Report"] = {
 			label: __("Bank Guarantee Status"),
 			fieldtype: "Select",
 			options: "\nNew\nReturned\nLost\nExtend",
-			default: "New",
 		},
 		{
 			fieldname: "reference_docname",
@@ -37,6 +36,12 @@ frappe.query_reports["Bank Guarantee Report"] = {
 			options: "DocType",
 			default: "Sales Order",
 			read_only: 1,
+		},
+		{
+			fieldname: "cost_center",
+			label: __("Cost Center"),
+			fieldtype: "Link",
+			options: "Cost Center",
 		},
 		{
 			fieldname: "project",
@@ -55,7 +60,12 @@ frappe.query_reports["Bank Guarantee Report"] = {
 			label: __("Guarantee Type"),
 			fieldtype: "Select",
 			options: "\nInitial\nAdvanced Payment\nFinal",
-			default: "Initial",
+		},
+		{
+			fieldname: "bank",
+			label: __("Bank"),
+			fieldtype: "Link",
+			options: "Bank",
 		},
 		{
 			fieldname: "banking_facilities",
