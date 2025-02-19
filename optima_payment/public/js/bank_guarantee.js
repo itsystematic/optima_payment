@@ -193,7 +193,7 @@ frappe.ui.form.on('Bank Guarantee', {
         frm.set_value("name_of_beneficiary", frm.doc.company);
     },
     calculate_bank_guarantee_amount: function (frm) {
-        let bank_guarantee_amount = frm.doc.amount * (frm.doc.bank_guarantee_percent / 100);
+        let bank_guarantee_amount = frm.doc.net_amount * (frm.doc.bank_guarantee_percent / 100);
         frm.set_value("bank_guarantee_amount", bank_guarantee_amount);
     },
     calculte_bank_amount: function (frm) {
