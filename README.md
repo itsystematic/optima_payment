@@ -126,3 +126,4 @@ Explore other powerful apps developed by IT Systematic:
 
 - **[Optima ZATCA](https://github.com/itsystematic/optima_zatca):** A comprehensive app for managing ZATCA compliance in Saudi Arabia.
 - **[Optima HR](https://github.com/itsystematic/optima-hr):** Transform HR operations with a powerful ERPNext-powered solution.
+- **[ERPNext Themes](https://github.com/itsystematic/themes):** beautifully designed ERPNext with stunning color themes, Arabic Almarai font, and Arabic human translations.
