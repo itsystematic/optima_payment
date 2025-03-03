@@ -25,8 +25,7 @@ def active_for_company(fn) :
     return caller
 
 
-def get_applicable_campanies_optima_payment(company=None) :
-
+def get_applicable_campanies_optima_payment(company=None) -> list[frappe._dict] :
     
     list_setting_doc = []
     conditions = {"enable_optima_payment" : 1}
@@ -58,7 +57,7 @@ def get_cheque_account(doc:frappe._dict , fieldname:str ) -> str|None :
 
 
 def if_hrms_app_installed(function):
-	"""Decorator to check if lending app is installed"""
+	"""Decorator to check if hrms app is installed"""
 
 	def wrapper(*args, **kwargs):
 		if "hrms" in frappe.get_installed_apps():

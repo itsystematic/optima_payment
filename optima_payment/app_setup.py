@@ -677,8 +677,13 @@ def get_custom_fields():
 
 
 @if_hrms_app_installed
-def add_hrms_fields(custom_fields: dict):
+def add_hrms_fields(custom_fields: dict) -> None:
+    """
+    Add custom fields to "Expense Claim Detail" doctype if HRMS app is installed.
 
+    Args:
+        custom_fields (dict): Dictionary of custom fields.
+    """
     custom_fields["Expense Claim Detail"] = [
         {
             "fieldname": "purchase_invoice",
