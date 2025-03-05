@@ -153,9 +153,9 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends (
             "company_expense",
             function (doc, cdt, cdn) {
                 return {
+                    query: "optima_payment.api.get_or_filtered_accounts",
                     filters: {
                         disabled: 0,
-                        root_type: ["in", ["Expense"]],
                         is_group: 0,
                         company: doc.company,
                     },
