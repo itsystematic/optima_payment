@@ -1,14 +1,14 @@
 cur_frm.add_fetch("bank_account", "bank_guarantee_account", "bank_guarantee_account");
 frappe.ui.form.on('Bank Guarantee', {
+    onload(frm) {
+        frm.trigger("set_reference_doctype_options");
+    },
+    
     refresh(frm) {
-        // frm.set_query("reference_docname", function (doc) {
-        //     return {
-        //         query: "optima_payment.override.doctype_class.bank_guarantee.get_reference_docname",
-        //     }
-        // })
         frm.trigger("custom_button");
         frm.trigger("set_beneficiary_name");
     },
+
     bank_rate_(frm) {
         frm.trigger("calculte_bank_amount")
     },
@@ -37,14 +37,14 @@ frappe.ui.form.on('Bank Guarantee', {
         }
     },
     bg_type: function (frm) {
-        // if (frm.doc.bg_type == "Receiving") {
-        //     frm.set_value("reference_doctype","Purchase Order" );
-        // } else if (frm.doc.bg_type == "Providing") {
-        //     frm.set_value("reference_doctype","Sales Order" );
-        // }
-        frm.set_value("reference_doctype", frm.doc.bg_type == "Receiving" ? "Purchase Order" : "Sales Order");
+
+        frm.trigger("set_reference_doctype_options");
+    },
+
+    reference_doctype: function (frm) {
         frm.trigger("reset_fields");
     },
+
     reference_docname: async (frm) => {
         try {
             if (!frm.doc.reference_doctype || !frm.doc.reference_docname) return;
@@ -64,7 +64,7 @@ frappe.ui.form.on('Bank Guarantee', {
         }
     },
 
-    // functions called by field events
+    // functions called by field events    ==================================================================================================================
 
     custom_button(frm) {
         if (frm.doc.docstatus > 0) {
@@ -139,7 +139,7 @@ frappe.ui.form.on('Bank Guarantee', {
                     {
                         label: 'Issue Commission Amount',
                         fieldname: 'issue_commission_amount',
-                        fieldtype: 'Float', 
+                        fieldtype: 'Float',
                         depends_on: "has_commission",
                         mandatory_depends_on: "has_commission"
                     },
@@ -205,12 +205,31 @@ frappe.ui.form.on('Bank Guarantee', {
         frm.set_value("facility_amount", facilities_amount);
     },
     reset_fields: function (frm) {
-        fields = ["reference_docname", "customer", "supplier", "project", "cost_center"];
+        
+        fields = ["reference_docname", "customer", "supplier", "project", "cost_center", "net_amount", "tax_amount", "amount"];
 
         fields.forEach((field) => {
             frm.set_value(field, "");
         })
     },
+
+    set_reference_doctype_options: function (frm) {
+
+        // Define all possible options you want to allow for `reference_doctype`
+        let baseOptions = ["Sales Order", "Purchase Order", "Purchase Invoice"];
+
+        if (frm.doc.bg_type === "Providing") {
+            // If bg_type == "Providing", remove "Purchase Order" from the list
+            baseOptions = baseOptions.filter(opt => opt !== "Purchase Order");
+        }
+
+        // Convert array into newline-separated string for the Select field
+        frm.set_df_property("reference_doctype", "options", baseOptions.join("\n"));
+        // frm.set_value("reference_doctype", baseOptions[0]);
+
+        // Force a refresh so the field updates immediately
+        frm.refresh_field("reference_doctype");
+    }
 
 })
 
