@@ -352,6 +352,13 @@ def get_custom_fields():
         ],
         "Letter Head": [
             {
+                "fieldname": "is_box",
+                "fieldtype": "Check",
+                "label": "Box",
+                "insert_after": "is_default",
+            },
+            # Bank Guarantee Related Fields
+            {
                 "fieldname": "customer",
                 "fielndtype": "Link",
                 "label": "Customer",
@@ -367,14 +374,9 @@ def get_custom_fields():
                 "options": "Supplier",
                 "depends_on": 'eval: doc.bg_type == "Receiving"',
             },
-            {
-                "fieldname": "is_box",
-                "fieldtype": "Check",
-                "label": "Box",
-                "insert_after": "is_default",
-            },
         ],
         "Bank Account": [
+            # Bank Guarantee Related Fields
             {
                 "fieldname": "bank_guarantee_account",
                 "fieldtype": "Link",
@@ -384,6 +386,7 @@ def get_custom_fields():
             },
         ],
         "Company": [
+            # Bank Guarantee Related Fields
             {
                 "fieldname": "default_insurance_account",
                 "fieldtype": "Link",
@@ -414,6 +417,7 @@ def get_custom_fields():
             },
         ],
         "GL Entry": [
+            # Bank Guarantee Related Fields
             {
                 "fieldname": "is_bank_guarantee_comission_entry",
                 "fieldtype": "Check",
