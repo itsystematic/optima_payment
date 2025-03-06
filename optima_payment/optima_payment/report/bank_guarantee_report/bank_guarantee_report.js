@@ -26,16 +26,14 @@ frappe.query_reports["Bank Guarantee Report"] = {
 		{
 			fieldname: "reference_docname",
 			label: __("Reference Docname"),
-			fieldtype: "Link",
-			options: "Sales Order",
+			fieldtype: "Data",
+			// options: "reference_doctype",
 		},
 		{
 			fieldname: "reference_doctype",
 			label: __("Reference DocType"),
-			fieldtype: "Link",
-			options: "DocType",
-			default: "Sales Order",
-			read_only: 1,
+			fieldtype: "Select",
+			options: "\nPurchase Invoice\nSales Order",
 		},
 		{
 			fieldname: "cost_center",
@@ -54,12 +52,20 @@ frappe.query_reports["Bank Guarantee Report"] = {
 			label: __("Customer"),
 			fieldtype: "Link",
 			options: "Customer",
+			depends_on: "eval: doc.reference_doctype == 'Sales Order'",
+		},
+		{
+			fieldname: "supplier",
+			label: __("Supplier"),
+			fieldtype: "Link",
+			options: "Supplier",
+			depends_on: "eval: doc.reference_doctype == 'Purchase Invoice'",
 		},
 		{
 			fieldname: "guarantee_type",
 			label: __("Guarantee Type"),
 			fieldtype: "Select",
-			options: "\nInitial\nAdvanced Payment\nFinal",
+			options: "\nInitial\nAdvanced Payment\nFinal\nFinacial",
 		},
 		{
 			fieldname: "bank",

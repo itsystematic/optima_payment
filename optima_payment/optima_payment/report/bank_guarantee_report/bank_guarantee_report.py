@@ -34,6 +34,7 @@ def get_query() -> MySQLQueryBuilder:
             bank_guarantee.remarks.as_("remarks"),
             bank_guarantee.project.as_("project"),
             bank_guarantee.customer.as_("customer"),
+            bank_guarantee.supplier.as_("supplier"),
             bank_guarantee.end_date.as_("end_date"),
             bank_guarantee.amount.as_("grand_amount"),
             bank_guarantee.start_date.as_("start_date"),
@@ -61,53 +62,56 @@ def get_query() -> MySQLQueryBuilder:
 
 
 def get_conditions(filters: dict, query: list[dict]) -> MySQLQueryBuilder:
-	bank_guarantee = frappe.qb.DocType("Bank Guarantee")
+    bank_guarantee = frappe.qb.DocType("Bank Guarantee")
 
-	if filters.get("from_date") and filters.get("to_date"):
-		query = query.where(
-			bank_guarantee.posting_date.between(filters.from_date, filters.to_date)
-		)
+    if filters.get("from_date") and filters.get("to_date"):
+        query = query.where(
+            bank_guarantee.posting_date.between(filters.from_date, filters.to_date)
+        )
 
-	if filters.get("bank_guarantee_status"):
-		query = query.where(
-			bank_guarantee.bank_guarantee_status == filters.bank_guarantee_status
-		)
+    if filters.get("bank_guarantee_status"):
+        query = query.where(
+            bank_guarantee.bank_guarantee_status == filters.bank_guarantee_status
+        )
 
-	if filters.get("reference_docname"):
-		query = query.where(
-			bank_guarantee.reference_docname == filters.reference_docname
-		)
+    if filters.get("reference_docname"):
+        query = query.where(
+            bank_guarantee.reference_docname == filters.reference_docname
+        )
 
-	if filters.get("reference_doctype"):
-		query = query.where(
-			bank_guarantee.reference_doctype == filters.reference_doctype
-		)
+    if filters.get("reference_doctype"):
+        query = query.where(
+            bank_guarantee.reference_doctype == filters.reference_doctype
+        )
 
-	if filters.get("project"):
-		query = query.where(bank_guarantee.project == filters.project)
+    if filters.get("project"):
+        query = query.where(bank_guarantee.project == filters.project)
 
-	if filters.get("customer"):
-		query = query.where(bank_guarantee.customer == filters.customer)
+    if filters.get("customer"):
+        query = query.where(bank_guarantee.customer == filters.customer)
 
-	if filters.get("guarantee_type"):
-		query = query.where(bank_guarantee.guarantee_type == filters.guarantee_type)
+    if filters.get("supplier"):
+        query = query.where(bank_guarantee.supplier == filters.supplier)
 
-	if filters.get("banking_facilities"):
-		query = query.where(
-			bank_guarantee.banking_facilities == filters.banking_facilities)
-		
-	if filters.get("cost_center"):
-		query = query.where(bank_guarantee.cost_center == filters.cost_center)
+    if filters.get("guarantee_type"):
+        query = query.where(bank_guarantee.guarantee_type == filters.guarantee_type)
 
-	if filters.get("bank_guarantee_number"):
-		query = query.where(
-			bank_guarantee.bank_guarantee_number == filters.bank_guarantee_number
-		)
-	
-	if filters.get("bank"):
-		query = query.where(bank_guarantee.bank == filters.bank)
+    if filters.get("banking_facilities"):
+        query = query.where(
+            bank_guarantee.banking_facilities == filters.banking_facilities)
+        
+    if filters.get("cost_center"):
+        query = query.where(bank_guarantee.cost_center == filters.cost_center)
 
-	return query
+    if filters.get("bank_guarantee_number"):
+        query = query.where(
+            bank_guarantee.bank_guarantee_number == filters.bank_guarantee_number
+        )
+
+    if filters.get("bank"):
+        query = query.where(bank_guarantee.bank == filters.bank)
+
+    return query
 
 
 def get_coloums() -> list[dict]:
@@ -134,15 +138,22 @@ def get_coloums() -> list[dict]:
 			"width": 200,
         },
         {
+            "fieldname": "supplier",
+            "label": _("Supplier"),
+            "fieldtype": "Link",
+            "options": "Supplier",
+			"width": 200,
+        },
+        {
             "fieldname": "reference_doctype",
             "label": _("Reference DocType"),
-            "width": 100,
+            "width": 150,
         },
         {
             "fieldname": "reference_docname",
             "label": _("Reference Documnet"),
-            "fieldtype": "Link",
-            "options": "Sales Order",
+            "fieldtype": "Data",
+            # "options": "Purchase Invoice",
             "width": 200,
         },
 		{
