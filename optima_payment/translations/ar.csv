@@ -76,3 +76,24 @@ Only,فقط
 only,فقط
 Ledger,حساب الاستاذ
 Cheque Dashboard, لوحة قياده الشيكات
+bank_guarantee_percent,Bank Guarantee Percent,نسبه الضمان البنكى
+Advanced Payment,Advanced Payment,دفعات مقدمه
+Finacial,Finacial,مالى
+issue_commission,Issue Commission,أصدار عموله؟
+issue_commission_amount,Issue Commission Amount,قيمه العموله المصدره
+bank_rate_,Bank Rate (%),نسبه البنك(%)
+bank_amount,Bank Amount,قيمه البنك
+banking_facilities,Banking Facilities,التسهيلات البنكيه
+Without Facilities,Without Facilities,بدون تسهيلات
+With Facilities,With Facilities,مع تسهيلات
+tax_amount,Tax Amount,قيمه الضريبه
+amount,Grand Amount,إجمالي المبلغ
+bank_guarantee_amount,Bank Guarantee Amount,قيمه الضمان البنكى
+no_of_extended_days,No of Extended Days,عدد الأيام الممتد تجدها
+new_end_date,New End Date,تاريخ الأنتهاء الجديد
+bank_facilities_account,Bank Facilities Account,حساب التسهيلات البنكيه
+facility_amount,Facility Amount,قيمه التسهيلات
+Lost,Lost,فقد
+Extend,Extend,تمديد
+Return,Return,أرجاع
+extend_validity,Extend Validity,تمديد الصلاحية
