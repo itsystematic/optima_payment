@@ -171,7 +171,7 @@ BANK_GUARANTEE_FIELDS_ORDER = [
     "remarks",
     "amended_from",
     "custom_section_break_sluyu",
-    "more_information",
+    "more_information"
 ]
 
 def get_custom_fields():
@@ -342,6 +342,7 @@ def get_custom_fields():
                 "options": "Bank Print Format Items",
                 "insert_after": "bank_formats",
             },
+            # Bank Guarantee Related Fields
             {
                 "fieldname": "company",
                 "label": "Company",
@@ -364,7 +365,7 @@ def get_custom_fields():
                 "label": "Customer",
                 "insert_after": "reference_docname",
                 "options": "Customer",
-                "depends_on": 'eval: doc.bg_type == "Providing"',
+                "depends_on": 'eval: doc.reference_doctype == "Sales Order"',
             },
             {
                 "fieldname": "supplier",
@@ -372,7 +373,7 @@ def get_custom_fields():
                 "label": "Supplier",
                 "insert_after": "customer",
                 "options": "Supplier",
-                "depends_on": 'eval: doc.bg_type == "Receiving"',
+                "depends_on": 'eval: doc.reference_doctype == "Purchase Invoice"',
             },
         ],
         "Bank Account": [
@@ -637,7 +638,7 @@ def get_custom_fields():
                 "fieldtype": "Select",
                 "label": "Guarantee Type",
                 "insert_after": "Conditions",
-                "options": "\nInitial\nAdvanced Paymnet\nFinal",
+                "options": "\nInitial\nAdvanced Paymnet\nFinal\nFinacial",
                 "reqd": 1,
             },
             {
@@ -783,7 +784,7 @@ def get_property_setter():
             "fieldname": "customer",
             "property": "depends_on",
             "property_type": "Data",
-            "value": 'eval: doc.bg_type == "Providing"',
+            "value": 'eval: doc.reference_doctype == "Sales Order"',
             "doctype_or_field": "DocField",
         },
         {
@@ -791,7 +792,7 @@ def get_property_setter():
             "fieldname": "supplier",
             "property": "depends_on",
             "property_type": "Data",
-            "value": 'eval: doc.bg_type == "Receiving"',
+            "value": 'eval: doc.reference_doctype == "Purchase Invoice"',
             "doctype_or_field": "DocField",
         },
         {
@@ -868,10 +869,18 @@ def get_property_setter():
         },
         {
             "doctype": "Bank Guarantee",
-            "property": "default",
-            "property_type": "Text",
-            "fieldname": "bg_type",
-            "value": "Providing",
+            "property": "fieldtype",
+            "property_type": "Data",
+            "fieldname": "reference_doctype",
+            "value": "Select",
+            "doctype_or_field": "DocField",
+        },
+        {
+            "doctype": "Bank Guarantee",
+            "property": "options",
+            "property_type": "Data",
+            "fieldname": "reference_doctype",
+            "value": "Sales Order\nPurchase Invoice\nPurchase Order",
             "doctype_or_field": "DocField",
         },
         {
@@ -975,6 +984,30 @@ def get_property_setter():
             "property": "read_only",
             "property_type": "Check",
             "value": 1,
+            "doctype_or_field": "DocField",
+        },
+        {
+            "doctype": "Bank Guarantee",
+            "fieldname": "bg_type",
+            "property": "fieldtype",
+            "property_type": "Data",
+            "value": "Select",
+            "doctype_or_field": "DocField",
+        },
+        {
+            "doctype": "Bank Guarantee",
+            "fieldname": "bg_type",
+            "property": "options",
+            "property_type": "Data",
+            "value": "\nProviding\nReceiving",
+            "doctype_or_field": "DocField",
+        },
+        {
+            "doctype": "Bank Guarantee",
+            "property": "default",
+            "property_type": "Data",
+            "fieldname": "bg_type",
+            "value": "Providing",
             "doctype_or_field": "DocField",
         },
     ]
