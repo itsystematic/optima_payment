@@ -442,7 +442,7 @@ def get_property_setters():
         {
             "doctype": "Bank Guarantee",
             "property": "default",
-            "property_type": "Text",
+            "property_type": "Data",
             "fieldname": "reference_doctype",
             "value": "Sales Order",
             "doctype_or_field": "DocField",
