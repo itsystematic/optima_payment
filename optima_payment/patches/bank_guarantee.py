@@ -441,14 +441,6 @@ def get_property_setters():
         },
         {
             "doctype": "Bank Guarantee",
-            "property": "default",
-            "property_type": "Data",
-            "fieldname": "reference_doctype",
-            "value": "Sales Order",
-            "doctype_or_field": "DocField",
-        },
-        {
-            "doctype": "Bank Guarantee",
             "property": "fieldtype",
             "property_type": "Data",
             "fieldname": "reference_doctype",
@@ -461,6 +453,14 @@ def get_property_setters():
             "property_type": "Data",
             "fieldname": "reference_doctype",
             "value": "Sales Order\nPurchase Invoice\nPurchase Order",
+            "doctype_or_field": "DocField",
+        },
+        {
+            "doctype": "Bank Guarantee",
+            "property": "default",
+            "property_type": "Data",
+            "fieldname": "reference_doctype",
+            "value": "Sales Order",
             "doctype_or_field": "DocField",
         },
         {
