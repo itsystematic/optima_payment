@@ -279,6 +279,7 @@ class CustomPaymentEntry(PAYMENTENTRY):
             "party_account_field"
         ):
             self.setup_party_account_field()
+        self.set_transaction_currency_and_rate()
 
         gl_entries = []
         if not self.get("multi_expense"):
