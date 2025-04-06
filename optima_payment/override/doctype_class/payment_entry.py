@@ -275,10 +275,9 @@ class CustomPaymentEntry(PAYMENTENTRY):
             super().validate_mandatory()
 
     def build_gl_map(self):
-        if self.payment_type in ("Receive", "Pay") and not self.get(
-            "party_account_field"
-        ):
+        if self.payment_type in ("Receive", "Pay") and not self.get("party_account_field"):
             self.setup_party_account_field()
+            
         self.set_transaction_currency_and_rate()
 
         gl_entries = []
