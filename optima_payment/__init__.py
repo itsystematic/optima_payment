@@ -68,4 +68,20 @@ def if_hrms_app_installed(function):
 
 # Overwrite get_advance_payment_entries
 # TO Skip Cheque Status ( Return , Reject )
-accounts_controller.get_advance_payment_entries = optima_get_advance_payment_entries
+# Apply monkey patch only if the site is using the app
+def should_apply_patch():
+    """Check if this site is actually using the optima_payment app"""
+    try:
+        # Check if any Optima Payment settings exist
+        if frappe.db.count("Optima Payment Setting") > 0:
+            return True
+        # Check if any related doctype records exist
+        # Add other checks for your app-specific doctypes if needed
+        return False
+    except Exception:
+        # If table doesn't exist or any other error, don't apply the patch
+        return False
+
+# Only apply the monkey patch if the site is using this app
+if should_apply_patch():
+    accounts_controller.get_advance_payment_entries = optima_get_advance_payment_entries
