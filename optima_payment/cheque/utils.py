@@ -1,5 +1,6 @@
 import frappe
 from frappe.utils import getdate
+from erpnext.controllers import accounts_controller
 from erpnext.accounts.general_ledger import make_gl_entries
 from optima_payment.optima_payment.doctype.cheque_action_log.cheque_action_log import add_cheque_action_log
 
@@ -174,7 +175,24 @@ def in_words(integer: int, in_million=True) -> str:
 
 from erpnext.controllers.accounts_controller import get_common_query
 
-def optima_get_advance_payment_entries(
+# Store original function
+original_get_advance_payment_entries = accounts_controller.get_advance_payment_entries
+
+def optima_get_advance_payment_entries():
+    """Wrapper that conditionally uses your custom implementation"""
+    try:
+        # Check if this site is using the app
+        if frappe.db.exists("DocType", "Optima Payment Setting") and frappe.db.count("Optima Payment Setting") > 0:
+            return _optima_get_advance_payment_entries
+        else:
+            # Fall back to original if not using your app
+            return original_get_advance_payment_entries
+    except Exception:
+        # Handle any errors (like during install when tables don't exist yet)
+        return original_get_advance_payment_entries
+    
+
+def _optima_get_advance_payment_entries(
 	party_type,
 	party,
 	party_account,
