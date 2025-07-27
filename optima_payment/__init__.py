@@ -68,4 +68,6 @@ def if_hrms_app_installed(function):
 
 # Overwrite get_advance_payment_entries
 # TO Skip Cheque Status ( Return , Reject )
+
+# Apply the monkey patch with the wrapper function that will check conditions
 accounts_controller.get_advance_payment_entries = optima_get_advance_payment_entries
