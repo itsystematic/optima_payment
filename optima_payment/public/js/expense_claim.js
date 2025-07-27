@@ -63,12 +63,15 @@ frappe.ui.form.on("Expense Claim Detail", {
         cur_frm.events.calculate_total_advance_amount(frm);
     },
     purchase_invoice(frm, cdt, cdn){
-        let current_row = locals[cdt][cdn];
-        frappe.db.get_value('Purchase Invoice' , current_row.purchase_invoice , 'outstanding_amount')
+        let row = locals[cdt][cdn];
+        frappe.db.get_value('Purchase Invoice' , row.purchase_invoice , ['outstanding_amount', 'cost_center', 'posting_date', 'remarks'])
             .then(r => {
-				frappe.model.set_value(cdt,cdn , {
+				frappe.model.set_value(row, {
 					"amount" : r.message.outstanding_amount ,
-					"sanctioned_amount" : r.message.outstanding_amount
+					"sanctioned_amount" : r.message.outstanding_amount,
+					"cost_center" : r.message.cost_center,
+					"expense_date" : r.message.posting_date,
+					"description" : r.message.remarks
 				});
                 refresh_field("expenses");
             })
