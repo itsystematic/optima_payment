@@ -469,7 +469,6 @@ def get_custom_fields():
                 "label": "Cost Center",
                 "insert_after": "project",
                 "options": "Cost Center",
-                "reqd": 1,
             },
             {
                 "fieldname": "bank_guarantee_account",
@@ -656,6 +655,8 @@ def get_custom_fields():
                 "options": "\nBank Guarantee\nCheque\nCash\nDeduction",
                 "default": "Bank Guarantee",
                 "read_only": 1,
+                "hidden": 1
+
             },
             {
                 "fieldname": "bank_guarantee_percent",
@@ -970,14 +971,14 @@ def get_property_setter():
             "value": 1,
             "doctype_or_field": "DocField",
         },
-        {
-            "doctype": "Bank Guarantee",
-            "fieldname": "bg_type",
-            "property": "read_only",
-            "property_type": "Check",
-            "value": 1,
-            "doctype_or_field": "DocField",
-        },
+        # {
+        #     "doctype": "Bank Guarantee",
+        #     "fieldname": "bg_type",
+        #     "property": "read_only",
+        #     "property_type": "Check",
+        #     "value": 1,
+        #     "doctype_or_field": "DocField",
+        # },
         {
             "doctype": "Bank Guarantee",
             "fieldname": "bg_type",
