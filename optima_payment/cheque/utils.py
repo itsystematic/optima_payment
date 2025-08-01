@@ -1,6 +1,5 @@
 import frappe
 from frappe.utils import getdate
-from erpnext.controllers import accounts_controller
 from erpnext.accounts.general_ledger import make_gl_entries
 from optima_payment.optima_payment.doctype.cheque_action_log.cheque_action_log import add_cheque_action_log
 
@@ -175,35 +174,7 @@ def in_words(integer: int, in_million=True) -> str:
 
 from erpnext.controllers.accounts_controller import get_common_query
 
-# Store original function
-original_get_advance_payment_entries = accounts_controller.get_advance_payment_entries
-
-# Module-level variable to cache the check result
-_use_optima_cache = {}
-
-def optima_get_advance_payment_entries(*args, **kwargs):
-    """Wrapper that conditionally uses your custom implementation"""
-    try:
-        # Get current site name
-        site_name = frappe.local.site
-
-        # Check cache first
-        if site_name not in _use_optima_cache:
-            _use_optima_cache[site_name] = frappe.db.exists("DocType", "Optima Payment Setting") and frappe.db.count("Optima Payment Setting") > 0
-        
-        # Use cached result
-        if _use_optima_cache[site_name]:
-            return _optima_get_advance_payment_entries(*args, **kwargs)
-        else:
-            return original_get_advance_payment_entries(*args, **kwargs)
-        
-    except Exception as e:
-        frappe.logger().error(f"Error in optima wrapper: {str(e)}")
-        # Handle any errors
-        return original_get_advance_payment_entries(*args, **kwargs)
-    
-
-def _optima_get_advance_payment_entries(
+def optima_get_advance_payment_entries(
 	party_type,
 	party,
 	party_account,
