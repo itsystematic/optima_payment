@@ -861,10 +861,10 @@ def get_property_setter():
         },
         {
             "doctype": "Bank Guarantee",
-            "property": "default",
-            "property_type": "Text",
+            "property": "options",
+            "property_type": "Data",
             "fieldname": "reference_doctype",
-            "value": "Sales Order",
+            "value": "Sales Order\nPurchase Invoice\nPurchase Order",
             "doctype_or_field": "DocField",
         },
         {
@@ -873,14 +873,6 @@ def get_property_setter():
             "property_type": "Data",
             "fieldname": "reference_doctype",
             "value": "Select",
-            "doctype_or_field": "DocField",
-        },
-        {
-            "doctype": "Bank Guarantee",
-            "property": "options",
-            "property_type": "Data",
-            "fieldname": "reference_doctype",
-            "value": "Sales Order\nPurchase Invoice\nPurchase Order",
             "doctype_or_field": "DocField",
         },
         {
@@ -947,7 +939,7 @@ def get_property_setter():
             "doctype_or_field": "DocField",
         },
         {
-            "doctype:": "Bank Guarantee",
+            "doctype": "Bank Guarantee",
             "property": "hidden",
             "fieldname": "bank_account_no",
             "property_type": "Data",
@@ -955,7 +947,7 @@ def get_property_setter():
             "doctype_or_field": "DocField",
         },
         {
-            "doctype:": "Bank Guarantee",
+            "doctype": "Bank Guarantee",
             "property": "hidden",
             "fieldname": "iban",
             "property_type": "Data",
@@ -963,7 +955,7 @@ def get_property_setter():
             "doctype_or_field": "DocField",
         },
         {
-            "doctype:": "Bank Guarantee",
+            "doctype": "Bank Guarantee",
             "property": "hidden",
             "fieldname": "branch_code",
             "property_type": "Data",
@@ -971,7 +963,7 @@ def get_property_setter():
             "doctype_or_field": "DocField",
         },
         {
-            "doctype:": "Bank Guarantee",
+            "doctype": "Bank Guarantee",
             "property": "hidden",
             "fieldname": "swift_number",
             "property_type": "Data",
