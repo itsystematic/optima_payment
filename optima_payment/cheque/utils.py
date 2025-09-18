@@ -173,9 +173,10 @@ def in_words(integer: int, in_million=True) -> str:
 
 
 from erpnext.controllers.accounts_controller import get_common_query
+from erpnext.controllers.accounts_controller import get_advance_payment_entries
 
 # Store original function
-original_get_advance_payment_entries = accounts_controller.get_advance_payment_entries
+original_get_advance_payment_entries = get_advance_payment_entries
 
 # Module-level variable to cache the check result
 _use_optima_cache = {}
