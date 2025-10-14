@@ -1,6 +1,5 @@
 import frappe
 from frappe.utils import getdate
-from erpnext.controllers import accounts_controller
 from erpnext.accounts.general_ledger import make_gl_entries
 from optima_payment.optima_payment.doctype.cheque_action_log.cheque_action_log import add_cheque_action_log
 
@@ -174,22 +173,72 @@ def in_words(integer: int, in_million=True) -> str:
 
 
 from erpnext.controllers.accounts_controller import get_common_query
+from erpnext.controllers.accounts_controller import get_advance_payment_entries
 
 # Store original function
-original_get_advance_payment_entries = accounts_controller.get_advance_payment_entries
+original_get_advance_payment_entries = get_advance_payment_entries
 
 # Module-level variable to cache the check result
 _use_optima_cache = {}
 
+def clear_optima_cache(site_name=None) -> None:
+    """Clear the optima implementation cache for a specific site or all sites"""
+    global _use_optima_cache
+    if site_name:
+        _use_optima_cache.pop(site_name, None)
+    else:
+        _use_optima_cache.clear()
+
+
+def should_use_optima_implementation() -> bool:
+    """
+    Comprehensive check to determine if optima payment implementation should be used
+    Returns True only if ALL conditions are met:
+    1. App is installed for current site
+    2. DocType exists and is accessible
+    3. cheque_status field exists in Payment Entry table
+    4. At least one Optima Payment Setting exists
+    """
+    try:
+        # Check if app is installed for current site
+        if "optima_payment" not in frappe.get_installed_apps():
+            return False
+        
+        # Check if DocType exists and is accessible
+        if not frappe.db.exists("DocType", "Optima Payment Setting"):
+            return False
+            
+        # Check if cheque_status field exists in Payment Entry table
+        try:
+            # Try to access the field metadata first
+            if not frappe.db.has_column("Payment Entry", "cheque_status"):
+                return False
+        except Exception:
+            # Fallback: try a simple query
+            try:
+                frappe.db.sql("SELECT cheque_status FROM `tabPayment Entry` LIMIT 1", as_dict=True)
+            except Exception:
+                return False
+                
+        # Check if there are any settings configured
+        if frappe.db.count("Optima Payment Setting") == 0:
+            return False
+            
+        return True
+        
+    except Exception as e:
+        frappe.logger().error(f"Error checking optima implementation availability: {str(e)}")
+        return False
+
 def optima_get_advance_payment_entries(*args, **kwargs):
     """Wrapper that conditionally uses your custom implementation"""
     try:
-        # Get current site name
+        # Get current site name for caching
         site_name = frappe.local.site
 
         # Check cache first
         if site_name not in _use_optima_cache:
-            _use_optima_cache[site_name] = frappe.db.exists("DocType", "Optima Payment Setting") and frappe.db.count("Optima Payment Setting") > 0
+            _use_optima_cache[site_name] = should_use_optima_implementation()
         
         # Use cached result
         if _use_optima_cache[site_name]:
@@ -199,7 +248,7 @@ def optima_get_advance_payment_entries(*args, **kwargs):
         
     except Exception as e:
         frappe.logger().error(f"Error in optima wrapper: {str(e)}")
-        # Handle any errors
+        # Always fallback to original implementation on any error
         return original_get_advance_payment_entries(*args, **kwargs)
     
 
@@ -242,6 +291,7 @@ def _optima_get_advance_payment_entries(
 
 		allocated = list(q.run(as_dict=True))
 		payment_entries += allocated
+	
 	if include_unallocated:
 		q = get_common_query(
 			party_type,
@@ -253,7 +303,18 @@ def _optima_get_advance_payment_entries(
 		)
 		q = q.select((payment_entry.unallocated_amount).as_("amount"))
 		q = q.where(payment_entry.unallocated_amount > 0)
-		q = q.where(~payment_entry.cheque_status.isin(['Returned' , 'Rejected' , 'Return To Holder']))
+		
+		# Add cheque_status filter only if the field exists
+		try:
+			# Double-check field existence before using it in query
+			if frappe.db.has_column("Payment Entry", "cheque_status"):
+				q = q.where(~payment_entry.cheque_status.isin(['Returned', 'Rejected', 'Return To Holder']))
+			else:
+				frappe.logger().warning("cheque_status field not found in Payment Entry, skipping filter")
+		except Exception as e:
+			frappe.logger().error(f"Error checking cheque_status field: {str(e)}")
+			# Continue without the cheque_status filter
+			pass
 
 		unallocated = list(q.run(as_dict=True))
 		payment_entries += unallocated
