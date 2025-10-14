@@ -49,6 +49,7 @@ class CustomPaymentEntry(PAYMENTENTRY):
         self.make_gl_entries()
         self.update_outstanding_amounts()
         self.set_status()
+        
     # def build_gl_map(self):
     #     if self.payment_type in ("Receive", "Pay") and not self.get("party_account_field"):
     #         self.setup_party_account_field()
