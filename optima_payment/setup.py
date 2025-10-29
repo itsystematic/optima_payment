@@ -1099,3 +1099,41 @@ def get_property_setter():
         },
     ]
     return property_setter
+
+
+def before_uninstall()-> None:
+    """Cleanup custom fields before uninstalling the app"""
+    delete_custom_fields(get_custom_fields())
+    delete_property_setters(get_property_setter())
+
+
+def delete_custom_fields()-> None:
+    """
+    Create custom fields related to Optima Payment in the system
+    :param custom_fields: Dictionary like { "DocType": [ {field1}, {field2} ] }
+    """
+    for doctype, fields in get_custom_fields().items():
+        frappe.db.delete(
+            "Custom Field",
+            {
+                "dt": doctype,
+                "fieldname": ["in", [field.get("fieldname") for field in fields]],
+            },
+        )
+        
+        frappe.clear_cache(doctype=doctype)
+
+
+def delete_property_setters(property_setters: list[dict]) -> None:
+    """Delete property setters related to Optima Payment in the system"""
+    for ps in property_setters:
+        frappe.db.delete(
+            "Property Setter",
+            {
+                "doctype": ps.get("doctype"),
+                "fieldname": ps.get("fieldname"),
+                "property": ps.get("property"),
+            },
+        )
+
+        frappe.clear_cache(doctype=ps.get("doctype"))

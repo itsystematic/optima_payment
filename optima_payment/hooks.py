@@ -109,7 +109,7 @@ after_migrate = "optima_payment.migrate.after_migrate"
 # Uninstallation
 # ------------
 
-# before_uninstall = "optima_payment.uninstall.before_uninstall"
+before_uninstall = "optima_payment.uninstall.before_uninstall"
 # after_uninstall = "optima_payment.uninstall.after_uninstall"
 
 boot_session = "optima_payment.startup.boot.add_optima_payment_setting"
