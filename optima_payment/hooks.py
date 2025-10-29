@@ -102,7 +102,7 @@ jinja = {
 # ------------
 
 # before_install = "optima_payment.install.before_install"
-# after_install = "optima_payment.install.after_install"
+after_install = "optima_payment.install.after_install"
 
 after_migrate = "optima_payment.migrate.after_migrate"
 
