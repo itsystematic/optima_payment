@@ -120,7 +120,7 @@ boot_session = "optima_payment.startup.boot.add_optima_payment_setting"
 # Name of the app being installed is passed as an argument
 
 # before_app_install = "optima_payment.utils.before_app_install"
-after_app_install = "optima_payment.install.after_app_install"
+# after_app_install = "optima_payment.install.after_app_install"
 
 # Integration Cleanup
 # -------------------

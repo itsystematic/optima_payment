@@ -1,13 +1,10 @@
 import frappe
 from click import secho
 from frappe.custom.doctype.property_setter.property_setter import delete_property_setter
-from optima_payment.app_setup import get_custom_fields, get_property_setter
+from optima_payment.setup import get_custom_fields, get_property_setter
 
 
-def after_app_uninstall(app_name):
-    if app_name != "optima_payment":
-        return
-    
+def before_uninstall():    
     try:
         secho("Step 1: Removing custom fields...", fg="blue")
         delete_custom_fields(get_custom_fields())

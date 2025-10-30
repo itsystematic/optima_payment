@@ -9,7 +9,6 @@ import click
 from os import listdir
 
 from optima_payment import if_hrms_app_installed
-from optima_payment.setup import get_custom_fields, get_property_setter
 
 MAIN_ORDER_FIELDS = [
     "type_of_payment",
