@@ -1056,7 +1056,7 @@ def get_property_setter():
             "doctype_or_field": "DocField",
         },
         {
-            "doctype:": "Bank Guarantee",
+            "doctype": "Bank Guarantee",
             "property": "hidden",
             "fieldname": "bank_account_no",
             "property_type": "Data",
@@ -1064,7 +1064,7 @@ def get_property_setter():
             "doctype_or_field": "DocField",
         },
         {
-            "doctype:": "Bank Guarantee",
+            "doctype": "Bank Guarantee",
             "property": "hidden",
             "fieldname": "iban",
             "property_type": "Data",
@@ -1072,7 +1072,7 @@ def get_property_setter():
             "doctype_or_field": "DocField",
         },
         {
-            "doctype:": "Bank Guarantee",
+            "doctype": "Bank Guarantee",
             "property": "hidden",
             "fieldname": "branch_code",
             "property_type": "Data",
@@ -1080,7 +1080,7 @@ def get_property_setter():
             "doctype_or_field": "DocField",
         },
         {
-            "doctype:": "Bank Guarantee",
+            "doctype": "Bank Guarantee",
             "property": "hidden",
             "fieldname": "swift_number",
             "property_type": "Data",

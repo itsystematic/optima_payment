@@ -44,13 +44,12 @@ class CustomPaymentEntry(PAYMENTENTRY):
     def on_submit(self):
         if self.difference_amount and self.get("multi_expense") == 0:
             frappe.throw(_("Difference Amount must be zero"))
-        self.make_gl_entries()
-
-        self.update_outstanding_amounts()
-        self.update_advance_paid()
+        self.update_payment_requests()
         self.update_payment_schedule()
+        self.make_gl_entries()
+        self.update_outstanding_amounts()
         self.set_status()
-
+        
     # def build_gl_map(self):
     #     if self.payment_type in ("Receive", "Pay") and not self.get("party_account_field"):
     #         self.setup_party_account_field()
