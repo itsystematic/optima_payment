@@ -189,16 +189,15 @@ def prepare_setup() -> None:
     click.secho("Step 1: Installing standard data...", fg="blue")
     add_standard_data()
     
-    # Step 2: Add property setters
-    click.secho("Step 2: Adding property setters...", fg="blue")
+    # Step 2: Create custom fields with error handling
+    click.secho("Step 2: Creating custom fields...", fg="blue")
+    create_custom_fields_safely()
+
+    # Step 3: Add property setters
+    click.secho("Step 3: Adding property setters...", fg="blue")
     add_additional_property_setter()
     
-    # Step 3: Create custom fields with error handling
-    click.secho("Step 3: Creating custom fields...", fg="blue")
-    create_custom_fields_safely()
-    
-    click.secho("Data Restored Successfully", fg="green")
-
+   
 
 
 
@@ -963,6 +962,14 @@ def get_property_setter():
         },
         {
             "doctype": "Bank Guarantee",
+            "property": "default",
+            "property_type": "Data",
+            "fieldname": "reference_doctype",
+            "value": "",  # Clear the default first
+            "doctype_or_field": "DocField",
+        },
+        {
+            "doctype": "Bank Guarantee",
             "property": "fieldtype",
             "property_type": "Data",
             "fieldname": "reference_doctype",
@@ -975,6 +982,14 @@ def get_property_setter():
             "property_type": "Data",
             "fieldname": "reference_doctype",
             "value": "Sales Order\nPurchase Invoice\nPurchase Order",
+            "doctype_or_field": "DocField",
+        },
+        {
+            "doctype": "Bank Guarantee",
+            "property": "default",
+            "property_type": "Data",
+            "fieldname": "reference_doctype",
+            "value": "Sales Order",  # Or leave empty: ""
             "doctype_or_field": "DocField",
         },
         {
