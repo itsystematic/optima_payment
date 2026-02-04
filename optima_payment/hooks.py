@@ -102,14 +102,14 @@ jinja = {
 # ------------
 
 # before_install = "optima_payment.install.before_install"
-# after_install = "optima_payment.install.after_install"
+after_install = "optima_payment.install.after_install"
 
 after_migrate = "optima_payment.migrate.after_migrate"
 
 # Uninstallation
 # ------------
 
-# before_uninstall = "optima_payment.uninstall.before_uninstall"
+before_uninstall = "optima_payment.uninstall.before_uninstall"
 # after_uninstall = "optima_payment.uninstall.after_uninstall"
 
 boot_session = "optima_payment.startup.boot.add_optima_payment_setting"
@@ -120,7 +120,7 @@ boot_session = "optima_payment.startup.boot.add_optima_payment_setting"
 # Name of the app being installed is passed as an argument
 
 # before_app_install = "optima_payment.utils.before_app_install"
-after_app_install = "optima_payment.install.after_app_install"
+# after_app_install = "optima_payment.install.after_app_install"
 
 # Integration Cleanup
 # -------------------

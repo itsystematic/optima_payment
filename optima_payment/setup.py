@@ -1,6 +1,13 @@
-# create custom fields for mode of payment and payment entry in optima payment
-# create property setter for payment entry in optima payment
+import frappe
+from frappe import get_app_path
+from frappe import make_property_setter
+from frappe.core.doctype.data_import.data_import import import_doc
+from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
+
 import json
+import click
+from os import listdir
+
 from optima_payment import if_hrms_app_installed
 
 MAIN_ORDER_FIELDS = [
@@ -174,7 +181,143 @@ BANK_GUARANTEE_FIELDS_ORDER = [
     "more_information"
 ]
 
-def get_custom_fields():
+
+
+def prepare_setup() -> None:
+    """ Function To Setting up Optima Payment Customizations """
+    # Step 1: Import standard data first (DocTypes, etc.)
+    click.secho("Step 1: Installing standard data...", fg="blue")
+    add_standard_data()
+    
+    # Step 2: Create custom fields with error handling
+    click.secho("Step 2: Creating custom fields...", fg="blue")
+    create_custom_fields_safely()
+
+    # Step 3: Add property setters
+    click.secho("Step 3: Adding property setters...", fg="blue")
+    add_additional_property_setter()
+    
+   
+
+
+
+def create_custom_fields_safely():
+    """Create custom fields with proper error handling"""
+    try:
+        custom_fields = get_custom_fields()
+        
+        if not custom_fields:
+            click.secho("No custom fields to create", fg="yellow")
+            return
+            
+        # Validate custom fields data structure
+        validated_fields = validate_custom_fields_data(custom_fields)
+        
+        if validated_fields:
+            create_custom_fields(validated_fields, update=True)
+            click.secho(f"Successfully created custom fields for {len(validated_fields)} DocTypes", fg="green")
+        else:
+            click.secho("No valid custom fields found after validation", fg="yellow")
+            
+    except Exception as e:
+        click.secho(f"Error creating custom fields: {str(e)}", fg="red")
+        frappe.log_error(f"Custom fields creation error: {str(e)}")
+
+
+def validate_custom_fields_data(custom_fields):
+    """Validate custom fields data and filter out problematic entries"""
+    validated_fields = {}
+    
+    for doctype, fields in custom_fields.items():
+        if not doctype or not fields:
+            click.secho(f"Skipping invalid DocType: {doctype}", fg="yellow")
+            continue
+            
+        valid_fields = []
+        for field in fields:
+            if not field or not isinstance(field, dict):
+                click.secho(f"Skipping invalid field in {doctype}: {field}", fg="yellow")
+                continue
+                
+            # Check required field properties
+            if not field.get('fieldname') or not field.get('fieldtype'):
+                click.secho(f"Skipping field with missing required properties in {doctype}: {field}", fg="yellow")
+                continue
+                
+            # Check if custom field already exists
+            existing = frappe.db.exists("Custom Field", {
+                "dt": doctype,
+                "fieldname": field.get("fieldname")
+            })
+            
+            if existing:
+                click.secho(f"Custom field already exists: {doctype}-{field.get('fieldname')}", fg="yellow")
+                # Skip or update existing field
+                continue
+                
+            valid_fields.append(field)
+            
+        if valid_fields:
+            validated_fields[doctype] = valid_fields
+            
+    return validated_fields
+
+
+def add_standard_data():
+    """Import standard data files with error handling"""
+    try:
+        files_path = get_app_path("optima_payment", "files")
+        if not frappe.os.path.exists(files_path):
+            click.secho("Files directory not found, skipping data import", fg="yellow")
+            return
+            
+        all_files_in_folders = listdir(files_path)[::-1]
+        click.secho("Install DocTypes From Files => {}".format(", ".join(all_files_in_folders)), fg="blue")
+        
+        for file in all_files_in_folders:
+            try:
+                file_path = get_app_path("optima_payment", f"files/{file}")
+                import_doc(file_path)
+                click.secho(f"Successfully imported: {file}", fg="green")
+            except Exception as e:
+                click.secho(f"Error importing {file}: {str(e)}", fg="red")
+                frappe.log_error(f"Data import error for {file}: {str(e)}")
+                continue
+                
+    except Exception as e:
+        click.secho(f"Error in add_standard_data: {str(e)}", fg="red")
+        frappe.log_error(f"Standard data installation error: {str(e)}")
+
+
+def add_additional_property_setter():
+    """Add property setters with error handling"""
+    try:
+        property_setter = get_property_setter()
+        if not property_setter:
+            click.secho("No property setters to create", fg="yellow")
+            return
+            
+        for ps in property_setter:
+            try:
+                if not ps or not isinstance(ps, dict):
+                    click.secho(f"Skipping invalid property setter: {ps}", fg="yellow")
+                    continue
+                    
+                make_property_setter(ps)
+                click.secho(f"Created property setter for: {ps.get('doctype', 'Unknown')}", fg="green")
+                
+            except Exception as e:
+                click.secho(f"Error creating property setter {ps}: {str(e)}", fg="red")
+                frappe.log_error(f"Property setter error: {str(e)}")
+                continue
+                
+    except Exception as e:
+        click.secho(f"Error in add_additional_property_setter: {str(e)}", fg="red")
+        frappe.log_error(f"Property setter installation error: {str(e)}")
+
+
+def get_custom_fields() -> dict[str, list[dict]]:
+    """Return custom fields related to Optima Payment to be created in the system"""
     custom_fields = {
         "Mode of Payment": [
             {
@@ -250,15 +393,6 @@ def get_custom_fields():
                 "read_only": 1,
                 "no_copy": 1,
             },
-            # {
-            #     "fieldname": "pay_mode_of_payment",
-            #     "fieldtype": "Link",
-            #     "options": "Mode of Payment",
-            #     "insert_after": "cheque_status",
-            #     "label": "Pay Mode of Payment",
-            #     "read_only": 1,
-            #     "no_copy": 1,
-            # },
             {
                 "fieldname": "bank_fees_amount",
                 "fieldtype": "Currency",
@@ -267,16 +401,6 @@ def get_custom_fields():
                 "read_only": 1,
                 "no_copy": 1,
             },
-            # {
-            #     "fieldname": "against_payment_entry",
-            #     "fieldtype": "Link",
-            #     "options": "Payment Entry",
-            #     "insert_after": "bank_fees_amount",
-            #     "label": "Endorsed Cheque",
-            #     "read_only": 1,
-            #     "no_copy": 1,
-            # },
-            # # --FH
             {
                 "fieldname": "multi_expense",
                 "fieldtype": "Check",
@@ -324,11 +448,9 @@ def get_custom_fields():
                 "read_only": 1,
                 #  "precision": "",
             },
-            #  END --FH
         ],
 
         "Bank": [
-            # --WS
             {
                 "label": "Print Formats",
                 "fieldname": "bank_formats",
@@ -469,7 +591,6 @@ def get_custom_fields():
                 "label": "Cost Center",
                 "insert_after": "project",
                 "options": "Cost Center",
-                "reqd": 1,
             },
             {
                 "fieldname": "bank_guarantee_account",
@@ -499,12 +620,6 @@ def get_custom_fields():
                 "label": "",
                 "insert_after": "Bank Guarantee",
             },
-            # {
-            #     "fieldname": "column_break_123",
-            #     "fieldtype": "Column Break",
-            #     "label": "",
-            #     "insert_after": "Name of Beneficiary",
-            # },
             {
                 "fieldname": "column_break_1230",
                 "fieldtype": "Column Break",
@@ -656,6 +771,8 @@ def get_custom_fields():
                 "options": "\nBank Guarantee\nCheque\nCash\nDeduction",
                 "default": "Bank Guarantee",
                 "read_only": 1,
+                "hidden": 1
+
             },
             {
                 "fieldname": "bank_guarantee_percent",
@@ -702,22 +819,6 @@ def add_hrms_fields(custom_fields: dict) -> None:
 def get_property_setter():
 
     property_setter = [
-        # {
-        #     "doctype": "Payment Entry",
-        #     "property": "search_fields",
-        #     "fieldname": "",
-        #     "value": "reference_no",
-        #     "property_type": "Data",
-        #     "for_doctype": True,
-        #     "validate_fields_for_doctype": False,
-        # },
-        # {
-        #     "doctype": "Payment Entry",
-        #     "property": "reqd",
-        #     "fieldname": "cost_center",
-        #     "value": 0,
-        #     "property_type": "Check",
-        # },
         {
             "doctype": "Payment Entry",
             "property": "depends_on",
@@ -861,10 +962,10 @@ def get_property_setter():
         },
         {
             "doctype": "Bank Guarantee",
-            "property": "options",
+            "property": "default",
             "property_type": "Data",
             "fieldname": "reference_doctype",
-            "value": "Sales Order\nPurchase Invoice\nPurchase Order",
+            "value": "",  # Clear the default first
             "doctype_or_field": "DocField",
         },
         {
@@ -873,6 +974,22 @@ def get_property_setter():
             "property_type": "Data",
             "fieldname": "reference_doctype",
             "value": "Select",
+            "doctype_or_field": "DocField",
+        },
+        {
+            "doctype": "Bank Guarantee",
+            "property": "options",
+            "property_type": "Data",
+            "fieldname": "reference_doctype",
+            "value": "Sales Order\nPurchase Invoice\nPurchase Order",
+            "doctype_or_field": "DocField",
+        },
+        {
+            "doctype": "Bank Guarantee",
+            "property": "default",
+            "property_type": "Data",
+            "fieldname": "reference_doctype",
+            "value": "Sales Order",  # Or leave empty: ""
             "doctype_or_field": "DocField",
         },
         {
@@ -973,14 +1090,6 @@ def get_property_setter():
         {
             "doctype": "Bank Guarantee",
             "fieldname": "bg_type",
-            "property": "read_only",
-            "property_type": "Check",
-            "value": 1,
-            "doctype_or_field": "DocField",
-        },
-        {
-            "doctype": "Bank Guarantee",
-            "fieldname": "bg_type",
             "property": "fieldtype",
             "property_type": "Data",
             "value": "Select",
@@ -1004,3 +1113,41 @@ def get_property_setter():
         },
     ]
     return property_setter
+
+
+def before_uninstall()-> None:
+    """Cleanup custom fields before uninstalling the app"""
+    delete_custom_fields(get_custom_fields())
+    delete_property_setters(get_property_setter())
+
+
+def delete_custom_fields()-> None:
+    """
+    Create custom fields related to Optima Payment in the system
+    :param custom_fields: Dictionary like { "DocType": [ {field1}, {field2} ] }
+    """
+    for doctype, fields in get_custom_fields().items():
+        frappe.db.delete(
+            "Custom Field",
+            {
+                "dt": doctype,
+                "fieldname": ["in", [field.get("fieldname") for field in fields]],
+            },
+        )
+        
+        frappe.clear_cache(doctype=doctype)
+
+
+def delete_property_setters(property_setters: list[dict]) -> None:
+    """Delete property setters related to Optima Payment in the system"""
+    for ps in property_setters:
+        frappe.db.delete(
+            "Property Setter",
+            {
+                "doctype": ps.get("doctype"),
+                "fieldname": ps.get("fieldname"),
+                "property": ps.get("property"),
+            },
+        )
+
+        frappe.clear_cache(doctype=ps.get("doctype"))
