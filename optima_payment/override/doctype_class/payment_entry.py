@@ -1,5 +1,6 @@
 from erpnext.accounts.doctype.payment_entry.payment_entry import (
     get_account_details,
+    get_reference_details,
 )
 import frappe
 from frappe import _
@@ -12,6 +13,21 @@ from erpnext.accounts.general_ledger import (
 )
 from optima_payment import active_for_company
 from erpnext.accounts.utils import cancel_exchange_gain_loss_journal
+from erpnext import get_company_currency
+from erpnext.setup.utils import get_exchange_rate
+from frappe.utils import flt
+
+# Check if optima_hr is installed
+HAS_OPTIMA_HR = "optima_hr" in frappe.get_installed_apps()
+
+if "hrms" in frappe.get_installed_apps():
+    try:
+        from hrms.overrides.employee_payment_entry import get_reference_details_for_employee
+        HAS_HRMS = True
+    except ImportError:
+        HAS_HRMS = False
+else:
+    HAS_HRMS = False
 
 # def get_custom_class() -> type:
 #     """
@@ -37,6 +53,70 @@ else:
 
 
 class CustomPaymentEntry(PAYMENTENTRY):
+    # ================================================================================================
+    # OPTIMA HR INTEGRATION - Reference Doctypes Support
+    # ================================================================================================
+    # These methods add support for Optima HR custom doctypes (Leave Dues, End of Service Benefits)
+    # in Payment Entry references
+    
+    def get_valid_reference_doctypes(self):
+        """Extended reference doctypes including optima_hr doctypes if installed"""
+        if self.party_type == "Customer":
+            return ("Sales Order", "Sales Invoice", "Journal Entry", "Dunning", "Payment Entry")
+        elif self.party_type == "Supplier":
+            return ("Purchase Order", "Purchase Invoice", "Journal Entry", "Payment Entry")
+        elif self.party_type == "Shareholder":
+            return ("Journal Entry",)
+        elif self.party_type == "Employee":
+            if HAS_OPTIMA_HR:
+                return ("Expense Claim", "Journal Entry", "Employee Advance", "Gratuity", "Leave Dues", "End of Service Benefits")
+            else:
+                return ("Expense Claim", "Journal Entry", "Employee Advance", "Gratuity")
+    
+    def set_missing_ref_details(
+        self,
+        force: bool = False,
+        update_ref_details_only_for: list | None = None,
+        reference_exchange_details: dict | None = None,
+    ) -> None:
+        """Override to support optima_hr reference doctypes"""
+        for d in self.get("references"):
+            if d.allocated_amount:
+                if update_ref_details_only_for and (
+                    (d.reference_doctype, d.reference_name) not in update_ref_details_only_for
+                ):
+                    continue
+
+                ref_details = get_payment_reference_details(
+                    d.reference_doctype,
+                    d.reference_name,
+                    self.party_account_currency,
+                    self.party_type,
+                    self.party,
+                )
+
+                # Only update exchange rate when the reference is Journal Entry
+                if (
+                    reference_exchange_details
+                    and d.reference_doctype == reference_exchange_details.reference_doctype
+                    and d.reference_name == reference_exchange_details.reference_name
+                ):
+                    ref_details.update({"exchange_rate": reference_exchange_details.exchange_rate})
+
+                for field, value in ref_details.items():
+                    if d.exchange_gain_loss:
+                        continue
+
+                    if field == "exchange_rate" or not d.get(field) or force:
+                        if self.get("_action") in ("submit", "cancel"):
+                            d.db_set(field, value)
+                        else:
+                            d.set(field, value)
+    
+    # ================================================================================================
+    # CORE VALIDATION AND SUBMISSION
+    # ================================================================================================
+    
     def validate(self):
         super().validate()
         self.validate_company_expenses()
@@ -51,20 +131,10 @@ class CustomPaymentEntry(PAYMENTENTRY):
         self.update_payment_schedule()
         self.set_status()
 
-    # def build_gl_map(self):
-    #     if self.payment_type in ("Receive", "Pay") and not self.get("party_account_field"):
-    #         self.setup_party_account_field()
-
-    #     gl_entries = []
-    #     self.add_party_gl_entries(gl_entries)
-    #     self.add_bank_gl_entries(gl_entries)
-    #     self.add_deductions_gl_entries(gl_entries)
-    #     self.add_tax_gl_entries(gl_entries)
-    #     add_regional_gl_entries(gl_entries, self)
-
-    #     return gl_entries
-
-    # @active_for_company
+    # ================================================================================================
+    # GL ENTRIES - Party and Bank Accounts
+    # ================================================================================================
+    
     def add_party_gl_entries(self, gl_entries):
         if not self.party_account:
             return
@@ -193,7 +263,11 @@ class CustomPaymentEntry(PAYMENTENTRY):
 
         gl_entries.append(self.get_gl_dict(gl_entry, item=self))
 
-    # --------------------------------- Multi Expense Logic ---------------------------------
+    # ================================================================================================
+    # MULTI EXPENSE LOGIC
+    # ================================================================================================
+    # Support for multi-expense payment entries where party is not required
+    
     def validate_company_expenses(self):
         if self.get("multi_expense") == 1:
             self.flags.ignore_mandatory = True
@@ -210,11 +284,12 @@ class CustomPaymentEntry(PAYMENTENTRY):
                 self.set(field, None)
             self.references = []
         else:
-            if self.get("multi_expense") == 0:
+            # Only validate party if NOT multi_expense
+            if not self.get("multi_expense"):
                 if not self.party_type:
                     frappe.throw(_("Party Type is mandatory"))
 
-                if not self.party and self.get("multi_expense") == 0:
+                if not self.party:
                     frappe.throw(_("Party is mandatory"))
 
                 _party_name = (
@@ -322,7 +397,75 @@ class CustomPaymentEntry(PAYMENTENTRY):
         self.make_advance_gl_entries(cancel=cancel)
 
 
+# ====================================================================================================
+# OPTIMA HR INTEGRATION - Helper Functions
+# ====================================================================================================
+# These functions provide support for Optima HR custom doctypes in Payment Entry references
+# - Leave Dues: Employee leave encashment/settlement
+# - End of Service Benefits: Employee gratuity and end of service calculations
+
+@frappe.whitelist()
+def get_payment_reference_details(
+    reference_doctype, reference_name, party_account_currency, party_type=None, party=None
+):
+    """Get reference details supporting optima_hr doctypes"""
+    if HAS_HRMS and reference_doctype in ("Expense Claim", "Employee Advance", "Gratuity"):
+        return get_reference_details_for_employee(reference_doctype, reference_name, party_account_currency)
+    elif HAS_OPTIMA_HR and reference_doctype in ("Leave Dues", "End of Service Benefits"):
+        return get_reference_details_for_optima(reference_doctype, reference_name, party_account_currency)
+    else:
+        return get_reference_details(
+            reference_doctype, reference_name, party_account_currency, party_type, party
+        )
+
+
+def get_reference_details_for_optima(reference_doctype, reference_name, party_account_currency):
+    """Get reference details for optima_hr doctypes"""
+    total_amount = outstanding_amount = exchange_rate = None
+    ref_doc = frappe.get_doc(reference_doctype, reference_name)
+    company_currency = ref_doc.get("company_currency") or get_company_currency(ref_doc.company)
+    total_amount, exchange_rate = get_total_amount_and_exchange_rate(
+        ref_doc, party_account_currency, company_currency
+    )
+
+    if reference_doctype == "Leave Dues":
+        outstanding_amount = flt(ref_doc.total_dues_amount) - flt(ref_doc.paid_amount)
+    elif reference_doctype == "End of Service Benefits":
+        outstanding_amount = flt(ref_doc.final_result) - flt(ref_doc.paid_amount)
+
+    return frappe._dict(
+        {
+            "due_date": ref_doc.get("posting_date"),
+            "total_amount": flt(total_amount),
+            "outstanding_amount": flt(outstanding_amount),
+            "exchange_rate": flt(exchange_rate),
+        }
+    )
+
+
+def get_total_amount_and_exchange_rate(ref_doc, party_account_currency, company_currency):
+    """Get total amount and exchange rate for optima_hr doctypes"""
+    total_amount = exchange_rate = None
+
+    if ref_doc.doctype == "Leave Dues":
+        total_amount = ref_doc.total_dues_amount
+    elif ref_doc.doctype == "End of Service Benefits":
+        total_amount = ref_doc.final_result
+
+    if not exchange_rate:
+        # Get the exchange rate from the original ref doc
+        # or get it based on the posting date of the ref doc.
+        exchange_rate = ref_doc.get("conversion_rate") or get_exchange_rate(
+            party_account_currency, company_currency, ref_doc.posting_date
+        )
+
+    return total_amount, exchange_rate
+
+
+# ====================================================================================================
+# REGIONAL CUSTOMIZATIONS
+# ====================================================================================================
+
 @erpnext.allow_regional
 def add_regional_gl_entries(gl_entries, doc):
-
     return
