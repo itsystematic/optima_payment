@@ -129,29 +129,11 @@ class CustomPaymentEntry(PAYMENTENTRY):
         self.make_gl_entries()
         self.update_outstanding_amounts()
         self.set_status()
-<<<<<<< HEAD
 
     # ================================================================================================
     # GL ENTRIES - Party and Bank Accounts
     # ================================================================================================
     
-=======
-        
-    # def build_gl_map(self):
-    #     if self.payment_type in ("Receive", "Pay") and not self.get("party_account_field"):
-    #         self.setup_party_account_field()
-
-    #     gl_entries = []
-    #     self.add_party_gl_entries(gl_entries)
-    #     self.add_bank_gl_entries(gl_entries)
-    #     self.add_deductions_gl_entries(gl_entries)
-    #     self.add_tax_gl_entries(gl_entries)
-    #     add_regional_gl_entries(gl_entries, self)
-
-    #     return gl_entries
-
-    # @active_for_company
->>>>>>> 25230c59e503633fd9c32b0db893d6c961dfbe2f
     def add_party_gl_entries(self, gl_entries):
         if not self.party_account:
             return
