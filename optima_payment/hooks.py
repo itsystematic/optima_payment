@@ -156,7 +156,6 @@ after_app_uninstall = "optima_payment.uninstall.after_app_uninstall"
 # 	"ToDo": "custom_app.overrides.CustomToDo"
 # }
 override_doctype_class = {
-	"Expense Claim": "optima_payment.override.doctype_class.expense_claim.CustomExpenseClaim", # --AM
     "Payment Entry": "optima_payment.override.doctype_class.payment_entry.CustomPaymentEntry", # --FH
     "Bank Guarantee": "optima_payment.override.doctype_class.bank_guarantee.CustomBankGuarantee",
 }
