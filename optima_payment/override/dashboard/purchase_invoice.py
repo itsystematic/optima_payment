@@ -25,11 +25,5 @@ def get_data(data=None):
             },
             {"label": _("Returns"), "items": ["Purchase Invoice"]},
             {"label": _("Subscription"), "items": ["Auto Repeat"]},
-            {
-                "label": _("Expense Claim"),
-                "items": [
-                    _("Expense Claim"),
-                ]
-            }
         ],
     }
