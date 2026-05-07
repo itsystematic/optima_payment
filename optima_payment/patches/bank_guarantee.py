@@ -26,7 +26,7 @@ def get_custom_fields():
         "Letter Head": [
             {
                 "fieldname": "customer",
-                "fielndtype": "Link",
+                "fieldtype": "Link",
                 "label": "Customer",
                 "insert_after": "reference_docname",
                 "options": "Customer",
@@ -34,7 +34,7 @@ def get_custom_fields():
             },
             {
                 "fieldname": "supplier",
-                "fielndtype": "Link",
+                "fieldtype": "Link",
                 "label": "Supplier",
                 "insert_after": "customer",
                 "options": "Supplier",

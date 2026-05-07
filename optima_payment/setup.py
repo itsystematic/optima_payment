@@ -2,7 +2,6 @@ import frappe
 from frappe import get_app_path
 from frappe import make_property_setter
 from frappe.core.doctype.data_import.data_import import import_doc
-from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
 import json
 import click
@@ -225,7 +224,16 @@ def _run_setup_steps(steps, section_label=None) -> None:
         try:
             step_fn()
         except Exception as error:
-            frappe.db.rollback(save_point=savepoint)
+            try:
+                frappe.db.rollback(save_point=savepoint)
+            except Exception as rollback_error:
+                frappe.log_error(
+                    title="Optima Payment setup rollback failed",
+                    message=(
+                        f"Failed to rollback savepoint {savepoint} while handling "
+                        f"{step_label}: {_describe_exception(rollback_error)}"
+                    ),
+                )
             raise SetupStepError(section_label or "Optima Payment setup", step_label, error) from error
 
 
@@ -323,7 +331,7 @@ def create_custom_fields_safely(custom_fields=None):
     validated_fields = validate_custom_fields_data(custom_fields)
 
     if validated_fields:
-        create_custom_fields(validated_fields, update=True)
+        upsert_custom_fields(validated_fields)
         click.secho(f"Successfully created custom fields for {len(validated_fields)} DocTypes", fg="green")
         return
 
@@ -376,6 +384,53 @@ def validate_custom_fields_data(custom_fields):
             validated_fields[doctype] = valid_fields
             
     return validated_fields
+
+
+def upsert_custom_fields(custom_fields: dict[str, list[dict]]) -> None:
+    for doctype, fields in custom_fields.items():
+        for field in fields:
+            upsert_custom_field(doctype, field)
+
+
+def upsert_custom_field(doctype: str, field: dict) -> None:
+    existing_field = frappe.db.get_value(
+        "Custom Field",
+        {"dt": doctype, "fieldname": field.get("fieldname")},
+        ["name", "fieldtype"],
+        as_dict=True,
+    )
+    target_fieldtype = field.get("fieldtype")
+
+    if existing_field and existing_field.fieldtype != target_fieldtype:
+        frappe.delete_doc("Custom Field", existing_field.name, force=True)
+        frappe.clear_cache(doctype=doctype)
+        click.secho(
+            f"Recreated conflicting custom field {doctype}.{field.get('fieldname')} "
+            f"({existing_field.fieldtype} -> {target_fieldtype})",
+            fg="yellow",
+        )
+        existing_field = None
+
+    if existing_field:
+        custom_field = frappe.get_doc("Custom Field", existing_field.name)
+        updates = {}
+        for key, value in field.items():
+            if custom_field.get(key) != value:
+                updates[key] = value
+
+        if updates:
+            frappe.db.set_value("Custom Field", existing_field.name, updates, update_modified=False)
+            frappe.clear_cache(doctype=doctype)
+        return
+
+    custom_field = frappe.get_doc(
+        {
+            "doctype": "Custom Field",
+            "dt": doctype,
+            **field,
+        }
+    )
+    custom_field.insert(ignore_permissions=True)
 
 
 def add_standard_data():
@@ -471,7 +526,7 @@ def upsert_property_setter(property_setter: dict) -> str:
         return "created"
 
     property_setter_doc = frappe.get_doc("Property Setter", primary_name)
-    updated = False
+    updates = {}
     field_mapping = {
         "doctype_or_field": "doctype_or_field",
         "fieldname": "field_name",
@@ -483,13 +538,11 @@ def upsert_property_setter(property_setter: dict) -> str:
     for source_key, target_key in field_mapping.items():
         new_value = normalized_property_setter.get(source_key)
         if property_setter_doc.get(target_key) != new_value:
-            property_setter_doc.set(target_key, new_value)
-            updated = True
+            updates[target_key] = new_value
 
-    if updated:
-        property_setter_doc.flags.ignore_validate = True
-        property_setter_doc.flags.validate_fields_for_doctype = False
-        property_setter_doc.save(ignore_permissions=True)
+    if updates:
+        frappe.db.set_value("Property Setter", primary_name, updates, update_modified=False)
+        frappe.clear_cache(doctype=normalized_property_setter.get("doctype"))
         return "updated"
 
     return "verified"
@@ -686,7 +739,7 @@ def get_banking_custom_fields() -> dict[str, list[dict]]:
             },
             {
                 "fieldname": "customer",
-                "fielndtype": "Link",
+                "fieldtype": "Link",
                 "label": "Customer",
                 "insert_after": "reference_docname",
                 "options": "Customer",
@@ -694,7 +747,7 @@ def get_banking_custom_fields() -> dict[str, list[dict]]:
             },
             {
                 "fieldname": "supplier",
-                "fielndtype": "Link",
+                "fieldtype": "Link",
                 "label": "Supplier",
                 "insert_after": "customer",
                 "options": "Supplier",
