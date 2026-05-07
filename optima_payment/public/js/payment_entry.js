@@ -162,12 +162,14 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends (
             "is_endorsed_cheque": {
                 hidden:
                     me.frm.doc.payment_type == "Receive" ||
-                    (me.frm.doc.payment_type == "Pay" && me.mode_of_payment_doc.type != "Cheque") ||
-                    me.mode_of_payment_doc.receivable_cheque == 1 ||
+                    (me.frm.doc.payment_type == "Pay" &&
+                        me.frm.doc.mode_of_payment &&
+                        me.mode_of_payment_doc.type != "Cheque") ||
+                    me.mode_of_payment_doc.is_receivable_cheque == 1 ||
                     me.frm.doc.multi_expense == 1,
             },
             "multi_expense": {
-                hidden: me.mode_of_payment_doc.type != "Cheque" ? 0 : 1,
+                hidden: me.frm.doc.is_endorsed_cheque == 1,
             },
             "payee_name": {
                 read_only: me.frm.doc.is_endorsed_cheque ,
