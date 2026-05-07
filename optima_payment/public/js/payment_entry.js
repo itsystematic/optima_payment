@@ -7,6 +7,8 @@ const LEGACY_PAYMENT_ENTRY_FIELDS = [
     "custom_total_amount",
 ];
 
+const OPTIMA_PAYMENT_TOGGLE_FIELDS = ["is_endorsed_cheque", "multi_expense"];
+
 const set_company_expense_totals = (frm) => {
     let total = 0;
     (frm.doc.company_expense || []).forEach((row) => {
@@ -46,6 +48,14 @@ const hide_legacy_cheque_fields = (frm) => {
     LEGACY_PAYMENT_ENTRY_FIELDS.forEach((fieldname) => {
         if (frm.meta?.fields?.some((field) => field.fieldname === fieldname)) {
             frm.set_df_property(fieldname, "hidden", 1);
+        }
+    });
+};
+
+const set_optima_payment_fields_hidden = (frm, hidden) => {
+    OPTIMA_PAYMENT_TOGGLE_FIELDS.forEach((fieldname) => {
+        if (frm.fields_dict?.[fieldname]) {
+            frm.set_df_property(fieldname, "hidden", hidden ? 1 : 0);
         }
     });
 };
@@ -125,6 +135,15 @@ const set_dynamic_labels_safely = (frm) => {
     reference_grid.refresh();
 };
 
+const ensure_optima_payment_controller = (frm) => {
+    if (!frm.__optima_payment_controller) {
+        frm.__optima_payment_controller = new optima_payment.PaymentEntryController({ frm });
+        extend_cscript(frm.cscript, frm.__optima_payment_controller);
+    }
+
+    return frm.__optima_payment_controller;
+};
+
 optima_payment.PaymentEntryController = class PaymentEntryController extends (
     frappe.ui.form.Controller
 ) {
@@ -132,7 +151,6 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends (
         super(opts);
         this.mode_of_payment_doc = {};
     }
-
     refresh() {
         this.add_cheques_buttons() ;
         this.setup_query_filters() ;
@@ -241,7 +259,6 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends (
                 receivable_cheque: "",
                 is_endorsed_cheque: 0,
             });
-            
             this.multi_expense();
         }
     }
@@ -798,12 +815,25 @@ frappe.ui.form.on("Payment Entry", {
             set_dynamic_labels_safely(target_frm || frm);
         };
         hide_legacy_cheque_fields(frm);
+        set_optima_payment_fields_hidden(frm, true);
+        ensure_optima_payment_controller(frm);
     },
     refresh(frm) {
         hide_legacy_cheque_fields(frm);
+        if (frm.doc.company && !frm.__optima_payment_company_state_loaded) {
+            frm.trigger("company");
+        }
     },
     company(frm) {
         hide_legacy_cheque_fields(frm);
+        frm.__optima_payment_company_state_loaded = true;
+
+        if (!frm.doc.company) {
+            frm.__optima_payment_enabled = false;
+            set_optima_payment_fields_hidden(frm, true);
+            return;
+        }
+
         if (frm.doc.company) {
             frappe.call({
                 method: "optima_payment.cheque.api.get_company_settings",
@@ -812,24 +842,19 @@ frappe.ui.form.on("Payment Entry", {
                 },
                 callback: (r) => {
                     if (r.message && r.message.enable_optima_payment) {
-                        const fieldsToShow = ["is_endorsed_cheque", "multi_expense"];
-                        fieldsToShow.forEach((field) => {
-                            cur_frm.set_df_property(field, "hidden", 0);
-                        });
-                        if (!cur_frm.cscript["optima_payment.cheque.api.endorsed_cheque"]) {
-                            extend_cscript(
-                                cur_frm.cscript,
-                                new optima_payment.PaymentEntryController({ frm: cur_frm })
-                            );
-                        }
+                        frm.__optima_payment_enabled = true;
+                        set_optima_payment_fields_hidden(frm, false);
+
+                        const controller = ensure_optima_payment_controller(frm);
+                        frappe.run_serially([
+                            () => controller.get_mode_of_payment_options(),
+                            () => controller.handle_fields(),
+                            () => controller.setup_query_filters(),
+                            () => controller.add_default_payee_name(),
+                        ]);
                     } else {
-                        const fieldsToHide = ["is_endorsed_cheque", "multi_expense"];
-                        fieldsToHide.forEach((field) => {
-                            cur_frm.set_df_property(field, "hidden", 1);
-                        });
-                        cur_frm.set_df_property();
-                        cur_frm.cscript = {};
-                        cur_frm.refresh();
+                        frm.__optima_payment_enabled = false;
+                        set_optima_payment_fields_hidden(frm, true);
                     }
                 },
             });
@@ -850,7 +875,4 @@ frappe.ui.form.on("Company Expense Details", {
     },
 });
 
-extend_cscript(
-    cur_frm.cscript,
-    new optima_payment.PaymentEntryController({ frm: cur_frm })
-);
+ensure_optima_payment_controller(cur_frm);
