@@ -1,11 +1,17 @@
+"""Install entrypoint for Optima Payment."""
+
+from __future__ import annotations
+
 import click
 import frappe
+
 from optima_payment.migration_artifact import import_cheque_legacy_artifact
 from optima_payment.setup import prepare_setup
 
 
 def after_install() -> None:
-    print("Starting Optima Payment installation...")
+    """Run Optima Payment setup and import any prepared legacy artifact."""
+    click.secho("Starting Optima Payment installation...", fg="blue")
     prepare_setup()
     import_cheque_legacy_artifact()
     if "cheque" in frappe.get_installed_apps():
