@@ -19,6 +19,13 @@ def before_uninstall():
         frappe.log_error(f"Optima Payment uninstallation error: {str(e)}")
 
 
+def after_app_uninstall(app_name):
+    if app_name != "optima_payment":
+        return
+
+    before_uninstall()
+
+
 def delete_custom_fields(custom_fields: dict):
     """Remove custom fields with proper error handling"""
     try:
