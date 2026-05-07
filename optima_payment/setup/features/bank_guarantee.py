@@ -1,119 +1,89 @@
+"""Bank Guarantee setup isolated from other Optima Payment domains."""
+
+from __future__ import annotations
+
 import json
-import frappe
-from frappe import make_property_setter
-from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
-def execute():
-    update_bank_guarantee()
 
 
-def update_bank_guarantee():
-    # frappe.reload_doc("custom", "doctype", "bank_guarantee", force=True)
-    custom_fields = get_custom_fields()
+BANK_GUARANTEE_FIELDS_ORDER = [
+    "recent_transaction_date",
+    "bank_guarantee_purpose",
+    "bg_type",
+    "reference_doctype",
+    "reference_docname",
+    "customer",
+    "supplier",
+    "project",
+    "company",
+    "cost_center",
+    "conditions",
+    "guarantee_type",
+    "column_break_6",
+    "posting_date",
+    "bank_guarantee_status",
+    "net_amount",
+    "tax_amount",
+    "amount",
+    "bank_guarantee_percent",
+    "bank_guarantee_amount",
+    "returned_date",
+    "start_date",
+    "validity",
+    "end_date",
+    "extend_validity",
+    "no_of_extended_days",
+    "new_end_date",
+    "bank_account_info",
+    "bank",
+    "account",
+    "bank_account_no",
+    "issue_commission",
+    "issue_commission_amount",
+    "bank_rate_",
+    "bank_amount",
+    "cheque_no",
+    "cheque_date",
+    "column_break_17",
+    "bank_account",
+    "bank_guarantee_account",
+    "iban",
+    "branch_code",
+    "swift_number",
+    "banking_facilities",
+    "bank_facilities_account",
+    "facilities_rate_",
+    "facility_amount",
+    "section_break_14",
+    "name_of_beneficiary",
+    "charges",
+    "fixed_deposit_number",
+    "margin_money",
+    "column_break_19",
+    "bank_guarantee_number",
+    "remarks",
+    "amended_from",
+    "custom_section_break_sluyu",
+    "more_information",
+]
 
-    create_custom_fields(custom_fields, update=True)
-    add_additional_property_setter()
-    
 
-
-def add_additional_property_setter():
-    property_setter = get_property_setters()
-    for ps in property_setter:
-        make_property_setter(ps)
-
-
-def get_custom_fields():
-    custom_fields = {
-        "Letter Head": [
-            {
-                "fieldname": "customer",
-                "fieldtype": "Link",
-                "label": "Customer",
-                "insert_after": "reference_docname",
-                "options": "Customer",
-                "depends_on": 'eval: doc.reference_doctype == "Sales Order"',
-            },
-            {
-                "fieldname": "supplier",
-                "fieldtype": "Link",
-                "label": "Supplier",
-                "insert_after": "customer",
-                "options": "Supplier",
-                "depends_on": 'eval: doc.reference_doctype == "Purchase Invoice"',
-            },
-        ],
-        "Bank": [
-            {
-                "fieldname": "company",
-                "label": "Company",
-                "fieldtype": "Link",
-                "options": "Company",
-                "insert_after": "website" 
-            },
-        ],
-        "Bank Account": [
-            {
-                "fieldname": "bank_guarantee_account",
-                "fieldtype": "Link",
-                "label": "Bank Guarantee Account",
-                "insert_after": "company",
-                "options": "Account",
-            },
-        ],
-        "Company": [
-            {
-                "fieldname": "default_insurance_account",
-                "fieldtype": "Link",
-                "label": "Default Insurance Account",
-                "options": "Account",
-                "insert_after": "default_bank_account",
-            },
-            {
-                "fieldname": "default_receiving_insurance_account",
-                "fieldtype": "Link",
-                "label": "Default Receiving Insurance Account",
-                "options": "Account",
-                "insert_after": "default_insurance_account",
-            },
-            {
-                "fieldname": "bank_fees_account",
-                "fieldtype": "Link",
-                "label": "Bank Fees Account",
-                "options": "Account",
-                "insert_after": "default_receiving_insurance_account",
-            },
-            {
-                "fieldname": "lost_expense_Bank_guarantee_account",
-                "fieldtype": "Link",
-                "label": "Lost Expense Bank Guarantee Account",
-                "options": "Account",
-                "insert_after": "bank_fees_account",
-            },
-        ],
-        "GL Entry": [
-            # Bank Guarantee Related Fields
-            {
-                "fieldname": "is_bank_guarantee_comission_entry",
-                "fieldtype": "Check",
-                "label": "Bank Guarantee Comission Entry",
-                "insert_after": "transaction_exchange_rate",
-                "default": 0,
-                "hidden": 1
-            }
-        ],
+def get_custom_fields() -> dict[str, list[dict]]:
+    """Return Bank Guarantee custom fields owned by Optima Payment."""
+    return {
         "Bank Guarantee": [
             {
                 "fieldname": "bank_guarantee_percent",
                 "fieldtype": "Percent",
                 "label": "Bank Guarantee Percent",
                 "reqd": 1,
-                "precision": 0
+                "precision": 0,
             },
             {
                 "fieldname": "bank_guarantee_amount",
                 "fieldtype": "Currency",
                 "label": "Bank Guarantee Amount",
                 "reqd": 1,
-                "no_copy":1,
+                "no_copy": 1,
                 "read_only": 1,
                 "depends_on": "eval: doc.bank_guarantee_percent != 0",
             },
@@ -141,7 +111,6 @@ def get_custom_fields():
                 "label": "Cost Center",
                 "insert_after": "project",
                 "options": "Cost Center",
-                "reqd": 1,
             },
             {
                 "fieldname": "bank_guarantee_account",
@@ -171,12 +140,6 @@ def get_custom_fields():
                 "label": "",
                 "insert_after": "Bank Guarantee",
             },
-            # {
-            #     "fieldname": "column_break_123",
-            #     "fieldtype": "Column Break",
-            #     "label": "",
-            #     "insert_after": "Name of Beneficiary",
-            # },
             {
                 "fieldname": "column_break_1230",
                 "fieldtype": "Column Break",
@@ -197,7 +160,7 @@ def get_custom_fields():
                 "fieldtype": "Date",
                 "label": "Cheque Date",
                 "insert_after": "Cheque No",
-                "depends_on": "eval: doc.bank_guarantee_purpose == 'Cheque'"
+                "depends_on": "eval: doc.bank_guarantee_purpose == 'Cheque'",
             },
             {
                 "fieldname": "cheque_no",
@@ -220,7 +183,7 @@ def get_custom_fields():
                 "fieldtype": "Int",
                 "label": "No of Extended Days",
                 "insert_after": "Extend Validity",
-                "depends_on": "eval:doc.extend_validity == 1"
+                "depends_on": "eval:doc.extend_validity == 1",
             },
             {
                 "fieldname": "extend_validity",
@@ -296,7 +259,7 @@ def get_custom_fields():
                 "label": "Issue Commission Amount",
                 "insert_after": "Issue Commission",
                 "depends_on": "eval:doc.issue_commission == 1",
-                "default": 0
+                "default": 0,
             },
             {
                 "fieldname": "issue_commission",
@@ -328,6 +291,7 @@ def get_custom_fields():
                 "options": "\nBank Guarantee\nCheque\nCash\nDeduction",
                 "default": "Bank Guarantee",
                 "read_only": 1,
+                "hidden": 1,
             },
             {
                 "fieldname": "bank_guarantee_percent",
@@ -338,20 +302,20 @@ def get_custom_fields():
                 "fieldname": "remarks",
                 "fieldtype": "Small Text",
                 "label": "Remarks",
-                "print_hide": 1
+                "print_hide": 1,
             },
             {
                 "fieldname": "recent_transaction_date",
                 "fieldtype": "Date",
-                "hidden": 1
-            }
-        ],
+                "hidden": 1,
+            },
+        ]
     }
 
-    return custom_fields
 
-def get_property_setters():
-    property_setter = [
+def get_property_setters() -> list[dict]:
+    """Return Bank Guarantee property setters owned by Optima Payment."""
+    return [
         {
             "doctype": "Bank Guarantee",
             "property": "field_order",
@@ -441,6 +405,14 @@ def get_property_setters():
         },
         {
             "doctype": "Bank Guarantee",
+            "property": "default",
+            "property_type": "Data",
+            "fieldname": "reference_doctype",
+            "value": "",
+            "doctype_or_field": "DocField",
+        },
+        {
+            "doctype": "Bank Guarantee",
             "property": "fieldtype",
             "property_type": "Data",
             "fieldname": "reference_doctype",
@@ -491,7 +463,7 @@ def get_property_setters():
             "property": "fetch_from",
             "fieldname": "name_of_beneficiary",
             "property_type": "Small Text",
-            "value": '.customer_name',
+            "value": ".customer_name",
             "doctype_or_field": "DocField",
         },
         {
@@ -527,7 +499,7 @@ def get_property_setters():
             "doctype_or_field": "DocField",
         },
         {
-            "doctype:": "Bank Guarantee",
+            "doctype": "Bank Guarantee",
             "property": "hidden",
             "fieldname": "bank_account_no",
             "property_type": "Data",
@@ -535,7 +507,7 @@ def get_property_setters():
             "doctype_or_field": "DocField",
         },
         {
-            "doctype:": "Bank Guarantee",
+            "doctype": "Bank Guarantee",
             "property": "hidden",
             "fieldname": "iban",
             "property_type": "Data",
@@ -543,7 +515,7 @@ def get_property_setters():
             "doctype_or_field": "DocField",
         },
         {
-            "doctype:": "Bank Guarantee",
+            "doctype": "Bank Guarantee",
             "property": "hidden",
             "fieldname": "branch_code",
             "property_type": "Data",
@@ -551,18 +523,10 @@ def get_property_setters():
             "doctype_or_field": "DocField",
         },
         {
-            "doctype:": "Bank Guarantee",
+            "doctype": "Bank Guarantee",
             "property": "hidden",
             "fieldname": "swift_number",
             "property_type": "Data",
-            "value": 1,
-            "doctype_or_field": "DocField",
-        },
-        {
-            "doctype": "Bank Guarantee",
-            "fieldname": "bg_type",
-            "property": "read_only",
-            "property_type": "Check",
             "value": 1,
             "doctype_or_field": "DocField",
         },
@@ -591,67 +555,3 @@ def get_property_setters():
             "doctype_or_field": "DocField",
         },
     ]
-    
-    return property_setter
-
-
-BANK_GUARANTEE_FIELDS_ORDER = [
-    "recent_transaction_date",
-    "bank_guarantee_purpose",
-    "bg_type",
-    "reference_doctype",
-    "reference_docname",
-    "customer",
-    "supplier",
-    "project",
-    "company",
-    "cost_center",
-    "conditions",
-    "guarantee_type",
-    "column_break_6",
-    "posting_date",
-    "bank_guarantee_status",
-    "net_amount",
-    "tax_amount",
-    "amount",
-    "bank_guarantee_percent",
-    "bank_guarantee_amount",
-    "returned_date",
-    "start_date",
-    "validity",
-    "end_date",
-    "extend_validity",
-    "no_of_extended_days",
-    "new_end_date",
-    "bank_account_info",
-    "bank",
-    "account",
-    "bank_account_no",
-    "issue_commission",
-    "issue_commission_amount",
-    "bank_rate_",
-    "bank_amount",
-    "cheque_no",
-    "cheque_date",
-    "column_break_17",
-    "bank_account",
-    "bank_guarantee_account",
-    "iban",
-    "branch_code",
-    "swift_number",
-    "banking_facilities",
-    "bank_facilities_account",
-    "facilities_rate_",
-    "facility_amount",
-    "section_break_14",
-    "name_of_beneficiary",
-    "charges",
-    "fixed_deposit_number",
-    "margin_money",
-    "column_break_19",
-    "bank_guarantee_number",
-    "remarks",
-    "amended_from",
-    "custom_section_break_sluyu",
-    "more_information"
-]

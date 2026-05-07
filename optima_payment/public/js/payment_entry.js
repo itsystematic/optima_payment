@@ -1,5 +1,149 @@
 frappe.provide("optima_payment");
 
+const LEGACY_PAYMENT_ENTRY_FIELDS = [
+    "custom_multi_expense",
+    "custom_company_expenses",
+    "custom_company_expense",
+    "custom_total_amount",
+];
+
+const OPTIMA_PAYMENT_TOGGLE_FIELDS = ["is_endorsed_cheque", "multi_expense"];
+
+const set_company_expense_totals = (frm) => {
+    let total = 0;
+    (frm.doc.company_expense || []).forEach((row) => {
+        total += Number(row.amount || 0);
+    });
+    frm.set_value({ paid_amount: total, received_amount: total, total_amount: total });
+    refresh_field(["total_amount", "paid_amount", "received_amount"]);
+};
+
+const set_company_expense_cost_center = (frm, cdt, cdn) => {
+    const row = frappe.get_doc(cdt, cdn);
+    const companyExpenseRows = frm.doc.company_expense || [];
+
+    if (companyExpenseRows.length < 2) {
+        frappe.call({
+            method: "frappe.client.get_value",
+            args: {
+                doctype: "Company",
+                filters: { name: frm.doc.company },
+                fieldname: "cost_center",
+            },
+            callback: (r) => {
+                if (r.message) {
+                    frappe.model.set_value(row.doctype, row.name, "cost_center", r.message.cost_center);
+                }
+            },
+        });
+        return;
+    }
+
+    if (row.parentfield) {
+        frm.script_manager.copy_from_first_row(row.parentfield, row, ["cost_center"]);
+    }
+};
+
+const hide_legacy_cheque_fields = (frm) => {
+    LEGACY_PAYMENT_ENTRY_FIELDS.forEach((fieldname) => {
+        if (frm.meta?.fields?.some((field) => field.fieldname === fieldname)) {
+            frm.set_df_property(fieldname, "hidden", 1);
+        }
+    });
+};
+
+const set_optima_payment_fields_hidden = (frm, hidden) => {
+    OPTIMA_PAYMENT_TOGGLE_FIELDS.forEach((fieldname) => {
+        if (frm.fields_dict?.[fieldname]) {
+            frm.set_df_property(fieldname, "hidden", hidden ? 1 : 0);
+        }
+    });
+};
+
+const set_dynamic_labels_safely = (frm) => {
+    var company_currency = frm.doc.company
+        ? frappe.get_doc(":Company", frm.doc.company)?.default_currency
+        : "";
+
+    frm.set_currency_labels(
+        [
+            "base_paid_amount",
+            "base_received_amount",
+            "base_total_allocated_amount",
+            "difference_amount",
+            "base_paid_amount_after_tax",
+            "base_received_amount_after_tax",
+            "base_total_taxes_and_charges",
+        ],
+        company_currency
+    );
+
+    frm.set_currency_labels(["paid_amount"], frm.doc.paid_from_account_currency);
+    frm.set_currency_labels(["received_amount"], frm.doc.paid_to_account_currency);
+
+    var party_account_currency =
+        frm.doc.payment_type == "Receive"
+            ? frm.doc.paid_from_account_currency
+            : frm.doc.paid_to_account_currency;
+
+    frm.set_currency_labels(
+        ["total_allocated_amount", "unallocated_amount", "total_taxes_and_charges"],
+        party_account_currency
+    );
+
+    var currency_field =
+        frm.doc.payment_type == "Receive" ? "paid_from_account_currency" : "paid_to_account_currency";
+    frm.set_df_property("total_allocated_amount", "options", currency_field);
+    frm.set_df_property("unallocated_amount", "options", currency_field);
+    frm.set_df_property("total_taxes_and_charges", "options", currency_field);
+    frm.set_df_property("party_balance", "options", currency_field);
+
+    frm.set_currency_labels(
+        ["total_amount", "outstanding_amount", "allocated_amount"],
+        party_account_currency,
+        "references"
+    );
+
+    frm.set_df_property(
+        "source_exchange_rate",
+        "description",
+        "1 " + frm.doc.paid_from_account_currency + " = [?] " + company_currency
+    );
+
+    frm.set_df_property(
+        "target_exchange_rate",
+        "description",
+        "1 " + frm.doc.paid_to_account_currency + " = [?] " + company_currency
+    );
+
+    frm.refresh_fields();
+
+    const party_currency =
+        frm.doc.payment_type === "Receive" ? "paid_from_account_currency" : "paid_to_account_currency";
+    const reference_field = frm.fields_dict["references"];
+    const reference_grid = reference_field && reference_field.grid;
+
+    if (!reference_grid) {
+        console.warn("Payment Entry references grid is unavailable during set_dynamic_labels");
+        return;
+    }
+
+    ["total_amount", "outstanding_amount", "allocated_amount"].forEach((fieldname) => {
+        reference_grid.update_docfield_property(fieldname, "options", party_currency);
+    });
+
+    reference_grid.refresh();
+};
+
+const ensure_optima_payment_controller = (frm) => {
+    if (!frm.__optima_payment_controller) {
+        frm.__optima_payment_controller = new optima_payment.PaymentEntryController({ frm });
+        extend_cscript(frm.cscript, frm.__optima_payment_controller);
+    }
+
+    return frm.__optima_payment_controller;
+};
+
 optima_payment.PaymentEntryController = class PaymentEntryController extends (
     frappe.ui.form.Controller
 ) {
@@ -69,6 +213,10 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends (
                 this.frm.set_df_property(fieldname, property, value);
             });
         });
+    }
+
+    set_dynamic_labels(frm) {
+        set_dynamic_labels_safely(frm);
     }
 
     receivable_cheque() {
@@ -170,7 +318,6 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends (
             function (doc, cdt, cdn) {
                 return {
                     filters: {
-                        // "name": "Party Type",
                         name: ["in", ["Supplier", "Shareholder", "Employee"]],
                     },
                 };
@@ -652,12 +799,7 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends (
     //  ======  Multi Expense ======
 
     amount(doc, cdt, cdn) {
-        let total = 0;
-        this.frm.doc.company_expense.forEach(function (d) {
-            total += d.amount;
-        });
-        this.frm.set_value({ paid_amount: total, received_amount: total, total_amount: total });
-        refresh_field(["total_amount", "paid_amount", "received_amount"]);
+        set_company_expense_totals(this.frm);
     }
 
     // Change Mandatory
@@ -668,7 +810,30 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends (
 };
 
 frappe.ui.form.on("Payment Entry", {
+    setup(frm) {
+        frm.events.set_dynamic_labels = (target_frm) => {
+            set_dynamic_labels_safely(target_frm || frm);
+        };
+        hide_legacy_cheque_fields(frm);
+        set_optima_payment_fields_hidden(frm, true);
+        ensure_optima_payment_controller(frm);
+    },
+    refresh(frm) {
+        hide_legacy_cheque_fields(frm);
+        if (frm.doc.company && !frm.__optima_payment_company_state_loaded) {
+            frm.trigger("company");
+        }
+    },
     company(frm) {
+        hide_legacy_cheque_fields(frm);
+        frm.__optima_payment_company_state_loaded = true;
+
+        if (!frm.doc.company) {
+            frm.__optima_payment_enabled = false;
+            set_optima_payment_fields_hidden(frm, true);
+            return;
+        }
+
         if (frm.doc.company) {
             frappe.call({
                 method: "optima_payment.cheque.api.get_company_settings",
@@ -677,24 +842,19 @@ frappe.ui.form.on("Payment Entry", {
                 },
                 callback: (r) => {
                     if (r.message && r.message.enable_optima_payment) {
-                        const fieldsToShow = ["is_endorsed_cheque", "multi_expense"];
-                        fieldsToShow.forEach((field) => {
-                            cur_frm.set_df_property(field, "hidden", 0);
-                        });
-                        if (!cur_frm.cscript["optima_payment.cheque.api.endorsed_cheque"]) {
-                            extend_cscript(
-                                cur_frm.cscript,
-                                new optima_payment.PaymentEntryController({ frm: cur_frm })
-                            );
-                        }
+                        frm.__optima_payment_enabled = true;
+                        set_optima_payment_fields_hidden(frm, false);
+
+                        const controller = ensure_optima_payment_controller(frm);
+                        frappe.run_serially([
+                            () => controller.get_mode_of_payment_options(),
+                            () => controller.handle_fields(),
+                            () => controller.setup_query_filters(),
+                            () => controller.add_default_payee_name(),
+                        ]);
                     } else {
-                        const fieldsToHide = ["is_endorsed_cheque", "multi_expense"];
-                        fieldsToHide.forEach((field) => {
-                            cur_frm.set_df_property(field, "hidden", 1);
-                        });
-                        cur_frm.set_df_property();
-                        cur_frm.cscript = {};
-                        cur_frm.refresh();
+                        frm.__optima_payment_enabled = false;
+                        set_optima_payment_fields_hidden(frm, true);
                     }
                 },
             });
@@ -702,7 +862,17 @@ frappe.ui.form.on("Payment Entry", {
     },
 });
 
-extend_cscript(
-    cur_frm.cscript,
-    new optima_payment.PaymentEntryController({ frm: cur_frm })
-);
+frappe.ui.form.on("Company Expense Details", {
+    amount(frm) {
+        set_company_expense_totals(frm);
+    },
+    company_expense_add(frm, cdt, cdn) {
+        set_company_expense_cost_center(frm, cdt, cdn);
+        set_company_expense_totals(frm);
+    },
+    company_expense_remove(frm) {
+        set_company_expense_totals(frm);
+    },
+});
+
+ensure_optima_payment_controller(cur_frm);

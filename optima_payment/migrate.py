@@ -1,20 +1,13 @@
+"""Migrate entrypoint for Optima Payment."""
 
-import frappe
+from __future__ import annotations
+
 from click import secho
 
-def after_migrate():
+from optima_payment.setup import update_fields_in_database
 
+
+def after_migrate() -> None:
+    """Apply stable post-migrate updates that remain safe across app versions."""
     update_fields_in_database()
-    secho("Setup Optima Payment Setting Successfully", fg="green")
-
-
-
-def update_fields_in_database():
-    frappe.db.sql(
-        """ UPDATE `tabDocField` 
-                SET options = "Cash\nBank\nCheque\nGeneral\nPhone"  
-            WHERE fieldname = 'type' 
-                AND parent = "Mode of Payment"
-    """ , auto_commit=True)
-    
-    
+    secho("Updated Optima Payment customizations and field options successfully", fg="green")
