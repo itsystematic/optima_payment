@@ -1,4 +1,5 @@
 from erpnext.accounts.doctype.payment_entry.payment_entry import (
+    PaymentEntry,
     get_account_details,
     get_reference_details,
 )
@@ -29,25 +30,22 @@ OPTIMA_EMPLOYEE_REFERENCE_DOCTYPES = ("Leave Dues", "End of Service Benefits")
 
 if "hrms" in frappe.get_installed_apps():
     try:
-        from hrms.overrides.employee_payment_entry import get_reference_details_for_employee
+        from hrms.overrides.employee_payment_entry import (
+            EmployeePaymentEntry,
+            get_reference_details_for_employee,
+        )
+
         HAS_HRMS = True
+        BasePaymentEntry = EmployeePaymentEntry
     except ImportError:
         HAS_HRMS = False
+        BasePaymentEntry = PaymentEntry
 else:
     HAS_HRMS = False
+    BasePaymentEntry = PaymentEntry
 
 
-if "hrms" in frappe.get_installed_apps():
-    from hrms.overrides.employee_payment_entry import EmployeePaymentEntry
-
-    PAYMENTENTRY = EmployeePaymentEntry
-else:
-    from erpnext.accounts.doctype.payment_entry.payment_entry import PaymentEntry
-
-    PAYMENTENTRY = PaymentEntry
-
-
-class CustomPaymentEntry(PAYMENTENTRY):
+class CustomPaymentEntry(BasePaymentEntry):
     # ================================================================================================
     # OPTIMA HR INTEGRATION - Reference Doctypes Support
     # ================================================================================================
