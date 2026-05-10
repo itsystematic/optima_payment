@@ -19,6 +19,12 @@ from frappe.utils import flt
 
 # Check if optima_hr is installed
 HAS_OPTIMA_HR = "optima_hr" in frappe.get_installed_apps()
+HRMS_EMPLOYEE_REFERENCE_DOCTYPES = (
+    "Expense Claim",
+    "Employee Advance",
+    "Gratuity",
+    "Leave Encashment",
+)
 OPTIMA_EMPLOYEE_REFERENCE_DOCTYPES = ("Leave Dues", "End of Service Benefits")
 
 if "hrms" in frappe.get_installed_apps():
@@ -392,14 +398,17 @@ def get_payment_reference_details(
     reference_doctype, reference_name, party_account_currency, party_type=None, party=None
 ):
     """Get reference details supporting optima_hr doctypes"""
-    if HAS_HRMS and reference_doctype in ("Expense Claim", "Employee Advance", "Gratuity"):
-        return get_reference_details_for_employee(reference_doctype, reference_name, party_account_currency)
-    elif HAS_OPTIMA_HR and reference_doctype in ("Leave Dues", "End of Service Benefits"):
-        return get_reference_details_for_optima(reference_doctype, reference_name, party_account_currency)
-    else:
-        return get_reference_details(
-            reference_doctype, reference_name, party_account_currency, party_type, party
+    if HAS_HRMS and reference_doctype in HRMS_EMPLOYEE_REFERENCE_DOCTYPES:
+        return get_reference_details_for_employee(
+            reference_doctype, reference_name, party_account_currency
         )
+
+    if HAS_OPTIMA_HR and reference_doctype in OPTIMA_EMPLOYEE_REFERENCE_DOCTYPES:
+        return get_reference_details_for_optima(reference_doctype, reference_name, party_account_currency)
+
+    return get_reference_details(
+        reference_doctype, reference_name, party_account_currency, party_type, party
+    )
 
 
 def get_reference_details_for_optima(reference_doctype, reference_name, party_account_currency):
