@@ -19,6 +19,7 @@ from frappe.utils import flt
 
 # Check if optima_hr is installed
 HAS_OPTIMA_HR = "optima_hr" in frappe.get_installed_apps()
+OPTIMA_EMPLOYEE_REFERENCE_DOCTYPES = ("Leave Dues", "End of Service Benefits")
 
 if "hrms" in frappe.get_installed_apps():
     try:
@@ -48,18 +49,13 @@ class CustomPaymentEntry(PAYMENTENTRY):
     # in Payment Entry references
     
     def get_valid_reference_doctypes(self):
-        """Extended reference doctypes including optima_hr doctypes if installed"""
-        if self.party_type == "Customer":
-            return ("Sales Order", "Sales Invoice", "Journal Entry", "Dunning", "Payment Entry")
-        elif self.party_type == "Supplier":
-            return ("Purchase Order", "Purchase Invoice", "Journal Entry", "Payment Entry")
-        elif self.party_type == "Shareholder":
-            return ("Journal Entry",)
-        elif self.party_type == "Employee":
-            if HAS_OPTIMA_HR:
-                return ("Expense Claim", "Journal Entry", "Employee Advance", "Gratuity", "Leave Dues", "End of Service Benefits")
-            else:
-                return ("Expense Claim", "Journal Entry", "Employee Advance", "Gratuity")
+        """Extend the upstream employee reference doctypes with Optima HR doctypes."""
+        doctypes = tuple(super().get_valid_reference_doctypes() or ())
+
+        if self.party_type != "Employee" or not HAS_OPTIMA_HR:
+            return doctypes
+
+        return tuple(dict.fromkeys(doctypes + OPTIMA_EMPLOYEE_REFERENCE_DOCTYPES)) # Using dict.fromkeys to remove duplicates while preserving order
     
     def set_missing_ref_details(
         self,
