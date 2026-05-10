@@ -29,19 +29,7 @@ if "hrms" in frappe.get_installed_apps():
 else:
     HAS_HRMS = False
 
-# def get_custom_class() -> type:
-#     """
-#     Returns the custom class name based on installed apps
 
-#     Returns:
-#         type: The custom class name
-#     """
-#     if "hrms" in frappe.get_installed_apps():
-#         from hrms.overrides.employee_payment_entry import EmployeePaymentEntry
-#         return EmployeePaymentEntry
-#     else :
-#         from erpnext.accounts.doctype.payment_entry.payment_entry import  PaymentEntry
-#         return PaymentEntry
 if "hrms" in frappe.get_installed_apps():
     from hrms.overrides.employee_payment_entry import EmployeePaymentEntry
 
