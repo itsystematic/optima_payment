@@ -107,6 +107,7 @@ class CustomPaymentEntry(BasePaymentEntry):
     # ================================================================================================
 
     def on_submit(self):
+        """Keep the upstream submit sequence, but override the hard zero-difference check for multi-expense entries."""
         if self.difference_amount and not self.is_multi_expense():
             frappe.throw(_("Difference Amount must be zero"))
         self.update_payment_requests()
