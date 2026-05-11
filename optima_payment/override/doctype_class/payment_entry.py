@@ -105,10 +105,6 @@ class CustomPaymentEntry(BasePaymentEntry):
     # ================================================================================================
     # CORE VALIDATION AND SUBMISSION
     # ================================================================================================
-    
-    def validate(self):
-        super().validate()
-        self.validate_company_expenses()
 
     def on_submit(self):
         if self.difference_amount and not self.is_multi_expense():
@@ -256,10 +252,6 @@ class CustomPaymentEntry(BasePaymentEntry):
     # ================================================================================================
     # Support for multi-expense payment entries where party is not required
     
-    def validate_company_expenses(self):
-        if self.is_multi_expense():
-            self.flags.ignore_mandatory = True
-
     def set_missing_values(self):
         """Reuse the upstream flow unless this is a multi-expense payment entry."""
         if self.payment_type == "Internal Transfer" or not self.is_multi_expense():
@@ -304,10 +296,19 @@ class CustomPaymentEntry(BasePaymentEntry):
         )
 
     def validate_mandatory(self):
-        if self.is_multi_expense():
+        """Keep financial amounts mandatory even when party-specific checks are skipped."""
+        if not self.is_multi_expense():
+            super().validate_mandatory()
             return
 
-        super().validate_mandatory()
+        for field in (
+            "paid_amount",
+            "received_amount",
+            "source_exchange_rate",
+            "target_exchange_rate",
+        ):
+            if not self.get(field):
+                frappe.throw(_("{0} is mandatory").format(_(self.meta.get_label(field))))
 
     def build_gl_map(self):
         if self.payment_type in ("Receive", "Pay") and not self.get("party_account_field"):
