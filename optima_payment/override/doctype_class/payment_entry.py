@@ -287,6 +287,14 @@ class CustomPaymentEntry(BasePaymentEntry):
             self.paid_to_account_balance = acc.account_balance
             self.paid_to_account_type = acc.account_type
 
+        if self.is_multi_expense() and self.payment_type == "Pay":
+            # Multi-expense entries do not use a party-side account, but the upstream
+            # exchange-rate flow still expects the target currency metadata.
+            self.paid_to_account_currency = (
+                self.paid_to_account_currency or self.paid_from_account_currency
+            )
+            self.paid_to_account_type = self.paid_to_account_type or self.paid_from_account_type
+
     def set_party_account_currency(self):
         """Mirror ERPNext's party-account currency selection for the active direction."""
         self.party_account_currency = (
@@ -294,6 +302,23 @@ class CustomPaymentEntry(BasePaymentEntry):
             if self.payment_type == "Receive"
             else self.paid_to_account_currency
         )
+
+    def _get_missing_mandatory_fields(self):
+        """Skip party-side account requirements for multi-expense payment entries."""
+        missing = super()._get_missing_mandatory_fields()
+
+        if not self.is_multi_expense():
+            return missing
+
+        optional_fields = {
+            "paid_to",
+            "paid_to_account_currency",
+        } if self.payment_type == "Pay" else {
+            "paid_from",
+            "paid_from_account_currency",
+        }
+
+        return [item for item in missing if item[0] not in optional_fields]
 
     def validate_mandatory(self):
         """Keep financial amounts mandatory even when party-specific checks are skipped."""
