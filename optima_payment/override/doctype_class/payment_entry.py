@@ -111,7 +111,7 @@ class CustomPaymentEntry(BasePaymentEntry):
         self.validate_company_expenses()
 
     def on_submit(self):
-        if self.difference_amount and self.get("multi_expense") == 0:
+        if self.difference_amount and not self.is_multi_expense():
             frappe.throw(_("Difference Amount must be zero"))
         self.update_payment_requests()
         self.update_payment_schedule()
@@ -257,7 +257,7 @@ class CustomPaymentEntry(BasePaymentEntry):
     # Support for multi-expense payment entries where party is not required
     
     def validate_company_expenses(self):
-        if self.get("multi_expense") == 1:
+        if self.is_multi_expense():
             self.flags.ignore_mandatory = True
 
     def set_missing_values(self):
@@ -304,8 +304,10 @@ class CustomPaymentEntry(BasePaymentEntry):
         )
 
     def validate_mandatory(self):
-        if self.get("multi_expense") == 0:
-            super().validate_mandatory()
+        if self.is_multi_expense():
+            return
+
+        super().validate_mandatory()
 
     def build_gl_map(self):
         if self.payment_type in ("Receive", "Pay") and not self.get("party_account_field"):
@@ -314,7 +316,7 @@ class CustomPaymentEntry(BasePaymentEntry):
         self.set_transaction_currency_and_rate()
 
         gl_entries = []
-        if not self.get("multi_expense"):
+        if not self.is_multi_expense():
             self.add_party_gl_entries(gl_entries)
         self.make_company_expense(gl_entries)
         self.add_bank_gl_entries(gl_entries)
@@ -323,23 +325,25 @@ class CustomPaymentEntry(BasePaymentEntry):
         return gl_entries
 
     def make_company_expense(self, gl_entries):
-        if self.get("company_expense") and self.multi_expense == 1:
-            for account in self.company_expense:
-                gl_entries.append(
-                    self.get_gl_dict(
-                        {
-                            "account": account.default_account,
-                            "account_currency": self.paid_from_account_currency,
-                            "debit_in_account_currency": account.amount,
-                            "party": account.party or None,
-                            "party_type": account.party_type or None,
-                            "debit": account.amount,
-                            "cost_center": account.cost_center or None,
-                            "remarks": account.remarks or None,
-                        },
-                        item=self,
-                    )
+        if not self.is_multi_expense() or not self.get("company_expense"):
+            return
+
+        for account in self.company_expense:
+            gl_entries.append(
+                self.get_gl_dict(
+                    {
+                        "account": account.default_account,
+                        "account_currency": self.paid_from_account_currency,
+                        "debit_in_account_currency": account.amount,
+                        "party": account.party or None,
+                        "party_type": account.party_type or None,
+                        "debit": account.amount,
+                        "cost_center": account.cost_center or None,
+                        "remarks": account.remarks or None,
+                    },
+                    item=self,
                 )
+            )
 
     def make_gl_entries(self, cancel=0, adv_adj=0):
         gl_entries = self.build_gl_map()
