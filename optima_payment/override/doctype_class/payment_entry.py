@@ -6,8 +6,6 @@ from erpnext.accounts.doctype.payment_entry.payment_entry import (
 import frappe
 from frappe import _
 import erpnext
-from erpnext.accounts.utils import get_balance_on
-from erpnext.accounts.party import get_party_account
 from erpnext.accounts.general_ledger import (
     make_gl_entries,
     process_gl_map,
@@ -16,7 +14,7 @@ from optima_payment import active_for_company
 from erpnext.accounts.utils import cancel_exchange_gain_loss_journal
 from erpnext import get_company_currency
 from erpnext.setup.utils import get_exchange_rate
-from frappe.utils import flt
+from frappe.utils import cint, flt
 
 # Check if optima_hr is installed
 HAS_OPTIMA_HR = "optima_hr" in frappe.get_installed_apps()
@@ -46,6 +44,8 @@ else:
 
 
 class CustomPaymentEntry(BasePaymentEntry):
+    """Payment Entry override with Optima HR and multi-expense support."""
+
     # ================================================================================================
     # OPTIMA HR INTEGRATION - Reference Doctypes Support
     # ================================================================================================
@@ -59,7 +59,8 @@ class CustomPaymentEntry(BasePaymentEntry):
         if self.party_type != "Employee" or not HAS_OPTIMA_HR:
             return doctypes
 
-        return tuple(dict.fromkeys(doctypes + OPTIMA_EMPLOYEE_REFERENCE_DOCTYPES)) # Using dict.fromkeys to remove duplicates while preserving order
+        # Preserve upstream ordering while avoiding duplicate doctypes.
+        return tuple(dict.fromkeys(doctypes + OPTIMA_EMPLOYEE_REFERENCE_DOCTYPES))
     
     def set_missing_ref_details(
         self,
@@ -260,72 +261,42 @@ class CustomPaymentEntry(BasePaymentEntry):
             self.flags.ignore_mandatory = True
 
     def set_missing_values(self):
-        if self.payment_type == "Internal Transfer":
-            for field in (
-                "party",
-                "party_balance",
-                "total_allocated_amount",
-                "base_total_allocated_amount",
-                "unallocated_amount",
-            ):
-                self.set(field, None)
-            self.references = []
-        else:
-            # Only validate party if NOT multi_expense
-            if not self.get("multi_expense"):
-                if not self.party_type:
-                    frappe.throw(_("Party Type is mandatory"))
+        """Reuse the upstream flow unless this is a multi-expense payment entry."""
+        if self.payment_type == "Internal Transfer" or not self.is_multi_expense():
+            super().set_missing_values()
+            return
 
-                if not self.party:
-                    frappe.throw(_("Party is mandatory"))
+        self.set_payment_account_details()
+        self.set_party_account_currency()
 
-                _party_name = (
-                    "title"
-                    if self.party_type == "Shareholder"
-                    else self.party_type.lower() + "_name"
-                )
+    def is_multi_expense(self):
+        """Return whether party-specific validation should be skipped."""
+        return cint(self.get("multi_expense")) == 1
 
-                if frappe.db.has_column(self.party_type, _party_name):
-                    self.party_name = frappe.db.get_value(
-                        self.party_type, self.party, _party_name
-                    )
-                else:
-                    self.party_name = frappe.db.get_value(
-                        self.party_type, self.party, "name"
-                    )
-
-        if self.party:
-            if not self.party_balance:
-                self.party_balance = get_balance_on(
-                    party_type=self.party_type,
-                    party=self.party,
-                    date=self.posting_date,
-                    company=self.company,
-                )
-
-            if not self.party_account:
-                party_account = get_party_account(
-                    self.party_type, self.party, self.company
-                )
-                self.set(self.party_account_field, party_account)
-                self.party_account = party_account
-
-        if self.paid_from and not (
-            self.paid_from_account_currency or self.paid_from_account_balance
+    def set_payment_account_details(self):
+        """Populate account metadata needed by exchange-rate and GL logic."""
+        if self.paid_from and (
+            not self.paid_from_account_currency
+            or not self.paid_from_account_balance
+            or not self.paid_from_account_type
         ):
-            acc = get_account_details(
-                self.paid_from, self.posting_date, self.cost_center
-            )
+            acc = get_account_details(self.paid_from, self.posting_date, self.cost_center)
             self.paid_from_account_currency = acc.account_currency
             self.paid_from_account_balance = acc.account_balance
+            self.paid_from_account_type = acc.account_type
 
-        if self.paid_to and not (
-            self.paid_to_account_currency or self.paid_to_account_balance
+        if self.paid_to and (
+            not self.paid_to_account_currency
+            or not self.paid_to_account_balance
+            or not self.paid_to_account_type
         ):
             acc = get_account_details(self.paid_to, self.posting_date, self.cost_center)
             self.paid_to_account_currency = acc.account_currency
             self.paid_to_account_balance = acc.account_balance
+            self.paid_to_account_type = acc.account_type
 
+    def set_party_account_currency(self):
+        """Mirror ERPNext's party-account currency selection for the active direction."""
         self.party_account_currency = (
             self.paid_from_account_currency
             if self.payment_type == "Receive"
