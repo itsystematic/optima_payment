@@ -4,54 +4,20 @@ from unittest.mock import patch
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
-from frappe.utils import nowdate
 
+from optima_payment.tests.utils import make_payment_entry
 from optima_payment.override.doctype_class.payment_entry import CustomPaymentEntry
 
 
 class TestCustomPaymentEntry(FrappeTestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.company = frappe.db.get_value("Company", {}, "name")
-        cls.payment_account = frappe.db.get_value(
-            "Account",
-            {"company": cls.company, "account_type": ("in", ["Bank", "Cash"]), "is_group": 0},
-            "name",
-        )
-        cls.naming_series = (
-            frappe.get_meta("Payment Entry").get_field("naming_series").default or "PAY-.FY.-"
-        )
-
     def tearDown(self):
         frappe.db.rollback()
-
-    def make_payment_entry(self, *, multi_expense: int) -> CustomPaymentEntry:
-        pe = frappe.new_doc("Payment Entry")
-        pe.update(
-            {
-                "naming_series": self.naming_series,
-                "payment_type": "Pay",
-                "posting_date": nowdate(),
-                "company": self.company,
-                "multi_expense": multi_expense,
-                "paid_from": self.payment_account,
-                "paid_amount": 100,
-                "received_amount": 100,
-                "source_exchange_rate": 1,
-                "target_exchange_rate": 1,
-                "base_paid_amount": 100,
-                "base_received_amount": 100,
-            }
-        )
-        return pe
 
     def test_new_payment_entry_uses_custom_override(self):
         self.assertIsInstance(frappe.new_doc("Payment Entry"), CustomPaymentEntry)
 
     def test_multi_expense_pay_skips_party_side_account_mandatory_fields(self):
-        pe = self.make_payment_entry(multi_expense=1)
-
+        pe = make_payment_entry(multi_expense=1)
         pe.set_missing_values()
 
         missing = {field for field, _message in pe._get_missing_mandatory_fields()}
@@ -61,7 +27,7 @@ class TestCustomPaymentEntry(FrappeTestCase):
         self.assertEqual(pe.paid_to_account_currency, pe.paid_from_account_currency)
 
     def test_normal_pay_still_requires_party_side_account_fields(self):
-        pe = self.make_payment_entry(multi_expense=0)
+        pe = make_payment_entry(multi_expense=0)
 
         missing = {field for field, _message in pe._get_missing_mandatory_fields()}
 
@@ -69,7 +35,7 @@ class TestCustomPaymentEntry(FrappeTestCase):
         self.assertIn("paid_to_account_currency", missing)
 
     def test_multi_expense_validate_mandatory_keeps_exchange_rate_checks(self):
-        pe = self.make_payment_entry(multi_expense=1)
+        pe = make_payment_entry(multi_expense=1)
         pe.target_exchange_rate = None
 
         pe.set_missing_values()
@@ -80,7 +46,7 @@ class TestCustomPaymentEntry(FrappeTestCase):
         self.assertIn("Target Exchange Rate", str(exc.exception))
 
     def test_on_submit_allows_difference_amount_for_multi_expense(self):
-        pe = self.make_payment_entry(multi_expense=1)
+        pe = make_payment_entry(multi_expense=1)
         pe.difference_amount = 25
 
         with (
@@ -101,7 +67,7 @@ class TestCustomPaymentEntry(FrappeTestCase):
         set_status.assert_called_once_with(pe)
 
     def test_on_submit_keeps_difference_amount_check_for_normal_entries(self):
-        pe = self.make_payment_entry(multi_expense=0)
+        pe = make_payment_entry(multi_expense=0)
         pe.difference_amount = 25
 
         with self.assertRaises(frappe.ValidationError) as exc:
