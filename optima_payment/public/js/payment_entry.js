@@ -818,6 +818,11 @@ frappe.ui.form.on("Payment Entry", {
         set_optima_payment_fields_hidden(frm, true);
         ensure_optima_payment_controller(frm);
     },
+    before_save(frm) {
+        if (frm.doc.multi_expense === 1) {
+            frm.doc.party_type = "";
+        }
+    },
     refresh(frm) {
         hide_legacy_cheque_fields(frm);
         if (frm.doc.company && !frm.__optima_payment_company_state_loaded) {
