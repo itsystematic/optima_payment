@@ -87,6 +87,7 @@ def get_custom_fields() -> dict[str, list[dict]]:
                 "label": "Cheque Status",
                 "read_only": 1,
                 "no_copy": 1,
+                "default": "",
             },
             {
                 "fieldname": "bank_fees_amount",
