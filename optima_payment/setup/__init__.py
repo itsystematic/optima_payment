@@ -17,6 +17,7 @@ from optima_payment.setup.standard_data import add_standard_data, update_fields_
 def prepare_setup() -> None:
     """Install standard data, update stable metadata, and apply feature setup."""
     click.secho("Setting up Optima Payment customizations...", fg="blue")
+
     run_setup_steps(
         [
             ("Install standard data", add_standard_data),
