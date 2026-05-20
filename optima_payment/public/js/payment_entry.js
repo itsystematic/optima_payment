@@ -158,6 +158,7 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends (
 
     handle_fields() {
         let me = this;
+        const has_bank_fees = me.frm.doc.has_bank_fees == 1;
         let fieldnames_to_be_altered = {
             "is_endorsed_cheque": {
                 hidden:
@@ -167,7 +168,7 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends (
                     me.frm.doc.multi_expense == 1,
             },
             "multi_expense": {
-                hidden: me.mode_of_payment_doc.type != "Cheque" ? 0 : 1,
+                hidden: has_bank_fees || me.mode_of_payment_doc.type == "Cheque" ? 1 : 0,
             },
             "payee_name": {
                 read_only: me.frm.doc.is_endorsed_cheque ,
@@ -201,6 +202,12 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends (
             "reference_no": { read_only: me.frm.doc.is_endorsed_cheque },
             "paid_from" : { read_only : me.frm.doc.is_endorsed_cheque ? 1 :0 }
         };
+
+        if (me.frm.fields_dict.has_bank_fees) {
+            fieldnames_to_be_altered.has_bank_fees = {
+                hidden: me.frm.doc.multi_expense == 1,
+            };
+        }
 
         me.update_property_values(fieldnames_to_be_altered);
     }
@@ -659,11 +666,13 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends (
     async get_dialog_fields_return_reject() {
         let me = this;
         let default_cost_center = me.get_default_cost_center();
+        const hide_bank_fees = me.frm.doc.multi_expense == 1;
         return [
             {
                 label: __("Has Bank Fees"),
                 fieldname: "has_bank_fees",
                 fieldtype: "Check",
+                hidden: hide_bank_fees,
             },
             {
                 fieldtype: "Column Break",
@@ -804,7 +813,28 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends (
 
     // Change Mandatory
     multi_expense() {
-        this.frm.set_value({ party_type: ''});
+        const updates = { party_type: "" };
+
+        // Keep these toggles mutually exclusive so dependent fields stay in sync.
+        if (this.frm.doc.multi_expense == 1 && this.frm.fields_dict.has_bank_fees) {
+            updates.has_bank_fees = 0;
+        }
+
+        frappe.run_serially([() => this.frm.set_value(updates), () => this.handle_fields()]);
+    }
+
+    has_bank_fees() {
+        const updates = {};
+
+        if (this.frm.doc.has_bank_fees == 1 && this.frm.doc.multi_expense == 1) {
+            updates.multi_expense = 0;
+        }
+
+        if (Object.keys(updates).length) {
+            frappe.run_serially([() => this.frm.set_value(updates), () => this.handle_fields()]);
+            return;
+        }
+
         this.handle_fields();
     }
 };
