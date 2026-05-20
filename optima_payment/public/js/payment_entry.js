@@ -247,6 +247,7 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends (
         let me = this;
         frappe.run_serially([
             () => me.get_mode_of_payment_options(),
+            () => me.sync_mode_of_payment_bank_fees(),
             () => me.handle_fields(),
             () => me.add_default_payee_name(),
         ]);
@@ -387,6 +388,27 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends (
                 return r.message[fieldname];
             });
         return bank_fees_amount;
+    }
+
+    async sync_mode_of_payment_bank_fees() {
+        const updates = {};
+        let bank_fees = 0;
+
+        if (this.frm.doc.mode_of_payment) {
+            bank_fees = Number(this.mode_of_payment_doc.bank_fees ?? 0);
+        }
+
+        if (this.frm.fields_dict.bank_fees) {
+            updates.bank_fees = bank_fees;
+        }
+
+        if (this.frm.fields_dict.pay_fees) {
+            updates.pay_fees = bank_fees;
+        }
+
+        if (Object.keys(updates).length) {
+            await this.frm.set_value(updates);
+        }
     }
 
     add_cheque_payable_buttons() {
