@@ -128,7 +128,7 @@ boot_session = "optima_payment.startup.boot.add_optima_payment_setting"
 # Name of the app being uninstalled is passed as an argument
 
 # before_app_uninstall = "optima_payment.utils.before_app_uninstall"
-after_app_uninstall = "optima_payment.uninstall.after_app_uninstall"
+# after_app_uninstall = "optima_payment.uninstall.after_app_uninstall"
 
 # Desk Notifications
 # ------------------

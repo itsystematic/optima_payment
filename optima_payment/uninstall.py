@@ -17,10 +17,3 @@ def before_uninstall() -> None:
     """Backward-compatible uninstall hook used by Frappe."""
     before_uninstall_entrypoint()
 
-
-def after_app_uninstall(app_name: str) -> None:
-    """Clean up again when Frappe invokes the integration uninstall hook."""
-    if app_name != "optima_payment":
-        return
-
-    before_uninstall_entrypoint()
