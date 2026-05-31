@@ -8,6 +8,12 @@
   "enable_optima_payment",
   "column_break_gfcr",
   "company",
+  "bank_guarantee_accounts_section",
+  "bank_guarantee_insurance_account",
+  "bank_guarantee_receiving_insurance_account",
+  "column_break_vvdr",
+  "bank_guarantee_bank_fees_account",
+  "bank_guarantee_loss_expense_account",
   "section_break_yner",
   "cheque_accounts",
   "optima_payment_scheduler_section",
@@ -63,11 +69,44 @@
    "label": "Cheque Accounts",
    "options": "Cheque Accounts",
    "reqd": 1
+  },
+  {
+   "fieldname": "bank_guarantee_accounts_section",
+   "fieldtype": "Section Break",
+   "label": "Bank Guarantee Accounts"
+  },
+  {
+   "fieldname": "bank_guarantee_insurance_account",
+   "fieldtype": "Link",
+   "label": "Insurance Account",
+   "options": "Account"
+  },
+  {
+   "fieldname": "bank_guarantee_receiving_insurance_account",
+   "fieldtype": "Link",
+   "label": "Receiving Insurance Account",
+   "options": "Account"
+  },
+  {
+   "fieldname": "bank_guarantee_bank_fees_account",
+   "fieldtype": "Link",
+   "label": "Bank Fees Account",
+   "options": "Account"
+  },
+  {
+   "fieldname": "bank_guarantee_loss_expense_account",
+   "fieldtype": "Link",
+   "label": "Loss Expense Account",
+   "options": "Account"
+  },
+  {
+   "fieldname": "column_break_vvdr",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-10-23 11:48:27.378289",
+ "modified": "2026-05-31 20:50:40.125826",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Optima Payment Setting",
@@ -107,6 +146,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []
