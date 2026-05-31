@@ -6,6 +6,24 @@ frappe.ui.form.on("Optima Payment Setting", {
         frm.trigger("query_filters");
 	},
     query_filters: function (frm , cdt ,cdn) {
+        frm.set_query("bank_guarantee_bank_fees_account", () => {
+            return {
+                filters: {
+                    root_type: "Expense",
+                    is_group: 0,
+                    company: frm.doc.company,
+                }
+            };
+        });
+        frm.set_query("bank_guarantee_loss_expense_account", () => {
+            return {
+                filters: {
+                    root_type: "Expense",
+                    is_group: 0,
+                    company: frm.doc.company,
+                }
+            };
+        });
         frm.set_query("bank_fees_expense_account", "cheque_accounts",  (doc, cdt ,cdn)  =>  {
             let current_row = frappe.get_doc(cdt , cdn)
             return {

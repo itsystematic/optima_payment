@@ -36,20 +36,19 @@ class CustomBankGuarantee(Document):
             frappe.throw(_("Enter the Bank Guarantee Number or name of the Beneficiary before submitting."))
             
     def validate_company_account(self):
-        
-        company = self.get_company()
-        
-        if not company.default_insurance_account:
-            frappe.throw(_("Please set the Insurance Account under Company Settings."))
-            
-        if not company.default_receiving_insurance_account:
-            frappe.throw(_("Please set the Receiving Insurance Account under Company Settings."))
-            
-        if not company.bank_fees_account:
-            frappe.throw(_("Please set the Bank Fees Account under Company Settings."))
+        settings = self.get_optima_payment_setting()
 
-        if not company.lost_expense_bank_guarantee_account:
-            frappe.throw(_("Please set the Lost Expense Bank Guarantee Account under Company Settings."))
+        if not settings.bank_guarantee_insurance_account:
+            frappe.throw(_("Please set the Insurance Account under Optima Payment Setting."))
+
+        if not settings.bank_guarantee_receiving_insurance_account:
+            frappe.throw(_("Please set the Receiving Insurance Account under Optima Payment Setting."))
+
+        if not settings.bank_guarantee_bank_fees_account:
+            frappe.throw(_("Please set the Bank Fees Account under Optima Payment Setting."))
+
+        if not settings.bank_guarantee_loss_expense_account:
+            frappe.throw(_("Please set the Loss Expense Account under Optima Payment Setting."))
     
     def on_cancel(self):
         self.ignore_linked_doctypes = (
@@ -109,26 +108,27 @@ class CustomBankGuarantee(Document):
     def get_gl_entries(self) -> list[dict]:
         gl_entries = []
         company = self.get_company()
+        settings = self.get_optima_payment_setting(company.name)
         type_debit , type_credit = self.get_debit_or_credit()
 
         posting_date = self.get_posting_date() 
         
-        self.make_gl_of_bank_or_cheque_providing(gl_entries , type_debit , type_credit , company, posting_date)
-        self.make_gl_of_bank_or_cheque_receiving(gl_entries , type_debit , type_credit , company)
-        self.make_gl_of_cash_providing(gl_entries , type_debit , type_credit , company)
-        self.make_gl_of_cash_receiving(gl_entries , type_debit , type_credit , company)
-        self.make_gl_of_deduction_providing(gl_entries , type_debit , type_credit , company)
-        self.make_gl_of_deduction_receiving(gl_entries , type_debit , type_credit , company)
+        self.make_gl_of_bank_or_cheque_providing(gl_entries , type_debit , type_credit , company, settings, posting_date)
+        self.make_gl_of_bank_or_cheque_receiving(gl_entries , type_debit , type_credit , settings)
+        self.make_gl_of_cash_providing(gl_entries , type_debit , type_credit , company, settings)
+        self.make_gl_of_cash_receiving(gl_entries , type_debit , type_credit , company, settings)
+        self.make_gl_of_deduction_providing(gl_entries , type_debit , type_credit , company, settings)
+        self.make_gl_of_deduction_receiving(gl_entries , type_debit , type_credit , company, settings)
         
         return gl_entries
 
     
-    def make_gl_of_bank_or_cheque_providing(self ,gl_entries , type_debit , type_credit , company, posting_date):
+    def make_gl_of_bank_or_cheque_providing(self ,gl_entries , type_debit , type_credit , company, settings, posting_date):
         if self.bank_guarantee_purpose in ['Bank Guarantee' , 'Cheque'] and self.bg_type == "Providing" :                
 
             
             self.make_row_in_gl(
-                account= self.bank_guarantee_account if self.bank_guarantee_account  else  company.default_insurance_account ,
+                account= self.bank_guarantee_account if self.bank_guarantee_account  else  settings.bank_guarantee_insurance_account ,
                 credit_or_debit=type_debit ,
                 amount= self.bank_amount ,
                 cost_center = self.cost_center ,
@@ -146,7 +146,7 @@ class CustomBankGuarantee(Document):
             
             if self.bank_guarantee_status != "Returned" and self.issue_commission :
                 self.make_row_in_gl(
-                    account=company.bank_fees_account ,
+                    account=settings.bank_guarantee_bank_fees_account ,
                     credit_or_debit=type_debit ,
                     amount= self.issue_commission_amount,
                     cost_center = self.cost_center,
@@ -164,28 +164,28 @@ class CustomBankGuarantee(Document):
                 )
             
     
-    def make_gl_of_bank_or_cheque_receiving(self , gl_entries , type_debit , type_credit , company):
+    def make_gl_of_bank_or_cheque_receiving(self , gl_entries , type_debit , type_credit , settings):
         if self.bank_guarantee_purpose in ['Bank Guarantee' , 'Cheque'] and self.bg_type == "Receiving" : 
 
             self.make_row_in_gl(
-                account=company.default_receiving_insurance_account ,
+                account=settings.bank_guarantee_receiving_insurance_account ,
                 credit_or_debit=type_debit ,
                 amount=self.amount ,
                 gl_entries= gl_entries
             )
             self.make_row_in_gl(
-                account= self.bank_guarantee_account or  company.default_insurance_account ,
+                account= self.bank_guarantee_account or  settings.bank_guarantee_insurance_account ,
                 credit_or_debit=type_credit ,
                 amount= self.amount ,
                 gl_entries=gl_entries
             ) 
             
     
-    def make_gl_of_cash_providing(self , gl_entries , type_debit , type_credit , company):
+    def make_gl_of_cash_providing(self , gl_entries , type_debit , type_credit , company, settings):
         if self.bank_guarantee_purpose == "Cash" and self.bg_type == "Providing"  :
             
             self.make_row_in_gl(
-                account= self.bank_guarantee_account   if self.bank_guarantee_account  else  company.default_insurance_account ,
+                account= self.bank_guarantee_account   if self.bank_guarantee_account  else  settings.bank_guarantee_insurance_account ,
                 credit_or_debit=type_debit ,
                 amount=self.amount ,
                 gl_entries= gl_entries 
@@ -197,21 +197,21 @@ class CustomBankGuarantee(Document):
                 gl_entries=gl_entries
             ) 
     
-    def make_gl_of_cash_receiving(self , gl_entries , type_debit , type_credit , company):
+    def make_gl_of_cash_receiving(self , gl_entries , type_debit , type_credit , company, settings):
         if self.bank_guarantee_purpose == "Cash" and self.bg_type == "Receiving"  :
             self.make_row_in_gl(account=company.default_cash_account ,credit_or_debit=type_debit ,amount= self.amount ,gl_entries= gl_entries )
-            self.make_row_in_gl(account=company.default_receiving_insurance_account ,credit_or_debit=type_credit ,amount= self.amount ,gl_entries= gl_entries) 
+            self.make_row_in_gl(account=settings.bank_guarantee_receiving_insurance_account ,credit_or_debit=type_credit ,amount= self.amount ,gl_entries= gl_entries) 
             
     
-    def make_gl_of_deduction_providing(self , gl_entries , type_debit , type_credit , company):
+    def make_gl_of_deduction_providing(self , gl_entries , type_debit , type_credit , company, settings):
         if self.bank_guarantee_purpose == "Deduction" and self.bg_type == "Providing"  :
             self.make_row_in_gl(account=company.default_payable_account ,credit_or_debit=type_debit ,amount= self.amount ,gl_entries= gl_entries)
-            self.make_row_in_gl(account= company.default_receiving_insurance_account ,credit_or_debit=type_credit ,amount= self.amount ,gl_entries=  gl_entries ) 
+            self.make_row_in_gl(account= settings.bank_guarantee_receiving_insurance_account ,credit_or_debit=type_credit ,amount= self.amount ,gl_entries=  gl_entries ) 
         
-    def make_gl_of_deduction_receiving(self , gl_entries , type_debit , type_credit , company):
+    def make_gl_of_deduction_receiving(self , gl_entries , type_debit , type_credit , company, settings):
         if self.bank_guarantee_purpose == "Deduction" and self.bg_type == "Receiving"  :
             self.make_row_in_gl(
-                account= self.bank_guarantee_account   if self.bank_guarantee_account  else  company.default_insurance_account ,
+                account= self.bank_guarantee_account   if self.bank_guarantee_account  else  settings.bank_guarantee_insurance_account ,
                 credit_or_debit=type_debit ,
                 amount=self.amount ,
                 gl_entries=gl_entries
@@ -357,8 +357,9 @@ class CustomBankGuarantee(Document):
         gl_entries = []
         if self.bank_guarantee_purpose == 'Bank Guarantee' and self.bg_type == "Providing" :     
             company = self.get_company()
+            settings = self.get_optima_payment_setting(company.name)
             self.make_row_in_gl(
-                account=company.bank_fees_account ,
+                account=settings.bank_guarantee_bank_fees_account ,
                 credit_or_debit="debit" ,
                 amount= amount ,
                 cost_center = self.cost_center,
@@ -387,14 +388,14 @@ class CustomBankGuarantee(Document):
         if loss_date < recent_transaction_date :
             frappe.throw(_("Loss date cannot be before posting date"))
 
-        company = self.get_company()
+        settings = self.get_optima_payment_setting()
         gl_entries = self.get_gl_entries()
 
-        self.make_reverse_gl_entries(gl_entries, adv_adj=False, date=loss_date, company=company)
+        self.make_reverse_gl_entries(gl_entries, adv_adj=False, date=loss_date, company=self.get_company())
 
         gl_entries = []
         self.make_row_in_gl(
-            account= company.lost_expense_bank_guarantee_account , 
+            account= settings.bank_guarantee_loss_expense_account , 
             credit_or_debit="debit" ,
             amount= self.bank_guarantee_amount,
             cost_center = self.cost_center,
@@ -421,6 +422,21 @@ class CustomBankGuarantee(Document):
             company = self.company
             
         return frappe.get_doc("Company" , company)
+
+    def get_optima_payment_setting(self, company_name=None):
+        """Return the per-company Optima Payment Setting document for this transaction."""
+
+        company_name = company_name or self.get_company().name
+        setting_name = frappe.db.get_value("Optima Payment Setting", {"company": company_name}, "name")
+
+        if not setting_name:
+            frappe.throw(
+                _("Please create Optima Payment Setting for company {0}.").format(
+                    frappe.bold(company_name)
+                )
+            )
+
+        return frappe.get_cached_doc("Optima Payment Setting", setting_name)
     
     
     def on_trash(self) :
@@ -528,4 +544,3 @@ class CustomBankGuarantee(Document):
 #                         """
 #                             % ", ".join(["%s"] * len(bank_guarantee_sales_orders)),
 #                             tuple(inv for inv in bank_guarantee_sales_orders))
-
