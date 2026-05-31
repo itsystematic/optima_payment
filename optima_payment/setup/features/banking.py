@@ -61,36 +61,6 @@ def get_custom_fields() -> dict[str, list[dict]]:
                 "options": "Account",
             },
         ],
-        "Company": [
-            {
-                "fieldname": "default_insurance_account",
-                "fieldtype": "Link",
-                "label": "Default Insurance Account",
-                "options": "Account",
-                "insert_after": "default_bank_account",
-            },
-            {
-                "fieldname": "default_receiving_insurance_account",
-                "fieldtype": "Link",
-                "label": "Default Receiving Insurance Account",
-                "options": "Account",
-                "insert_after": "default_insurance_account",
-            },
-            {
-                "fieldname": "bank_fees_account",
-                "fieldtype": "Link",
-                "label": "Bank Fees Account",
-                "options": "Account",
-                "insert_after": "default_receiving_insurance_account",
-            },
-            {
-                "fieldname": "lost_expense_Bank_guarantee_account",
-                "fieldtype": "Link",
-                "label": "Lost Expense Bank Guarantee Account",
-                "options": "Account",
-                "insert_after": "bank_fees_account",
-            },
-        ],
         "GL Entry": [
             {
                 "fieldname": "is_bank_guarantee_comission_entry",
