@@ -5,3 +5,4 @@
 [post_model_sync]
 # Patches added in this section will be executed after doctypes are migrated
 # optima_payment.patches.bank_guarantee
+optima_payment.patches.migrate_bank_guarantee_accounts_to_settings
