@@ -16,8 +16,22 @@ def make_pay_cheque_gl(doc, mode_of_payment=None, posting_date=None):
     mode_of_payment_account = get_bank_cash_account(mode_of_payment, doc.get("company")).get("account")
 
     gl_entries = [
-        create_gl_entry(doc, posting_date, doc.get("paid_from"), debit=doc.paid_amount, against=doc.party),
-        create_gl_entry(doc, posting_date, mode_of_payment_account, credit=doc.paid_amount, against=doc.party)
+        create_gl_entry(
+            doc,
+            posting_date,
+            doc.get("paid_from"),
+            debit=doc.base_paid_amount,
+            against=doc.party,
+            exchange_side="source",
+        ),
+        create_gl_entry(
+            doc,
+            posting_date,
+            mode_of_payment_account,
+            credit=doc.base_paid_amount,
+            against=doc.party,
+            exchange_side="source",
+        ),
     ]
 
     finalize_gl_entries(doc, gl_entries ,'Encashment' , mode_of_payment, posting_date=posting_date)
@@ -31,15 +45,47 @@ def make_collect_cheque_gl(doc, mode_of_payment, bank_fees_commission=0.0, posti
     bank_fees_commission = float(bank_fees_commission) 
 
     gl_entries = [
-        create_gl_entry(doc, posting_date, mode_of_payment_account, debit=doc.base_paid_amount , debit_in_account_currency=doc.paid_amount,against=doc.get("party")),
-        create_gl_entry(doc, posting_date, default_account, credit=doc.base_paid_amount, credit_in_account_currency=doc.paid_amount, against=doc.get("party"))
+        create_gl_entry(
+            doc,
+            posting_date,
+            mode_of_payment_account,
+            debit=doc.base_received_amount,
+            against=doc.get("party"),
+            exchange_side="target",
+        ),
+        create_gl_entry(
+            doc,
+            posting_date,
+            default_account,
+            credit=doc.base_received_amount,
+            against=doc.get("party"),
+            exchange_side="target",
+        ),
     ]
 
     if bank_fees_commission:
         # bank_fees_expense_account = frappe.db.get_value("Optima Payment Setting", doc.get("company"), "bank_commission_account")
         bank_fees_expense_account = get_cheque_account(doc , "bank_commission_account")
-        gl_entries.append(create_gl_entry(doc, posting_date, bank_fees_expense_account, debit=bank_fees_commission, against=doc.party, cost_center=cost_center))
-        gl_entries.append(create_gl_entry(doc, posting_date, mode_of_payment_account, credit=bank_fees_commission, against=doc.party))
+        gl_entries.append(
+            create_gl_entry(
+                doc,
+                posting_date,
+                bank_fees_expense_account,
+                debit=bank_fees_commission,
+                against=doc.party,
+                cost_center=cost_center,
+            )
+        )
+        gl_entries.append(
+            create_gl_entry(
+                doc,
+                posting_date,
+                mode_of_payment_account,
+                credit=bank_fees_commission,
+                against=doc.party,
+                exchange_side="target",
+            )
+        )
 
     finalize_gl_entries(doc, gl_entries ,"Collected" , mode_of_payment , bank_fees_commission, posting_date=posting_date,cost_center=cost_center)
 
@@ -51,8 +97,20 @@ def make_cheque_slip_gl(doc , reverse=False ):
     incoming_cheque_wallet_account = get_cheque_account(doc , "incoming_cheque_wallet_account")
 
     gl_entries = [
-        create_gl_entry(doc, None, incoming_cheque_wallet_account, debit=doc.paid_amount),
-        create_gl_entry(doc, None, doc.paid_to, credit=doc.paid_amount)
+        create_gl_entry(
+            doc,
+            None,
+            incoming_cheque_wallet_account,
+            debit=doc.base_received_amount,
+            exchange_side="target",
+        ),
+        create_gl_entry(
+            doc,
+            None,
+            doc.paid_to,
+            credit=doc.base_received_amount,
+            exchange_side="target",
+        ),
     ]
 
     finalize_gl_entries(doc, gl_entries , cheque_status , reverse=reverse)
@@ -64,16 +122,52 @@ def make_reject_cheque_gl(doc, mode_of_payment, bank_fees_amount=0.0, posting_da
     # incoming_cheque_wallet_account = frappe.db.get_value("Optima Payment Setting", doc.company, "incoming_cheque_wallet_account")
     incoming_cheque_wallet_account = get_cheque_account(doc , "incoming_cheque_wallet_account")
     gl_entries = [
-        create_gl_entry(doc, posting_date, incoming_cheque_wallet_account, credit=doc.paid_amount, against=doc.party , remarks=remarks),
-        create_gl_entry(doc, posting_date, doc.get("paid_to"), debit=doc.paid_amount, against=doc.party , remarks=remarks)
+        create_gl_entry(
+            doc,
+            posting_date,
+            incoming_cheque_wallet_account,
+            credit=doc.base_received_amount,
+            against=doc.party,
+            remarks=remarks,
+            exchange_side="target",
+        ),
+        create_gl_entry(
+            doc,
+            posting_date,
+            doc.get("paid_to"),
+            debit=doc.base_received_amount,
+            against=doc.party,
+            remarks=remarks,
+            exchange_side="target",
+        ),
     ]
 
     if bank_fees_amount:
         # bank_fees_expense_account = frappe.db.get_value("Optima Payment Setting", doc.get("company"), "bank_fees_expense_account")
         bank_fees_expense_account = get_cheque_account(doc , "bank_fees_expense_account")
         mode_of_payment_account = get_bank_cash_account(mode_of_payment, doc.get("company")).get("account")
-        gl_entries.append(create_gl_entry(doc, posting_date, bank_fees_expense_account, debit=bank_fees_amount, against=doc.party ,remarks=remarks, cost_center=cost_center))
-        gl_entries.append(create_gl_entry(doc, posting_date, mode_of_payment_account, credit=bank_fees_amount, against=doc.party, remarks=remarks))
+        gl_entries.append(
+            create_gl_entry(
+                doc,
+                posting_date,
+                bank_fees_expense_account,
+                debit=bank_fees_amount,
+                against=doc.party,
+                remarks=remarks,
+                cost_center=cost_center,
+            )
+        )
+        gl_entries.append(
+            create_gl_entry(
+                doc,
+                posting_date,
+                mode_of_payment_account,
+                credit=bank_fees_amount,
+                against=doc.party,
+                remarks=remarks,
+                exchange_side="target",
+            )
+        )
 
     finalize_gl_entries(doc, gl_entries , "Rejected" , mode_of_payment , bank_fees_amount, posting_date=posting_date,cost_center=cost_center)
 
@@ -84,9 +178,33 @@ def make_return_cheque_gl(doc , posting_date=None , remarks=None) :
     # incoming_cheque_wallet_account = frappe.db.get_value("Optima Payment Setting", doc.company, "incoming_cheque_wallet_account")
     incoming_cheque_wallet_account = get_cheque_account(doc , "incoming_cheque_wallet_account")
     gl_entries = [
-        create_gl_entry(doc, posting_date, doc.get("paid_to"), debit=doc.paid_amount, against=doc.party ,remarks=remarks) ,
-        create_gl_entry(doc, posting_date, incoming_cheque_wallet_account, credit=doc.paid_amount, against=doc.party , remarks=remarks) ,
-        create_gl_entry(doc, posting_date, doc.get("paid_to"), credit=doc.paid_amount, against=doc.party ,remarks=remarks) ,
+        create_gl_entry(
+            doc,
+            posting_date,
+            doc.get("paid_to"),
+            debit=doc.base_received_amount,
+            against=doc.party,
+            remarks=remarks,
+            exchange_side="target",
+        ),
+        create_gl_entry(
+            doc,
+            posting_date,
+            incoming_cheque_wallet_account,
+            credit=doc.base_received_amount,
+            against=doc.party,
+            remarks=remarks,
+            exchange_side="target",
+        ),
+        create_gl_entry(
+            doc,
+            posting_date,
+            doc.get("paid_to"),
+            credit=doc.base_received_amount,
+            against=doc.party,
+            remarks=remarks,
+            exchange_side="target",
+        ),
     ]
     create_party_gl(doc , posting_date , remarks , gl_entries)
     create_advance_gl(doc, posting_date , remarks , gl_entries)
@@ -100,8 +218,22 @@ def make_deposit_under_collection_gl(doc, posting_date=None):
     incoming_cheque_wallet_account = get_cheque_account(doc , "incoming_cheque_wallet_account")
 
     gl_entries = [
-        create_gl_entry(doc, posting_date, incoming_cheque_wallet_account, debit=doc.base_paid_amount ,debit_in_account_currency=doc.paid_amount, against=doc.party),
-        create_gl_entry(doc, posting_date, doc.get("paid_to"), credit=doc.base_paid_amount,credit_in_account_currency=doc.paid_amount, against=doc.party)
+        create_gl_entry(
+            doc,
+            posting_date,
+            incoming_cheque_wallet_account,
+            debit=doc.base_received_amount,
+            against=doc.party,
+            exchange_side="target",
+        ),
+        create_gl_entry(
+            doc,
+            posting_date,
+            doc.get("paid_to"),
+            credit=doc.base_received_amount,
+            against=doc.party,
+            exchange_side="target",
+        ),
     ]
 
     finalize_gl_entries(doc, gl_entries ,"Deposit Under Collection", posting_date=posting_date)
@@ -111,9 +243,16 @@ def make_deposit_under_collection_gl(doc, posting_date=None):
 def make_return_to_holder_gl(doc , posting_date , remarks=None) :
 
     gl_entries = [
-        create_gl_entry(doc, posting_date, doc.get("paid_to"), credit=doc.paid_amount, against=doc.party ,remarks=remarks) ,
+        create_gl_entry(
+            doc,
+            posting_date,
+            doc.get("paid_to"),
+            credit=doc.base_received_amount,
+            against=doc.party,
+            remarks=remarks,
+            exchange_side="target",
+        ),
     ]
     create_party_gl(doc , posting_date , remarks , gl_entries)
     create_advance_gl(doc, posting_date , remarks , gl_entries)
     finalize_gl_entries(doc, gl_entries , "Return To Holder", posting_date=posting_date )
-

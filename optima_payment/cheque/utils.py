@@ -1,6 +1,11 @@
 import frappe
-from frappe.utils import getdate
+from frappe.utils import flt, getdate
+
+from erpnext import get_company_currency
+from erpnext.setup.utils import get_exchange_rate
+from erpnext.accounts.utils import get_account_currency
 from erpnext.accounts.general_ledger import make_gl_entries
+
 from optima_payment.optima_payment.doctype.cheque_action_log.cheque_action_log import add_cheque_action_log
 
 # Main Function
@@ -10,23 +15,22 @@ def create_gl_entry(
     posting_date,
     account,
     debit=0.0, 
-    debit_in_account_currency=0.0,
+    debit_in_account_currency=None,
     credit=0.0, 
-    credit_in_account_currency=0.0,
+    credit_in_account_currency=None,
     against=None, party=None, 
     party_type=None , remarks=None,
     against_voucher =None, 
     against_voucher_type= None ,
-    cost_center = None
+    cost_center = None,
+    exchange_side=None,
 ):
-    """Helper to create GL entry dict."""
-    return doc.get_gl_dict({
+    """Build a cheque GL row with account-currency amounts derived from base values."""
+    gl_entry = doc.get_gl_dict({
         "posting_date": posting_date or getdate(),
         "account": account,
         "debit": debit,
         "credit": credit,
-        "debit_in_account_currency": debit_in_account_currency,
-        "credit_in_account_currency": credit_in_account_currency,
         "against": against,
         "party": party,
         "party_type": party_type,
@@ -36,6 +40,80 @@ def create_gl_entry(
         "against_voucher" : against_voucher,
         "against_voucher_type":against_voucher_type
     }, item=doc)
+
+    gl_entry["debit_in_account_currency"] = _resolve_account_currency_amount(
+        doc=doc,
+        account=account,
+        posting_date=gl_entry.posting_date,
+        base_amount=debit,
+        explicit_amount=debit_in_account_currency,
+        exchange_side=exchange_side,
+    )
+    gl_entry["credit_in_account_currency"] = _resolve_account_currency_amount(
+        doc=doc,
+        account=account,
+        posting_date=gl_entry.posting_date,
+        base_amount=credit,
+        explicit_amount=credit_in_account_currency,
+        exchange_side=exchange_side,
+    )
+    return gl_entry
+
+
+def _resolve_account_currency_amount(doc, account, posting_date, base_amount, explicit_amount, exchange_side):
+    """Translate a base GL amount into the entry account's currency."""
+    if explicit_amount is not None:
+        return flt(explicit_amount)
+
+    base_amount = flt(base_amount)
+    if not base_amount:
+        return 0.0
+
+    company_currency = doc.get("company_currency") or get_company_currency(doc.company)
+    account_currency = get_account_currency(account)
+    if not account_currency or account_currency == company_currency:
+        return base_amount
+
+    exchange_rate = _get_exchange_rate_for_account(
+        doc, account, account_currency, posting_date, exchange_side
+    )
+    return flt(base_amount / (exchange_rate or 1))
+
+
+def _get_exchange_rate_for_account(doc, account, account_currency, posting_date, exchange_side):
+    """Prefer the payment entry side's rate and fall back to the account's exchange rate."""
+    payment_side = _get_payment_side(doc, account, exchange_side)
+    if payment_side and payment_side.get("currency") == account_currency and payment_side.get("rate"):
+        return payment_side["rate"]
+
+    return get_exchange_rate(account_currency, doc.get("company_currency") or get_company_currency(doc.company), posting_date)
+
+
+def _get_payment_side(doc, account, exchange_side):
+    """Return the payment side metadata used to translate cheque GL amounts."""
+    payment_sides = {
+        "source": {
+            "account": doc.get("paid_from"),
+            "currency": doc.get("paid_from_account_currency"),
+            "rate": flt(doc.get("source_exchange_rate")),
+        },
+        "target": {
+            "account": doc.get("paid_to"),
+            "currency": doc.get("paid_to_account_currency"),
+            "rate": flt(doc.get("target_exchange_rate")),
+        },
+    }
+
+    if exchange_side in payment_sides:
+        return payment_sides[exchange_side]
+
+    if account and account == doc.get("paid_from"):
+        return payment_sides["source"]
+
+    if account and account == doc.get("paid_to"):
+        return payment_sides["target"]
+
+    return None
 
 
 def finalize_gl_entries(doc , gl_entries, cheque_status=None , mode_of_payment=None , bank_fess_amount=0.00 ,reverse=False, posting_date=None,cost_center=None ) :
@@ -52,13 +130,15 @@ def finalize_gl_entries(doc , gl_entries, cheque_status=None , mode_of_payment=N
 
 
 
-def create_party_gl(doc , posting_date=None , remarks=None , gl_entries=[]) :
+def create_party_gl(doc , posting_date=None , remarks=None , gl_entries=None) :
+    gl_entries = gl_entries if gl_entries is not None else []
     party_gl_entries = []
     doc.add_party_gl_entries(party_gl_entries)
     reverse_gl_manually(party_gl_entries , posting_date , remarks , gl_entries)
 
 
-def create_advance_gl(doc , posting_date=None , remarks=None , gl_entries=[]) :
+def create_advance_gl(doc , posting_date=None , remarks=None , gl_entries=None) :
+    gl_entries = gl_entries if gl_entries is not None else []
     advance_gl_entries = []
     doc.add_advance_gl_entries(advance_gl_entries , None)
     reverse_gl_manually(advance_gl_entries , posting_date , remarks , gl_entries)
