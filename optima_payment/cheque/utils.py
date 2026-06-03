@@ -1,3 +1,4 @@
+
 import frappe
 from frappe.utils import flt, getdate
 
@@ -279,32 +280,28 @@ def should_use_optima_implementation() -> bool:
 
     Checking per-company enable flag prevents site-wide activation.
     """
-    try:
-        if "optima_payment" not in frappe.get_installed_apps():
-            return False
-
-        if not frappe.db.exists("DocType", "Optima Payment Setting"):
-            return False
-
-        try:
-            if not frappe.db.has_column("Payment Entry", "cheque_status"):
-                return False
-        except Exception:
-            try:
-                frappe.db.sql("SELECT cheque_status FROM `tabPayment Entry` LIMIT 1", as_dict=True)
-            except Exception:
-                return False
-
-        enabled_count = frappe.db.count(
-            "Optima Payment Setting",
-            filters={"enable_optima_payment": 1}
-        )
-
-        return enabled_count > 0
-
-    except Exception as e:
-        frappe.logger().error(f"Error checking optima implementation availability: {str(e)}")
+    if "optima_payment" not in frappe.get_installed_apps():
         return False
+
+    if not frappe.db.exists("DocType", "Optima Payment Setting"):
+        return False
+
+    try:
+        if not frappe.db.has_column("Payment Entry", "cheque_status"):
+            return False
+    except Exception:
+        try:
+            frappe.db.sql("SELECT cheque_status FROM `tabPayment Entry` LIMIT 1", as_dict=True)
+        except Exception:
+            return False
+
+    enabled_count = frappe.db.count(
+        "Optima Payment Setting",
+        filters={"enable_optima_payment": 1}
+    )
+
+    return enabled_count > 0
+        
 
 def optima_get_advance_payment_entries(*args, **kwargs):
     """Route to Optima or ERPNext implementation based on per-site cached check."""
