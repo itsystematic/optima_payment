@@ -396,30 +396,15 @@ def _optima_get_advance_payment_entries(
 		q = q.select((payment_entry.unallocated_amount).as_("amount"))
 		q = q.where(payment_entry.unallocated_amount > 0)
 		
-		# FIX: Filter out problematic cheque statuses BUT allow NULL values.
-		# The original filter excluded NULLsB, so non-cheque payments (bank transfer, cash, etc.)
-		# with NULL cheque_status were incorrectly filtered out from Payment Reconciliation.
-		# 
-		# Root cause: SQL's NOT IN operator returns NULL (falsy) when comparing against NULL,
-		# effectively excluding all rows where cheque_status IS NULL.
-		# 
-		# Solution: Explicitly allow NULL or empty cheque_status values, ensuring that only
-		# actual cheque payments with problematic statuses are filtered out.
-		try:
-			# Double-check field existence before using it in query
-			if frappe.db.has_column("Payment Entry", "cheque_status"):
-				# Allow NULL/empty cheque_status (non-cheque payments) + valid cheque statuses
-				q = q.where(
-					(payment_entry.cheque_status.isnull()) |
-					(payment_entry.cheque_status == '') |
-					(~payment_entry.cheque_status.isin(['Returned', 'Rejected', 'Return To Holder']))
-				)
-			else:
-				frappe.logger().warning("cheque_status field not found in Payment Entry, skipping filter")
-		except Exception as e:
-			frappe.logger().error(f"Error checking cheque_status field: {str(e)}")
-			# Continue without the cheque_status filter
-			pass
+		# Filter out problematic cheque statuses but allow NULL values.
+		# NULL cheque_status indicates non-cheque payments (bank transfer, cash, etc.)
+		# which should be included in Payment Reconciliation.
+		# Field existence is already verified by should_use_optima_implementation().
+		q = q.where(
+			(payment_entry.cheque_status.isnull()) |
+			(payment_entry.cheque_status == '') |
+			(~payment_entry.cheque_status.isin(['Returned', 'Rejected', 'Return To Holder']))
+		)
 
 		unallocated = list(q.run(as_dict=True))
 		payment_entries += unallocated
