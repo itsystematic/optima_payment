@@ -374,6 +374,7 @@ def _optima_get_advance_payment_entries(
 			(payment_ref.allocated_amount).as_("amount"),
 			(payment_ref.name).as_("reference_row"),
 			(payment_ref.reference_name).as_("against_order"),
+            (payment_entry.book_advance_payments_in_separate_party_account),
 		)
 
 		q = q.where(payment_ref.reference_doctype == order_doctype)
