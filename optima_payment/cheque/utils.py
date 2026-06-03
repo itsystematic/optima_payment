@@ -277,7 +277,11 @@ def should_use_optima_implementation() -> bool:
     1. App is installed for current site
     2. DocType exists and is accessible
     3. cheque_status field exists in Payment Entry table
-    4. At least one Optima Payment Setting exists
+    4. At least one Optima Payment Setting exists AND is enabled for current company
+    
+    FIX: Check per-company enable flag instead of just checking if any setting exists.
+    This prevents Optima override from activating globally across all companies when
+    it should only apply to companies that have enabled it.
     """
     try:
         # Check if app is installed for current site
@@ -299,9 +303,16 @@ def should_use_optima_implementation() -> bool:
                 frappe.db.sql("SELECT cheque_status FROM `tabPayment Entry` LIMIT 1", as_dict=True)
             except Exception:
                 return False
-                
-        # Check if there are any settings configured
-        if frappe.db.count("Optima Payment Setting") == 0:
+        
+        # FIX: Check if there are any settings with enable_optima_payment=1 for current company
+        # Only enable the override if explicitly enabled for a specific company.
+        # This prevents the override from affecting all companies site-wide.
+        enabled_count = frappe.db.count(
+            "Optima Payment Setting",
+            filters={"enable_optima_payment": 1}
+        )
+        
+        if enabled_count == 0:
             return False
             
         return True
@@ -384,11 +395,24 @@ def _optima_get_advance_payment_entries(
 		q = q.select((payment_entry.unallocated_amount).as_("amount"))
 		q = q.where(payment_entry.unallocated_amount > 0)
 		
-		# Add cheque_status filter only if the field exists
+		# FIX: Filter out problematic cheque statuses BUT allow NULL values.
+		# The original filter excluded NULLsB, so non-cheque payments (bank transfer, cash, etc.)
+		# with NULL cheque_status were incorrectly filtered out from Payment Reconciliation.
+		# 
+		# Root cause: SQL's NOT IN operator returns NULL (falsy) when comparing against NULL,
+		# effectively excluding all rows where cheque_status IS NULL.
+		# 
+		# Solution: Explicitly allow NULL or empty cheque_status values, ensuring that only
+		# actual cheque payments with problematic statuses are filtered out.
 		try:
 			# Double-check field existence before using it in query
 			if frappe.db.has_column("Payment Entry", "cheque_status"):
-				q = q.where(~payment_entry.cheque_status.isin(['Returned', 'Rejected', 'Return To Holder']))
+				# Allow NULL/empty cheque_status (non-cheque payments) + valid cheque statuses
+				q = q.where(
+					(payment_entry.cheque_status.isnull()) |
+					(payment_entry.cheque_status == '') |
+					(~payment_entry.cheque_status.isin(['Returned', 'Rejected', 'Return To Holder']))
+				)
 			else:
 				frappe.logger().warning("cheque_status field not found in Payment Entry, skipping filter")
 		except Exception as e:
