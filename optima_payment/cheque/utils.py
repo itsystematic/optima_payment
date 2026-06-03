@@ -11,21 +11,21 @@ from optima_payment.optima_payment.doctype.cheque_action_log.cheque_action_log i
 # Main Function
 
 def create_gl_entry(
-    doc, 
+    doc,
     posting_date,
     account,
-    debit=0.0, 
+    debit=0.0,
     debit_in_account_currency=None,
-    credit=0.0, 
+    credit=0.0,
     credit_in_account_currency=None,
-    against=None, party=None, 
-    party_type=None , remarks=None,
-    against_voucher =None, 
-    against_voucher_type= None ,
-    cost_center = None,
+    against=None, party=None,
+    party_type=None, remarks=None,
+    against_voucher=None,
+    against_voucher_type=None,
+    cost_center=None,
     exchange_side=None,
 ):
-    """Build a cheque GL row with account-currency amounts derived from base values."""
+    """Build cheque GL entry with account-currency amounts derived from base values if not explicitly provided."""
     gl_entry = doc.get_gl_dict({
         "posting_date": posting_date or getdate(),
         "account": account,
@@ -35,10 +35,10 @@ def create_gl_entry(
         "party": party,
         "party_type": party_type,
         "remarks": remarks,
-        "cost_center" : cost_center if cost_center else doc.cost_center ,
-        "project" : doc.project ,
-        "against_voucher" : against_voucher,
-        "against_voucher_type":against_voucher_type
+        "cost_center": cost_center if cost_center else doc.cost_center,
+        "project": doc.project,
+        "against_voucher": against_voucher,
+        "against_voucher_type": against_voucher_type
     }, item=doc)
 
     gl_entry["debit_in_account_currency"] = _resolve_account_currency_amount(
@@ -116,62 +116,60 @@ def _get_payment_side(doc, account, exchange_side):
     return None
 
 
-def finalize_gl_entries(doc , gl_entries, cheque_status=None , mode_of_payment=None , bank_fess_amount=0.00 ,reverse=False, posting_date=None,cost_center=None ) :
-    """Finalize GL entries based on the document status and add cheque action log."""
-    make_gl_entries(gl_entries, adv_adj=0, merge_entries=False, cancel=0 if doc.get("docstatus") == 1 or reverse ==True else 1)
+def finalize_gl_entries(doc, gl_entries, cheque_status=None, mode_of_payment=None, bank_fess_amount=0.00, reverse=False, posting_date=None, cost_center=None):
+    """Submit GL entries and log cheque action. Cancels entries if doc is cancelled, unless reverse=True."""
+    make_gl_entries(gl_entries, adv_adj=0, merge_entries=False, cancel=0 if doc.get("docstatus") == 1 or reverse == True else 1)
     add_cheque_action_log(
-        doc , 
-        cheque_status , 
-        mode_of_payment , 
-        bank_fess_amount, 
-        posting_date, 
+        doc,
+        cheque_status,
+        mode_of_payment,
+        bank_fess_amount,
+        posting_date,
         cost_center
     )
 
 
 
-def create_party_gl(doc , posting_date=None , remarks=None , gl_entries=None) :
-    gl_entries = gl_entries if gl_entries is not None else []
+def create_party_gl(doc, posting_date=None, remarks=None, gl_entries=None):
+    """Generate reversed party GL entries and append to gl_entries list."""
+    if gl_entries is None:
+        gl_entries = []
     party_gl_entries = []
     doc.add_party_gl_entries(party_gl_entries)
-    reverse_gl_manually(party_gl_entries , posting_date , remarks , gl_entries)
+    reverse_gl_manually(party_gl_entries, posting_date, remarks, gl_entries)
 
 
-def create_advance_gl(doc , posting_date=None , remarks=None , gl_entries=None) :
-    gl_entries = gl_entries if gl_entries is not None else []
+def create_advance_gl(doc, posting_date=None, remarks=None, gl_entries=None):
+    """Generate reversed advance GL entries and append to gl_entries list."""
+    if gl_entries is None:
+        gl_entries = []
     advance_gl_entries = []
-    doc.add_advance_gl_entries(advance_gl_entries , None)
-    reverse_gl_manually(advance_gl_entries , posting_date , remarks , gl_entries)
+    doc.add_advance_gl_entries(advance_gl_entries, None)
+    reverse_gl_manually(advance_gl_entries, posting_date, remarks, gl_entries)
 
-def reverse_gl_manually(gl_entries_for_action:list[dict] , posting_date , remarks , gl_entries) :
-    for gl_entry in gl_entries_for_action :
+def reverse_gl_manually(gl_entries_for_action: list[dict], posting_date, remarks, gl_entries):
+    """Reverse GL entries by swapping debit/credit and append to target list."""
+    for gl_entry in gl_entries_for_action:
         gl_entry.update({
-            "posting_date" : posting_date if posting_date else getdate(),
+            "posting_date": posting_date if posting_date else getdate(),
             "debit": gl_entry.credit,
-            "debit_in_account_currency" : gl_entry.credit_in_account_currency ,
+            "debit_in_account_currency": gl_entry.credit_in_account_currency,
             "credit": gl_entry.debit,
-            "credit_in_account_currency" : gl_entry.debit_in_account_currency,
-            #"cost_center": gl_entry.cost_center,
-            #"against_voucher" : gl_entry.against_voucher,
-            #"against_voucher_type":gl_entry.against_voucher_type ,
-            #"project" : gl_entry.project ,
-            "remarks" : remarks if remarks else "Return Invoice By Cheque {0}".format(gl_entry.voucher_name),
+            "credit_in_account_currency": gl_entry.debit_in_account_currency,
+            "remarks": remarks if remarks else "Return Invoice By Cheque {0}".format(gl_entry.voucher_name),
         })
         gl_entries.append(gl_entry)
 
-# Fix Money in Words OF Frappe 
 def money_to_words(
     number: str | float | int,
     main_currency: str | None = None,
     fraction_currency: str | None = None,
 ):
-    """
-    Returns string in words with currency and fraction currency.
-    """
+    """Convert number to words with currency labels. Improved Frappe implementation."""
     from frappe.utils import get_defaults , flt , get_number_format_info , cint
 
     _ = frappe._
-    
+
 
     try:
         # note: `flt` returns 0 for invalid input and we don't want that
@@ -261,8 +259,8 @@ original_get_advance_payment_entries = get_advance_payment_entries
 # Module-level variable to cache the check result
 _use_optima_cache = {}
 
-def clear_optima_cache(site_name=None) -> None:
-    """Clear the optima implementation cache for a specific site or all sites"""
+def clear_optima_cache(site_name: str = None) -> None:
+    """Clear optima implementation cache for specific site or all sites."""
     global _use_optima_cache
     if site_name:
         _use_optima_cache.pop(site_name, None)
@@ -272,76 +270,59 @@ def clear_optima_cache(site_name=None) -> None:
 
 def should_use_optima_implementation() -> bool:
     """
-    Comprehensive check to determine if optima payment implementation should be used
-    Returns True only if ALL conditions are met:
-    1. App is installed for current site
-    2. DocType exists and is accessible
-    3. cheque_status field exists in Payment Entry table
-    4. At least one Optima Payment Setting exists AND is enabled for current company
-    
-    FIX: Check per-company enable flag instead of just checking if any setting exists.
-    This prevents Optima override from activating globally across all companies when
-    it should only apply to companies that have enabled it.
+    Check if Optima Payment override should be active.
+
+    Returns True only if:
+    - App installed and DocType accessible
+    - cheque_status field exists in Payment Entry
+    - At least one company has enable_optima_payment=1
+
+    Checking per-company enable flag prevents site-wide activation.
     """
     try:
-        # Check if app is installed for current site
         if "optima_payment" not in frappe.get_installed_apps():
             return False
-        
-        # Check if DocType exists and is accessible
+
         if not frappe.db.exists("DocType", "Optima Payment Setting"):
             return False
-            
-        # Check if cheque_status field exists in Payment Entry table
+
         try:
-            # Try to access the field metadata first
             if not frappe.db.has_column("Payment Entry", "cheque_status"):
                 return False
         except Exception:
-            # Fallback: try a simple query
             try:
                 frappe.db.sql("SELECT cheque_status FROM `tabPayment Entry` LIMIT 1", as_dict=True)
             except Exception:
                 return False
-        
-        # FIX: Check if there are any settings with enable_optima_payment=1 for current company
-        # Only enable the override if explicitly enabled for a specific company.
-        # This prevents the override from affecting all companies site-wide.
+
         enabled_count = frappe.db.count(
             "Optima Payment Setting",
             filters={"enable_optima_payment": 1}
         )
-        
-        if enabled_count == 0:
-            return False
-            
-        return True
-        
+
+        return enabled_count > 0
+
     except Exception as e:
         frappe.logger().error(f"Error checking optima implementation availability: {str(e)}")
         return False
 
 def optima_get_advance_payment_entries(*args, **kwargs):
-    """Wrapper that conditionally uses your custom implementation"""
+    """Route to Optima or ERPNext implementation based on per-site cached check."""
     try:
-        # Get current site name for caching
         site_name = frappe.local.site
 
-        # Check cache first
         if site_name not in _use_optima_cache:
             _use_optima_cache[site_name] = should_use_optima_implementation()
-        
-        # Use cached result
+
         if _use_optima_cache[site_name]:
             return _optima_get_advance_payment_entries(*args, **kwargs)
         else:
             return original_get_advance_payment_entries(*args, **kwargs)
-        
+
     except Exception as e:
         frappe.logger().error(f"Error in optima wrapper: {str(e)}")
-        # Always fallback to original implementation on any error
         return original_get_advance_payment_entries(*args, **kwargs)
-    
+
 
 def _optima_get_advance_payment_entries(
 	party_type,
@@ -355,6 +336,13 @@ def _optima_get_advance_payment_entries(
 	limit=None,
 	condition=None,
 ):
+	"""
+	Fetch advance payment entries with cheque_status filtering.
+
+	Extends ERPNext's get_advance_payment_entries to exclude payments
+	with problematic cheque statuses (Returned, Rejected, Return To Holder)
+	while preserving non-cheque payments (NULL cheque_status).
+	"""
 	payment_entries = []
 	payment_entry = frappe.qb.DocType("Payment Entry")
 
@@ -383,7 +371,7 @@ def _optima_get_advance_payment_entries(
 
 		allocated = list(q.run(as_dict=True))
 		payment_entries += allocated
-	
+
 	if include_unallocated:
 		q = get_common_query(
 			party_type,
@@ -395,11 +383,8 @@ def _optima_get_advance_payment_entries(
 		)
 		q = q.select((payment_entry.unallocated_amount).as_("amount"))
 		q = q.where(payment_entry.unallocated_amount > 0)
-		
-		# Filter out problematic cheque statuses but allow NULL values.
-		# NULL cheque_status indicates non-cheque payments (bank transfer, cash, etc.)
-		# which should be included in Payment Reconciliation.
-		# Field existence is already verified by should_use_optima_implementation().
+
+		# Exclude problematic cheque statuses but include NULL (non-cheque payments).
 		q = q.where(
 			(payment_entry.cheque_status.isnull()) |
 			(payment_entry.cheque_status == '') |
@@ -408,5 +393,5 @@ def _optima_get_advance_payment_entries(
 
 		unallocated = list(q.run(as_dict=True))
 		payment_entries += unallocated
-    
+
 	return payment_entries
