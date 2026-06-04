@@ -13,7 +13,7 @@ __version__ = "15.1.0"
 import frappe
 from frappe import _
 from erpnext.controllers import accounts_controller
-from optima_payment.cheque.utils import optima_get_advance_payment_entries
+from optima_payment.cheque.payment_entry_override import optima_get_advance_payment_entries
 
 def active_for_company(fn) :
     
