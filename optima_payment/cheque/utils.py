@@ -9,7 +9,12 @@ from erpnext.accounts.general_ledger import make_gl_entries
 
 from optima_payment.optima_payment.doctype.cheque_action_log.cheque_action_log import add_cheque_action_log
 
-# Main Function
+
+# ================================================================================================
+# GENERAL LEDGER ENTRY CREATION
+# ================================================================================================
+# NOTE: This section could be further improved by extracting all GL-related utilities
+# into a dedicated module (e.g., cheque/gl_utils.py) for better cohesion and reusability.
 
 def create_gl_entry(
     doc,
@@ -117,6 +122,10 @@ def _get_payment_side(doc, account, exchange_side):
     return None
 
 
+# ================================================================================================
+# GL ENTRY FINALIZATION AND REVERSAL
+# ================================================================================================
+
 def finalize_gl_entries(doc, gl_entries, cheque_status=None, mode_of_payment=None, bank_fess_amount=0.00, reverse=False, posting_date=None, cost_center=None):
     """Submit GL entries and log cheque action. Cancels entries if doc is cancelled, unless reverse=True."""
     make_gl_entries(gl_entries, adv_adj=0, merge_entries=False, cancel=0 if doc.get("docstatus") == 1 or reverse == True else 1)
@@ -128,7 +137,6 @@ def finalize_gl_entries(doc, gl_entries, cheque_status=None, mode_of_payment=Non
         posting_date,
         cost_center
     )
-
 
 
 def create_party_gl(doc, posting_date=None, remarks=None, gl_entries=None):
@@ -160,6 +168,11 @@ def reverse_gl_manually(gl_entries_for_action: list[dict], posting_date, remarks
             "remarks": remarks if remarks else "Return Invoice By Cheque {0}".format(gl_entry.voucher_name),
         })
         gl_entries.append(gl_entry)
+
+
+# ================================================================================================
+# NUMBER FORMATTING UTILITIES
+# ================================================================================================
 
 def money_to_words(
     number: str | float | int,
