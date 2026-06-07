@@ -157,7 +157,7 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends (
             (values) => {
                 if (values.posting_date < this.frm.doc.posting_date) {
                     frappe.throw(
-                        __("Posting Date should be greater than {0}", [
+                        __("Posting Date should not be earlier than {0}", [
                             this.frm.doc.posting_date,
                         ])
                     );
