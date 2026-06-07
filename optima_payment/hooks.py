@@ -51,6 +51,12 @@ page_js = {"print" : "public/js/print_view.js"}
 # include js in doctype views
 doctype_js = {
     "Payment Entry" : [
+        "public/js/payment_entry/config.js",
+        "public/js/payment_entry/field_manager.js",
+        "public/js/payment_entry/query_filters.js",
+        "public/js/payment_entry/dialog_factory.js",
+        "public/js/payment_entry/button_manager.js",
+        "public/js/payment_entry/controller.js",
         "public/js/payment_entry.js" ,
         "public/js/controllink.js" ,
         "public/js/form.js"
