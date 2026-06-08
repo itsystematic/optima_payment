@@ -103,11 +103,9 @@ function set_dynamic_labels_safely(frm) {
         frm.doc.payment_type === "Receive"
             ? "paid_from_account_currency"
             : "paid_to_account_currency";
-    const reference_field = frm.fields_dict.references;
-    const reference_grid = reference_field && reference_field.grid;
+    const reference_grid = frm.fields_dict.references?.grid;
 
     if (!reference_grid) {
-        console.warn("Payment Entry references grid is unavailable during set_dynamic_labels");
         return;
     }
 
@@ -118,6 +116,16 @@ function set_dynamic_labels_safely(frm) {
     reference_grid.refresh();
 }
 
+function wire_payment_entry_event_dispatchers(frm) {
+    // Route direct frm.events.* calls back through ScriptManager so ERPNext and Optima handlers both run.
+    ["mode_of_payment", "party", "payment_type", "set_dynamic_labels"].forEach((eventName) => {
+        frm.events[eventName] = (target_frm = frm) => {
+            const active_frm = target_frm?.trigger ? target_frm : frm;
+            return active_frm.trigger(eventName);
+        };
+    });
+}
+
 // ================================================================================================
 // CONTROLLER BOOTSTRAP
 // ================================================================================================
@@ -125,10 +133,7 @@ function set_dynamic_labels_safely(frm) {
 function ensure_optima_payment_controller(frm) {
     if (!frm.__optima_payment_controller) {
         frm.__optima_payment_controller = new optima_payment.PaymentEntryController({ frm });
-        extend_cscript(frm.cscript, frm.__optima_payment_controller);
     }
 
     return frm.__optima_payment_controller;
 }
-
-ensure_optima_payment_controller(cur_frm);

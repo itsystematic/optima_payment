@@ -29,8 +29,8 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends (
         ]);
     }
 
-    set_dynamic_labels(frm) {
-        set_dynamic_labels_safely(frm);
+    set_dynamic_labels() {
+        set_dynamic_labels_safely(this.frm);
     }
 
     // ================================================================================================
@@ -193,7 +193,7 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends (
     // These toggles stay coordinated so cheque-specific field states do not drift.
 
     multi_expense() {
-        const updates = { party_type: "" };
+        const updates = {};
 
         // Keep these toggles mutually exclusive so dependent fields stay in sync.
         if (this.frm.doc.multi_expense == 1 && this.frm.fields_dict.has_bank_fees) {
@@ -225,6 +225,41 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends (
     }
 };
 
+function sync_optima_payment_company_state(frm, controller) {
+    controller.fieldManager.hideLegacyFields();
+    frm.__optima_payment_company_state_loaded = true;
+
+    if (!frm.doc.company) {
+        frm.__optima_payment_enabled = false;
+        controller.fieldManager.setOptimaFieldsHidden(true);
+        return;
+    }
+
+    frappe.call({
+        method: "optima_payment.cheque.api.get_company_settings",
+        args: {
+            company: frm.doc.company,
+        },
+        callback: (r) => {
+            if (r.message && r.message.enable_optima_payment) {
+                frm.__optima_payment_enabled = true;
+                controller.fieldManager.setOptimaFieldsHidden(false);
+
+                frappe.run_serially([
+                    () => controller.get_mode_of_payment_options(),
+                    () => controller.fieldManager.updateAll(controller.mode_of_payment_doc),
+                    () => controller.queryFilterManager.setup(),
+                    () => controller.add_default_payee_name(),
+                ]);
+                return;
+            }
+
+            frm.__optima_payment_enabled = false;
+            controller.fieldManager.setOptimaFieldsHidden(true);
+        },
+    });
+}
+
 // ================================================================================================
 // FORM REGISTRATION
 // ================================================================================================
@@ -233,60 +268,47 @@ frappe.ui.form.on("Payment Entry", {
     setup(frm) {
         const controller = ensure_optima_payment_controller(frm);
 
-        frm.events.set_dynamic_labels = (target_frm) => {
-            set_dynamic_labels_safely(target_frm || frm);
-        };
+        wire_payment_entry_event_dispatchers(frm);
         controller.fieldManager.hideLegacyFields();
         controller.fieldManager.setOptimaFieldsHidden(true);
     },
-    before_save(frm) {
-        if (frm.doc.multi_expense === 1) {
-            frm.doc.party_type = "";
-        }
+    set_dynamic_labels(frm) {
+        set_dynamic_labels_safely(frm);
+    },
+    mode_of_payment(frm) {
+        return ensure_optima_payment_controller(frm).mode_of_payment();
+    },
+    party(frm) {
+        return ensure_optima_payment_controller(frm).party();
+    },
+    payment_type(frm) {
+        return ensure_optima_payment_controller(frm).payment_type();
+    },
+    receivable_cheque(frm) {
+        return ensure_optima_payment_controller(frm).receivable_cheque();
+    },
+    is_endorsed_cheque(frm) {
+        return ensure_optima_payment_controller(frm).is_endorsed_cheque(frm.doc);
+    },
+    multi_expense(frm) {
+        return ensure_optima_payment_controller(frm).multi_expense();
+    },
+    has_bank_fees(frm) {
+        return ensure_optima_payment_controller(frm).has_bank_fees();
     },
     refresh(frm) {
         const controller = ensure_optima_payment_controller(frm);
 
+        controller.refresh();
         controller.fieldManager.hideLegacyFields();
         if (frm.doc.company && !frm.__optima_payment_company_state_loaded) {
-            frm.trigger("company");
+            sync_optima_payment_company_state(frm, controller);
         }
     },
     company(frm) {
         const controller = ensure_optima_payment_controller(frm);
 
-        controller.fieldManager.hideLegacyFields();
-        frm.__optima_payment_company_state_loaded = true;
-
-        if (!frm.doc.company) {
-            frm.__optima_payment_enabled = false;
-            controller.fieldManager.setOptimaFieldsHidden(true);
-            return;
-        }
-
-        frappe.call({
-            method: "optima_payment.cheque.api.get_company_settings",
-            args: {
-                company: frm.doc.company,
-            },
-            callback: (r) => {
-                if (r.message && r.message.enable_optima_payment) {
-                    frm.__optima_payment_enabled = true;
-                    controller.fieldManager.setOptimaFieldsHidden(false);
-
-                    frappe.run_serially([
-                        () => controller.get_mode_of_payment_options(),
-                        () => controller.fieldManager.updateAll(controller.mode_of_payment_doc),
-                        () => controller.queryFilterManager.setup(),
-                        () => controller.add_default_payee_name(),
-                    ]);
-                    return;
-                }
-
-                frm.__optima_payment_enabled = false;
-                controller.fieldManager.setOptimaFieldsHidden(true);
-            },
-        });
+        sync_optima_payment_company_state(frm, controller);
     },
 });
 
