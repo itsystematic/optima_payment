@@ -28,6 +28,7 @@ frappe.ui.form.Form = class FrappeForm extends frappe.ui.form.Form {
 		if (skip_confirm) {
 			cancel_doc();
 		} else {
+			// this was added to origianl code
             let message = this.doctype == "Payment Entry" ? "Permanently Cancel All Transaction in {0}  Are You Sure ?" : "Permanently Cancel {0}?"   ;
 			frappe.confirm(
 				__(message, [this.docname]),
