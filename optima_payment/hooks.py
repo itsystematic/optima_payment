@@ -59,7 +59,6 @@ doctype_js = {
         "public/js/payment_entry/controller.js",
         "public/js/payment_entry.js" ,
         "public/js/controllink.js" ,
-        "public/js/form.js"
     ],
     "Expense Claim": "public/js/expense_claim.js",
     "Expense Claim Type" : "public/js/expense_claim_type.js",
