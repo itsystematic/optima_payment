@@ -29,6 +29,14 @@ optima_payment.PaymentEntryController = class PaymentEntryController extends (
         ]);
     }
 
+    before_save(doc) {
+        // If not multi expense, party and party type should be cleared as they are not relevant and cause GL fetch issues.
+        if(!doc.multi_expense) return;
+        
+        doc.party_type = "";
+        doc.party = "";
+    }
+
     set_dynamic_labels() {
         set_dynamic_labels_safely(this.frm);
     }
@@ -274,6 +282,9 @@ frappe.ui.form.on("Payment Entry", {
     },
     set_dynamic_labels(frm) {
         set_dynamic_labels_safely(frm);
+    },
+    before_save(frm) {
+        return ensure_optima_payment_controller(frm).before_save(frm.doc);
     },
     mode_of_payment(frm) {
         return ensure_optima_payment_controller(frm).mode_of_payment();
