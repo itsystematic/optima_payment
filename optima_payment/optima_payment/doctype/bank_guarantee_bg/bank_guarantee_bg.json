@@ -7,91 +7,82 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "recent_transaction_date",
-  "bank_guarantee_purpose",
+  "masters_tab",
   "bg_type",
-  "reference_doctype",
   "reference_docname",
-  "customer",
-  "supplier",
   "project",
-  "company",
   "cost_center",
-  "conditions",
-  "guarantee_type",
+  "company",
   "column_break_6",
   "posting_date",
   "bank_guarantee_status",
+  "reference_doctype",
+  "customer",
+  "supplier",
+  "section_break_14",
+  "amended_from",
+  "amounts_tab",
+  "order_amounts_section",
   "net_amount",
+  "column_break_vxxw",
   "tax_amount",
+  "column_break_egpm",
   "amount",
+  "guarantee_amounts_section",
+  "guarantee_type",
+  "column_break_mmpf",
   "bank_guarantee_percent",
+  "column_break_sukj",
   "bank_guarantee_amount",
-  "section_break_validity",
+  "validity_section",
   "start_date",
-  "validity",
-  "end_date",
-  "column_break_validity",
   "extend_validity",
+  "column_break_jddo",
+  "validity",
   "no_of_extended_days",
+  "column_break_scnc",
+  "end_date",
   "new_end_date",
   "returned_date",
-  "bank_account_info",
+  "bank_tab",
+  "bank_info_section",
   "bank",
   "account",
   "bank_account_no",
-  "column_break_17",
+  "column_break_muxr",
   "bank_account",
   "bank_guarantee_account",
-  "iban",
-  "branch_code",
-  "swift_number",
-  "section_break_commission",
-  "issue_commission",
-  "issue_commission_amount",
-  "bank_rate_",
-  "bank_amount",
-  "cheque_no",
-  "cheque_date",
-  "column_break_commission",
+  "facilities_section",
   "banking_facilities",
+  "bank_rate_",
+  "column_break_bacg",
   "bank_facilities_account",
   "facilities_rate_",
+  "commission_section",
+  "issue_commission",
+  "column_break_pqlk",
+  "issue_commission_amount",
+  "section_break_sfzc",
+  "bank_amount",
+  "column_break_bljw",
   "facility_amount",
-  "section_break_14",
+  "terms_tab",
+  "conditions",
+  "more_information",
+  "reference_tab",
   "name_of_beneficiary",
-  "charges",
-  "fixed_deposit_number",
-  "margin_money",
-  "column_break_19",
+  "column_break_vbsq",
   "bank_guarantee_number",
-  "remarks",
-  "amended_from",
-  "custom_section_break_sluyu",
-  "more_information"
+  "section_break_pljm",
+  "remarks"
  ],
  "fields": [
-  {
-   "fieldname": "recent_transaction_date",
-   "fieldtype": "Date",
-   "hidden": 1,
-   "label": "Recent Transaction Date"
-  },
-  {
-   "default": "Bank Guarantee",
-   "fieldname": "bank_guarantee_purpose",
-   "fieldtype": "Select",
-   "hidden": 1,
-   "label": "Bank Guarantee Purpose",
-   "options": "\nBank Guarantee\nCheque\nCash\nDeduction",
-   "read_only": 1
-  },
   {
    "default": "Providing",
    "fieldname": "bg_type",
    "fieldtype": "Select",
    "label": "Bank Guarantee Type",
-   "options": "\nProviding\nReceiving",
+   "options": "Providing\nReceiving",
    "reqd": 1
   },
   {
@@ -99,7 +90,8 @@
    "fieldname": "reference_doctype",
    "fieldtype": "Select",
    "label": "Reference Document Type",
-   "options": "Sales Order\nPurchase Invoice\nPurchase Order"
+   "options": "Sales Order\nPurchase Order",
+   "read_only": 1
   },
   {
    "fieldname": "reference_docname",
@@ -143,7 +135,8 @@
    "fieldname": "cost_center",
    "fieldtype": "Link",
    "label": "Cost Center",
-   "options": "Cost Center"
+   "options": "Cost Center",
+   "reqd": 1
   },
   {
    "fieldname": "conditions",
@@ -155,7 +148,7 @@
    "fieldname": "guarantee_type",
    "fieldtype": "Select",
    "label": "Guarantee Type",
-   "options": "\nInitial\nAdvanced Paymnet\nFinal\nFinacial",
+   "options": "Initial\nFinal\nAdvanced Payment\nFinancial",
    "reqd": 1
   },
   {
@@ -167,7 +160,8 @@
    "default": "Today",
    "fieldname": "posting_date",
    "fieldtype": "Date",
-   "label": "Posting Date"
+   "label": "Posting Date",
+   "reqd": 1
   },
   {
    "fieldname": "bank_guarantee_status",
@@ -200,7 +194,8 @@
   {
    "fieldname": "bank_guarantee_percent",
    "fieldtype": "Percent",
-   "label": "Bank Guarantee Percent"
+   "label": "Bank Guarantee Percent",
+   "reqd": 1
   },
   {
    "depends_on": "eval: doc.bank_guarantee_percent != 0",
@@ -212,11 +207,6 @@
    "reqd": 1
   },
   {
-   "fieldname": "section_break_validity",
-   "fieldtype": "Section Break",
-   "label": "Validity"
-  },
-  {
    "fieldname": "start_date",
    "fieldtype": "Date",
    "label": "Start Date",
@@ -225,17 +215,14 @@
   {
    "fieldname": "validity",
    "fieldtype": "Int",
-   "label": "Validity in Days"
+   "label": "Validity in Days",
+   "reqd": 1
   },
   {
    "fieldname": "end_date",
    "fieldtype": "Date",
    "label": "End Date",
    "read_only": 1
-  },
-  {
-   "fieldname": "column_break_validity",
-   "fieldtype": "Column Break"
   },
   {
    "default": "0",
@@ -265,18 +252,14 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval:doc.bank_guarantee_purpose=='Bank Guarantee'||doc.custom_bank_guarantee_purpose=='Cheque'",
-   "fieldname": "bank_account_info",
-   "fieldtype": "Section Break",
-   "label": "Bank Account Info"
-  },
-  {
    "fieldname": "bank",
    "fieldtype": "Link",
    "label": "Bank",
-   "options": "Bank"
+   "options": "Bank",
+   "reqd": 1
   },
   {
+   "depends_on": "eval:doc.bank ;",
    "fieldname": "account",
    "fieldtype": "Link",
    "label": "Account",
@@ -291,10 +274,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "column_break_17",
-   "fieldtype": "Column Break"
-  },
-  {
    "depends_on": "eval:doc.bg_type == \"Providing\" && doc.bank",
    "fieldname": "bank_account",
    "fieldtype": "Link",
@@ -302,38 +281,12 @@
    "options": "Bank Account"
   },
   {
+   "depends_on": "eval:doc.bank ;",
    "fieldname": "bank_guarantee_account",
    "fieldtype": "Link",
    "label": "Bank Guarantee Account",
    "options": "Account",
    "read_only": 1
-  },
-  {
-   "fieldname": "iban",
-   "fieldtype": "Data",
-   "hidden": 1,
-   "label": "IBAN",
-   "options": "IBAN",
-   "read_only": 1
-  },
-  {
-   "fieldname": "branch_code",
-   "fieldtype": "Data",
-   "hidden": 1,
-   "label": "Branch Code",
-   "read_only": 1
-  },
-  {
-   "fieldname": "swift_number",
-   "fieldtype": "Data",
-   "hidden": 1,
-   "label": "SWIFT number",
-   "read_only": 1
-  },
-  {
-   "fieldname": "section_break_commission",
-   "fieldtype": "Section Break",
-   "label": "Commission & Facilities"
   },
   {
    "default": "0",
@@ -347,7 +300,8 @@
    "depends_on": "eval:doc.issue_commission == 1",
    "fieldname": "issue_commission_amount",
    "fieldtype": "Float",
-   "label": "Issue Commission Amount"
+   "label": "Issue Commission Amount",
+   "mandatory_depends_on": "eval:doc.issue_commission == 1"
   },
   {
    "default": "100",
@@ -359,26 +313,10 @@
   {
    "fieldname": "bank_amount",
    "fieldtype": "Float",
-   "label": "Bank Amount"
+   "label": "Bank Amount",
+   "read_only": 1
   },
   {
-   "depends_on": "eval: doc.bank_guarantee_purpose == 'Cheque'",
-   "fieldname": "cheque_no",
-   "fieldtype": "Data",
-   "label": "Cheque No"
-  },
-  {
-   "depends_on": "eval: doc.bank_guarantee_purpose == 'Cheque'",
-   "fieldname": "cheque_date",
-   "fieldtype": "Date",
-   "label": "Cheque Date"
-  },
-  {
-   "fieldname": "column_break_commission",
-   "fieldtype": "Column Break"
-  },
-  {
-   "depends_on": "eval:doc.bank_guarantee_purpose == \"Bank Guarantee\"",
    "fieldname": "banking_facilities",
    "fieldtype": "Select",
    "label": "Banking Facilities",
@@ -389,19 +327,22 @@
    "fieldname": "bank_facilities_account",
    "fieldtype": "Link",
    "label": "Bank Facilities Account",
+   "mandatory_depends_on": "eval: doc.banking_facilities == 'With Facilities'",
    "options": "Bank Account"
   },
   {
    "depends_on": "eval:doc.banking_facilities == \"With Facilities\"",
    "fieldname": "facilities_rate_",
    "fieldtype": "Percent",
-   "label": "Facilities Rate (%)"
+   "label": "Facilities Rate (%)",
+   "mandatory_depends_on": "eval: doc.banking_facilities == 'With Facilities'"
   },
   {
    "depends_on": "eval:doc.banking_facilities == \"With Facilities\"",
    "fieldname": "facility_amount",
    "fieldtype": "Float",
-   "label": "Facility Amount"
+   "label": "Facility Amount",
+   "read_only": 1
   },
   {
    "fieldname": "section_break_14",
@@ -413,28 +354,6 @@
    "fieldtype": "Data",
    "label": "Name of Beneficiary",
    "reqd": 1
-  },
-  {
-   "fieldname": "charges",
-   "fieldtype": "Currency",
-   "hidden": 1,
-   "label": "Charges Incurred"
-  },
-  {
-   "fieldname": "fixed_deposit_number",
-   "fieldtype": "Data",
-   "hidden": 1,
-   "label": "Fixed Deposit Number"
-  },
-  {
-   "fieldname": "margin_money",
-   "fieldtype": "Currency",
-   "hidden": 1,
-   "label": "Margin Money"
-  },
-  {
-   "fieldname": "column_break_19",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "bank_guarantee_number",
@@ -459,18 +378,122 @@
    "read_only": 1
   },
   {
-   "fieldname": "custom_section_break_sluyu",
-   "fieldtype": "Section Break"
-  },
-  {
    "fieldname": "more_information",
    "fieldtype": "Text Editor",
    "label": "Clauses and Conditions"
+  },
+  {
+   "fieldname": "amounts_tab",
+   "fieldtype": "Tab Break",
+   "label": "Details"
+  },
+  {
+   "fieldname": "order_amounts_section",
+   "fieldtype": "Section Break",
+   "label": "Order Amounts"
+  },
+  {
+   "fieldname": "column_break_vxxw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_egpm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "guarantee_amounts_section",
+   "fieldtype": "Section Break",
+   "label": "Guarantee Amounts"
+  },
+  {
+   "fieldname": "column_break_mmpf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_sukj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "bank_tab",
+   "fieldtype": "Tab Break",
+   "label": "Bank"
+  },
+  {
+   "fieldname": "column_break_muxr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_sfzc",
+   "fieldtype": "Section Break",
+   "label": "Final Amounts"
+  },
+  {
+   "fieldname": "column_break_bljw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "terms_tab",
+   "fieldtype": "Tab Break",
+   "label": "Terms"
+  },
+  {
+   "fieldname": "reference_tab",
+   "fieldtype": "Tab Break",
+   "label": "Reference"
+  },
+  {
+   "fieldname": "column_break_vbsq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_pljm",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "masters_tab",
+   "fieldtype": "Tab Break",
+   "label": "Masters"
+  },
+  {
+   "fieldname": "validity_section",
+   "fieldtype": "Section Break",
+   "label": "Validity Dates"
+  },
+  {
+   "fieldname": "column_break_jddo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_scnc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "bank_info_section",
+   "fieldtype": "Section Break",
+   "label": "Bank Info"
+  },
+  {
+   "fieldname": "facilities_section",
+   "fieldtype": "Section Break",
+   "label": "Facilities"
+  },
+  {
+   "fieldname": "column_break_bacg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "commission_section",
+   "fieldtype": "Section Break",
+   "label": "Commission"
+  },
+  {
+   "fieldname": "column_break_pqlk",
+   "fieldtype": "Column Break"
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2026-06-18 11:19:33.101320",
+ "modified": "2026-06-18 15:45:00.410692",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Bank Guarantee-BG",
