@@ -67,6 +67,7 @@
   "column_break_bljw",
   "facility_amount",
   "terms_tab",
+  "bank_guarantee_purpose",
   "conditions",
   "more_information",
   "reference_tab",
@@ -489,11 +490,19 @@
   {
    "fieldname": "column_break_pqlk",
    "fieldtype": "Column Break"
+  },
+  {
+   "default": "Bank Guarantee",
+   "fieldname": "bank_guarantee_purpose",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Bank Guarantee Purpose",
+   "options": "Bank Guarantee"
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2026-06-18 15:45:00.410692",
+ "modified": "2026-06-18 16:38:54.058473",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Bank Guarantee-BG",
