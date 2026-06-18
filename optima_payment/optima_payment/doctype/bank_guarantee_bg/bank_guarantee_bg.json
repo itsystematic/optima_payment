@@ -27,29 +27,33 @@
   "amount",
   "bank_guarantee_percent",
   "bank_guarantee_amount",
-  "returned_date",
+  "section_break_validity",
   "start_date",
   "validity",
   "end_date",
+  "column_break_validity",
   "extend_validity",
   "no_of_extended_days",
   "new_end_date",
+  "returned_date",
   "bank_account_info",
   "bank",
   "account",
   "bank_account_no",
-  "issue_commission",
-  "issue_commission_amount",
-  "bank_rate_",
-  "bank_amount",
-  "cheque_no",
-  "cheque_date",
   "column_break_17",
   "bank_account",
   "bank_guarantee_account",
   "iban",
   "branch_code",
   "swift_number",
+  "section_break_commission",
+  "issue_commission",
+  "issue_commission_amount",
+  "bank_rate_",
+  "bank_amount",
+  "cheque_no",
+  "cheque_date",
+  "column_break_commission",
   "banking_facilities",
   "bank_facilities_account",
   "facilities_rate_",
@@ -208,10 +212,9 @@
    "reqd": 1
   },
   {
-   "fieldname": "returned_date",
-   "fieldtype": "Date",
-   "label": "Returned Date",
-   "read_only": 1
+   "fieldname": "section_break_validity",
+   "fieldtype": "Section Break",
+   "label": "Validity"
   },
   {
    "fieldname": "start_date",
@@ -229,6 +232,10 @@
    "fieldtype": "Date",
    "label": "End Date",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_validity",
+   "fieldtype": "Column Break"
   },
   {
    "default": "0",
@@ -249,6 +256,12 @@
    "fieldname": "new_end_date",
    "fieldtype": "Date",
    "label": "New End Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "returned_date",
+   "fieldtype": "Date",
+   "label": "Returned Date",
    "read_only": 1
   },
   {
@@ -276,44 +289,6 @@
    "hidden": 1,
    "label": "Bank Account No",
    "read_only": 1
-  },
-  {
-   "default": "0",
-   "depends_on": "eval:doc.bg_type==\"Providing\"",
-   "fieldname": "issue_commission",
-   "fieldtype": "Check",
-   "label": "Issue Commission"
-  },
-  {
-   "default": "0",
-   "depends_on": "eval:doc.issue_commission == 1",
-   "fieldname": "issue_commission_amount",
-   "fieldtype": "Float",
-   "label": "Issue Commission Amount"
-  },
-  {
-   "default": "100",
-   "fieldname": "bank_rate_",
-   "fieldtype": "Percent",
-   "label": "Bank Rate (%)",
-   "read_only_depends_on": "eval: doc.banking_facilities == 'Without Facilities'"
-  },
-  {
-   "fieldname": "bank_amount",
-   "fieldtype": "Float",
-   "label": "Bank Amount"
-  },
-  {
-   "depends_on": "eval: doc.bank_guarantee_purpose == 'Cheque'",
-   "fieldname": "cheque_no",
-   "fieldtype": "Data",
-   "label": "Cheque No"
-  },
-  {
-   "depends_on": "eval: doc.bank_guarantee_purpose == 'Cheque'",
-   "fieldname": "cheque_date",
-   "fieldtype": "Date",
-   "label": "Cheque Date"
   },
   {
    "fieldname": "column_break_17",
@@ -354,6 +329,53 @@
    "hidden": 1,
    "label": "SWIFT number",
    "read_only": 1
+  },
+  {
+   "fieldname": "section_break_commission",
+   "fieldtype": "Section Break",
+   "label": "Commission & Facilities"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.bg_type==\"Providing\"",
+   "fieldname": "issue_commission",
+   "fieldtype": "Check",
+   "label": "Issue Commission"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.issue_commission == 1",
+   "fieldname": "issue_commission_amount",
+   "fieldtype": "Float",
+   "label": "Issue Commission Amount"
+  },
+  {
+   "default": "100",
+   "fieldname": "bank_rate_",
+   "fieldtype": "Percent",
+   "label": "Bank Rate (%)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "bank_amount",
+   "fieldtype": "Float",
+   "label": "Bank Amount"
+  },
+  {
+   "depends_on": "eval: doc.bank_guarantee_purpose == 'Cheque'",
+   "fieldname": "cheque_no",
+   "fieldtype": "Data",
+   "label": "Cheque No"
+  },
+  {
+   "depends_on": "eval: doc.bank_guarantee_purpose == 'Cheque'",
+   "fieldname": "cheque_date",
+   "fieldtype": "Date",
+   "label": "Cheque Date"
+  },
+  {
+   "fieldname": "column_break_commission",
+   "fieldtype": "Column Break"
   },
   {
    "depends_on": "eval:doc.bank_guarantee_purpose == \"Bank Guarantee\"",
@@ -448,7 +470,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2026-06-18 11:01:45.811265",
+ "modified": "2026-06-18 11:19:33.101320",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Bank Guarantee-BG",
