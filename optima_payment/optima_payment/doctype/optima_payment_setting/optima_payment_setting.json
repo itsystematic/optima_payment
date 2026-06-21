@@ -77,13 +77,13 @@
   {
    "fieldname": "bank_guarantee_insurance_account",
    "fieldtype": "Link",
-   "label": "Insurance Account",
+   "label": "Provided Bank Guarantee  Account ",
    "options": "Account"
   },
   {
    "fieldname": "bank_guarantee_receiving_insurance_account",
    "fieldtype": "Link",
-   "label": "Receiving Insurance Account",
+   "label": "Receiving Bank Guarantee Account ",
    "options": "Account"
   },
   {
@@ -105,7 +105,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-31 22:01:19.156676",
+ "modified": "2026-06-21 13:21:09.299683",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Optima Payment Setting",
