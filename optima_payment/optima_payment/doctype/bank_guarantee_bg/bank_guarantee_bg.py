@@ -20,6 +20,58 @@ from erpnext.accounts.doctype.accounting_dimension.accounting_dimension import g
 
 
 class BankGuaranteeBG(Document):
+    # begin: auto-generated types
+    # This code is auto-generated. Do not modify anything in this block.
+
+    from typing import TYPE_CHECKING
+
+    if TYPE_CHECKING:
+        from frappe.types import DF
+
+        account: DF.Link | None
+        amended_from: DF.Link | None
+        amount: DF.Currency
+        bank: DF.Link
+        bank_account: DF.Link | None
+        bank_account_no: DF.Data | None
+        bank_amount: DF.Float
+        bank_facilities_account: DF.Link | None
+        bank_guarantee_account: DF.Link | None
+        bank_guarantee_amount: DF.Currency
+        bank_guarantee_number: DF.Data
+        bank_guarantee_percent: DF.Percent
+        bank_guarantee_purpose: DF.Literal["Bank Guarantee"]
+        bank_guarantee_status: DF.Literal["New", "Exists", "Issued", "Returned", "Expired", "Extended", "Lost"]
+        bank_rate_: DF.Percent
+        banking_facilities: DF.Literal["Without Facilities", "With Facilities"]
+        bg_type: DF.Literal["Providing", "Receiving"]
+        company: DF.Link | None
+        conditions: DF.Literal["", "With Condition", "Without Condition"]
+        cost_center: DF.Link
+        customer: DF.Link | None
+        end_date: DF.Date | None
+        extend_validity: DF.Check
+        facilities_rate_: DF.Percent
+        facility_amount: DF.Float
+        guarantee_type: DF.Literal["Initial", "Final", "Advanced Payment", "Financial"]
+        issue_commission: DF.Check
+        issue_commission_amount: DF.Float
+        more_information: DF.TextEditor | None
+        name_of_beneficiary: DF.Data
+        net_amount: DF.Currency
+        new_end_date: DF.Date | None
+        no_of_extended_days: DF.Int
+        posting_date: DF.Date
+        project: DF.Link
+        reference_docname: DF.DynamicLink
+        reference_doctype: DF.Literal["Sales Order", "Purchase Order"]
+        remarks: DF.SmallText | None
+        returned_date: DF.Date | None
+        start_date: DF.Date
+        supplier: DF.Link | None
+        tax_amount: DF.Currency
+        validity: DF.Int
+    # end: auto-generated types
 
     def before_submit(self):
         self.add_remarks()
