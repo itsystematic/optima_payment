@@ -260,10 +260,11 @@
    "reqd": 1
   },
   {
-   "depends_on": "eval:doc.bank ;",
+   "depends_on": "eval:doc.bank",
    "fieldname": "account",
    "fieldtype": "Link",
    "label": "Account",
+   "mandatory_depends_on": "eval: doc.bg_type == \"Receiving\"",
    "options": "Account",
    "read_only": 1
   },
@@ -275,7 +276,7 @@
    "read_only": 1
   },
   {
-   "depends_on": "eval:doc.bg_type == \"Providing\" && doc.bank",
+   "depends_on": "eval: doc.bank",
    "fieldname": "bank_account",
    "fieldtype": "Link",
    "label": "Bank Account",
@@ -502,7 +503,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2026-06-21 13:30:44.077101",
+ "modified": "2026-06-21 15:48:32.664992",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Bank Guarantee-BG",

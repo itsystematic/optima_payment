@@ -170,13 +170,13 @@ class BankGuaranteeBG(Document):
         if self.bank_guarantee_purpose in ['Bank Guarantee' , 'Cheque'] and self.bg_type == "Receiving" :
 
             self.make_row_in_gl(
-                account=settings.bank_guarantee_receiving_insurance_account ,
+                account= self.account ,
                 credit_or_debit=type_debit ,
                 amount=self.amount ,
                 gl_entries= gl_entries
             )
             self.make_row_in_gl(
-                account= self.bank_guarantee_account or  settings.bank_guarantee_insurance_account ,
+                account= settings.bank_guarantee_receiving_insurance_account ,
                 credit_or_debit=type_credit ,
                 amount= self.amount ,
                 gl_entries=gl_entries
@@ -382,7 +382,7 @@ class BankGuaranteeBG(Document):
         recent_transaction_date = self.get_recent_transactoin_date()
 
         loss_date = frappe.utils.getdate(loss_date)
-        if loss_date < recent_transaction_date :
+        if loss_date < recent_transaction_date : # After
             frappe.throw(_("Loss date cannot be before posting date"))
 
         settings = self.get_optima_payment_setting()
