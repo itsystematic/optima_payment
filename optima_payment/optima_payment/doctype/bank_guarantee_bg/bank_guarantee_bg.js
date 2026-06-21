@@ -39,10 +39,19 @@ frappe.ui.form.on('Bank Guarantee-BG', {
                 },
             };
         });
+
         frm.set_query("project", function () {
             return {
                 filters: {
                     customer: frm.doc.customer,
+                },
+            };
+        });
+
+        frm.set_query("reference_docname", function () {
+            return {
+                filters: {
+                    docstatus: 1,
                 },
             };
         });
