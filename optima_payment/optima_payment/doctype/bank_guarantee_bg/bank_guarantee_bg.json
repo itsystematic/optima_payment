@@ -494,6 +494,7 @@
   },
   {
    "default": "Bank Guarantee",
+   "description": "This is legacy, to be deleted after checking",
    "fieldname": "bank_guarantee_purpose",
    "fieldtype": "Select",
    "hidden": 1,
@@ -503,7 +504,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2026-06-21 15:48:32.664992",
+ "modified": "2026-06-21 16:02:37.076724",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Bank Guarantee-BG",

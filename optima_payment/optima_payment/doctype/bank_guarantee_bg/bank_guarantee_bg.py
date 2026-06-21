@@ -35,7 +35,7 @@ class BankGuaranteeBG(Document):
             frappe.throw(_("Select the customer or supplier."))
 
     def validate_bank_or_cheque(self):
-        if (not self.bank_guarantee_number or not self.name_of_beneficiary) and self.bank_guarantee_purpose in ['Bank Guarantee' , 'Cheque']:
+        if not self.bank_guarantee_number or not self.name_of_beneficiary:
             frappe.throw(_("Enter the Bank Guarantee Number or name of the Beneficiary before submitting."))
 
     def validate_company_account(self):
@@ -87,10 +87,10 @@ class BankGuaranteeBG(Document):
 
     def set_status(self):
         if self.bank_guarantee_status == "New" :
-            if  self.bank_guarantee_purpose in ['Bank Guarantee' , 'Cheque' , "Cash" , "Deduction"] and self.bg_type == "Providing" :
+            if self.bg_type == "Providing" :
                 self.set("bank_guarantee_status" , "Issued")
 
-            elif self.bank_guarantee_purpose in ['Bank Guarantee' , 'Cheque' , "Cash" , "Deduction"] and self.bg_type == "Receiving":
+            elif self.bg_type == "Receiving":
                 self.set("bank_guarantee_status" , "Exists")
 
 
@@ -115,18 +115,13 @@ class BankGuaranteeBG(Document):
 
         posting_date = self.get_posting_date()
 
-        self.make_gl_of_bank_or_cheque_providing(gl_entries , type_debit , type_credit , company, settings, posting_date)
-        self.make_gl_of_bank_or_cheque_receiving(gl_entries , type_debit , type_credit , settings)
-        self.make_gl_of_cash_providing(gl_entries , type_debit , type_credit , company, settings)
-        self.make_gl_of_cash_receiving(gl_entries , type_debit , type_credit , company, settings)
-        self.make_gl_of_deduction_providing(gl_entries , type_debit , type_credit , company, settings)
-        self.make_gl_of_deduction_receiving(gl_entries , type_debit , type_credit , company, settings)
+        self.make_gl_of_providing(gl_entries , type_debit , type_credit , company, settings, posting_date)
 
         return gl_entries
 
 
-    def make_gl_of_bank_or_cheque_providing(self ,gl_entries , type_debit , type_credit , company, settings, posting_date):
-        if self.bank_guarantee_purpose in ['Bank Guarantee' , 'Cheque'] and self.bg_type == "Providing" :
+    def make_gl_of_providing(self ,gl_entries , type_debit , type_credit , company, settings, posting_date):
+        if self.bg_type == "Providing" :
 
 
             self.make_row_in_gl(
@@ -165,60 +160,6 @@ class BankGuaranteeBG(Document):
                     is_bank_guarantee_comission_entry = True
                 )
 
-
-    def make_gl_of_bank_or_cheque_receiving(self , gl_entries , type_debit , type_credit , settings):
-        if self.bank_guarantee_purpose in ['Bank Guarantee' , 'Cheque'] and self.bg_type == "Receiving" :
-
-            self.make_row_in_gl(
-                account= self.account ,
-                credit_or_debit=type_debit ,
-                amount=self.amount ,
-                gl_entries= gl_entries
-            )
-            self.make_row_in_gl(
-                account= settings.bank_guarantee_receiving_insurance_account ,
-                credit_or_debit=type_credit ,
-                amount= self.amount ,
-                gl_entries=gl_entries
-            )
-
-
-    def make_gl_of_cash_providing(self , gl_entries , type_debit , type_credit , company, settings):
-        if self.bank_guarantee_purpose == "Cash" and self.bg_type == "Providing"  :
-
-            self.make_row_in_gl(
-                account= self.bank_guarantee_account   if self.bank_guarantee_account  else  settings.bank_guarantee_insurance_account ,
-                credit_or_debit=type_debit ,
-                amount=self.amount ,
-                gl_entries= gl_entries
-            )
-            self.make_row_in_gl(
-                account=company.default_cash_account ,
-                credit_or_debit=type_credit ,
-                amount= self.amount ,
-                gl_entries=gl_entries
-            )
-
-    def make_gl_of_cash_receiving(self , gl_entries , type_debit , type_credit , company, settings):
-        if self.bank_guarantee_purpose == "Cash" and self.bg_type == "Receiving"  :
-            self.make_row_in_gl(account=company.default_cash_account ,credit_or_debit=type_debit ,amount= self.amount ,gl_entries= gl_entries )
-            self.make_row_in_gl(account=settings.bank_guarantee_receiving_insurance_account ,credit_or_debit=type_credit ,amount= self.amount ,gl_entries= gl_entries)
-
-
-    def make_gl_of_deduction_providing(self , gl_entries , type_debit , type_credit , company, settings):
-        if self.bank_guarantee_purpose == "Deduction" and self.bg_type == "Providing"  :
-            self.make_row_in_gl(account=company.default_payable_account ,credit_or_debit=type_debit ,amount= self.amount ,gl_entries= gl_entries)
-            self.make_row_in_gl(account= settings.bank_guarantee_receiving_insurance_account ,credit_or_debit=type_credit ,amount= self.amount ,gl_entries=  gl_entries )
-
-    def make_gl_of_deduction_receiving(self , gl_entries , type_debit , type_credit , company, settings):
-        if self.bank_guarantee_purpose == "Deduction" and self.bg_type == "Receiving"  :
-            self.make_row_in_gl(
-                account= self.bank_guarantee_account   if self.bank_guarantee_account  else  settings.bank_guarantee_insurance_account ,
-                credit_or_debit=type_debit ,
-                amount=self.amount ,
-                gl_entries=gl_entries
-            )
-            self.make_row_in_gl(account=company.default_receivable_account ,credit_or_debit=type_credit ,amount= self.amount,gl_entries= gl_entries )
 
     def make_row_in_gl(
         self,
@@ -352,7 +293,7 @@ class BankGuaranteeBG(Document):
 
     def make_gl_entry_of_extend(self, extend_to_date, amount) :
         gl_entries = []
-        if self.bank_guarantee_purpose == 'Bank Guarantee' and self.bg_type == "Providing" :
+        if self.bg_type == "Providing" :
             company = self.get_company()
             settings = self.get_optima_payment_setting(company.name)
             self.make_row_in_gl(
@@ -391,22 +332,42 @@ class BankGuaranteeBG(Document):
         self.make_reverse_gl_entries(gl_entries, adv_adj=False, date=loss_date, company=self.get_company())
 
         gl_entries = []
-        self.make_row_in_gl(
-            account= settings.bank_guarantee_loss_expense_account ,
-            credit_or_debit="debit" ,
-            amount= self.bank_guarantee_amount,
-            cost_center = self.cost_center,
-            posting_date = loss_date ,
-            gl_entries= gl_entries,
-        )
-        self.make_row_in_gl(
-            account=self.account ,
-            credit_or_debit="credit" ,
-            amount= self.bank_guarantee_amount ,
-            posting_date = loss_date ,
-            cost_center= self.cost_center,
-            gl_entries= gl_entries,
-        )
+
+        if self.bg_type == "Providing":
+            self.make_row_in_gl(
+                account= settings.bank_guarantee_loss_expense_account ,
+                credit_or_debit="debit" ,
+                amount= self.bank_guarantee_amount,
+                cost_center = self.cost_center,
+                posting_date = loss_date ,
+                gl_entries= gl_entries,
+            )
+            self.make_row_in_gl(
+                account=self.account ,
+                credit_or_debit="credit" ,
+                amount= self.bank_guarantee_amount ,
+                posting_date = loss_date ,
+                cost_center= self.cost_center,
+                gl_entries= gl_entries,
+            )
+
+        elif self.bg_type == "Receiving":
+            self.make_row_in_gl(
+                account=self.account ,
+                credit_or_debit="debit" ,
+                amount= self.bank_guarantee_amount ,
+                posting_date = loss_date ,
+                cost_center= self.cost_center,
+                gl_entries= gl_entries,
+            )
+            self.make_row_in_gl(
+                account= settings.bank_guarantee_receiving_insurance_account ,
+                credit_or_debit="credit" ,
+                amount= self.bank_guarantee_amount,
+                posting_date = loss_date ,
+                cost_center = self.cost_center,
+                gl_entries= gl_entries,
+            )
 
         make_gl_entries(gl_entries, cancel=False, merge_entries=False ,update_outstanding="No")
         self.update_fields_dict({ "bank_guarantee_status" : "Lost" })
@@ -468,6 +429,9 @@ class BankGuaranteeBG(Document):
         """
         voucher_no = self.name
         d = frappe.get_all("GL Entry", filters={'voucher_no': voucher_no}, pluck='posting_date',order_by='posting_date desc', limit=1)
+        
+        if not d: return None
+
         recent_transaction_date = d[0]
 
         return frappe.utils.getdate(recent_transaction_date)
