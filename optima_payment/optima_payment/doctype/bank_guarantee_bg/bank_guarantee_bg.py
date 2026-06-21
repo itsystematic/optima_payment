@@ -422,17 +422,19 @@ class BankGuaranteeBG(Document):
             (ple.voucher_type == self.doctype) & (ple.voucher_no == self.name)
         ).run()
 
-    def get_recent_transactoin_date(self) -> (date | None):
+    def get_recent_transactoin_date(self) -> date:
         """
             get recent transaction date for the voucher
             To Ensure that next transation is after previous one
+
+            Falls back to posting_date when no GL Entry exists yet (e.g. a Receiving
+            guarantee that hasn't posted any GL on submit) so callers always get a
+            valid floor to compare against.
         """
         voucher_no = self.name
         d = frappe.get_all("GL Entry", filters={'voucher_no': voucher_no}, pluck='posting_date',order_by='posting_date desc', limit=1)
-        
-        if not d: return None
 
-        recent_transaction_date = d[0]
+        recent_transaction_date = d[0] if d else self.posting_date
 
         return frappe.utils.getdate(recent_transaction_date)
 
