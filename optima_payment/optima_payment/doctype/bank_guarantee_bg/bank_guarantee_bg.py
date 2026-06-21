@@ -173,6 +173,8 @@ class BankGuaranteeBG(Document):
 
         self.update_fields_dict({"bank_guarantee_status" : "Returned" ,"returned_date" : returned_date })
 
+        frappe.msgprint(_("Bank Guarantee has been returned successfully"))
+
     @frappe.whitelist()
     def make_extend_action(self ,amount ,end_date ,days ,extend_to_date, has_commission) :
         last_gl_entry_date = self.get_recent_transactoin_date()
@@ -195,6 +197,8 @@ class BankGuaranteeBG(Document):
         # no commission? then no need to make gl entry
         if has_commission:
             self.make_gl_entry_of_extend(extend_to_date, amount)
+
+        frappe.msgprint(_("Bank Guarantee has been extended successfully"))
 
     @frappe.whitelist()
     def make_loss_action(self , loss_date) :
@@ -253,6 +257,8 @@ class BankGuaranteeBG(Document):
 
         make_gl_entries(gl_entries, cancel=False, merge_entries=False ,update_outstanding="No")
         self.update_fields_dict({ "bank_guarantee_status" : "Lost" })
+
+        frappe.msgprint(_("Bank Guarantee has been marked as lost successfully"))
 
     # ================================================================================================
     # GL ENTRY CONSTRUCTION
