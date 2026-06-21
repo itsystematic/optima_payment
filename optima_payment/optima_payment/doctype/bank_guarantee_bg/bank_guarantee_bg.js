@@ -74,6 +74,7 @@ frappe.ui.form.on('Bank Guarantee-BG', {
         frm.set_value("bank_rate_", 100 - frm.doc.facilities_rate_)
     },
     issue_commission(frm) {
+        optima_payment.utils.clear_fields(frm, ["issue_commission_amount"]);
         frm.trigger("bank_rate_");
     },
     no_of_extended_days: function (frm) {
@@ -91,7 +92,7 @@ frappe.ui.form.on('Bank Guarantee-BG', {
     },
 
     reference_doctype: function (frm) {
-        frm.trigger("reset_fields");
+        optima_payment.utils.clear_fields(frm, ["reference_docname", "customer", "supplier", "project", "cost_center", "net_amount", "tax_amount", "amount"]);
     },
 
     reference_docname: async (frm) => {
@@ -252,14 +253,6 @@ frappe.ui.form.on('Bank Guarantee-BG', {
     // ============================================================================================
     // REFERENCE DOCTYPE HANDLING
     // ============================================================================================
-    reset_fields: function (frm) {
-
-        fields = ["reference_docname", "customer", "supplier", "project", "cost_center", "net_amount", "tax_amount", "amount"];
-
-        fields.forEach((field) => {
-            frm.set_value(field, "");
-        })
-    },
 
     set_reference_doctype_options: function (frm) {
 
