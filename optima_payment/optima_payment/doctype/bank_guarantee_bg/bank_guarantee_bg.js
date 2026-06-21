@@ -74,7 +74,7 @@ frappe.ui.form.on('Bank Guarantee-BG', {
             frm.set_value("bank_rate_", 100);
         }
     },
-    bg_type: function (frm) {
+    bg_type(frm) {
 
         frm.trigger("set_reference_doctype_options");
     },
@@ -245,19 +245,12 @@ frappe.ui.form.on('Bank Guarantee-BG', {
 
     set_reference_doctype_options: function (frm) {
 
-        // Define all possible options you want to allow for `reference_doctype`
-        let baseOptions = ["Sales Order", "Purchase Order", "Purchase Invoice"];
-
+        // Auto-set reference_doctype based on bg_type
         if (frm.doc.bg_type === "Providing") {
-            // If bg_type == "Providing", remove "Purchase Order" from the list
-            baseOptions = baseOptions.filter(opt => opt !== "Purchase Order");
+            frm.set_value("reference_doctype", "Sales Order");
+        } else {
+            frm.set_value("reference_doctype", "Purchase Order");
         }
-
-        // Convert array into newline-separated string for the Select field
-        frm.set_df_property("reference_doctype", "options", baseOptions.join("\n"));
-
-        // Force a refresh so the field updates immediately
-        frm.refresh_field("reference_doctype");
     }
 
 })
