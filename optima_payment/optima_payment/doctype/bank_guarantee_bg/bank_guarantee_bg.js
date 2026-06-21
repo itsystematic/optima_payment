@@ -41,6 +41,10 @@ frappe.ui.form.on('Bank Guarantee-BG', {
         frm.trigger("set_reference_doctype_options");
     },
 
+    bank(frm) {
+        optima_payment.utils.clear_fields(frm, ["bank_account", "account", "bank_guarantee_account"]);
+    },
+
     refresh(frm) {
         frm.trigger("custom_button");
         frm.trigger("set_beneficiary_name");
