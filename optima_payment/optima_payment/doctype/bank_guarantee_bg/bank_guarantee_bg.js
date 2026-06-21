@@ -14,6 +14,17 @@ cur_frm.add_fetch("bank_account", "iban", "iban");
 cur_frm.add_fetch("bank_account", "branch_code", "branch_code");
 cur_frm.add_fetch("bank", "swift_number", "swift_number");
 
+// Banking and calculated fields that depend on bg_type ("Providing" vs "Receiving") -
+// stale values here would misrepresent the new direction, so they reset on every bg_type change.
+const BG_TYPE_DEPENDENT_FIELDS = [
+    "bank", "bank_account", "account", "bank_guarantee_account",
+    "bank_guarantee_percent", "bank_guarantee_amount",
+    "bank_rate_", "bank_amount",
+    "facilities_rate_", "facility_amount",
+    "issue_commission", "issue_commission_amount",
+    "banking_facilities",
+];
+
 frappe.ui.form.on('Bank Guarantee-BG', {
 
     // ============================================================================================
@@ -87,7 +98,7 @@ frappe.ui.form.on('Bank Guarantee-BG', {
         }
     },
     bg_type(frm) {
-
+        optima_payment.utils.clear_fields(frm, BG_TYPE_DEPENDENT_FIELDS);
         frm.trigger("set_reference_doctype_options");
     },
 
