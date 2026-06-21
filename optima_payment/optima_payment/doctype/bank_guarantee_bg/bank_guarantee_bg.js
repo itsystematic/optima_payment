@@ -1,6 +1,9 @@
 // Copyright (c) 2026, IT Systematic and contributors
 // For license information, please see license.txt
 
+// ================================================================================================
+// FIELD FETCH WIRING
+// ================================================================================================
 // Bank Guarantee-BG is a fully independent doctype (not a customization of ERPNext's
 // core "Bank Guarantee"), so the field-fetch wiring that ERPNext core ships in its own
 // bank_guarantee.js must be reproduced here explicitly - it is not inherited.
@@ -12,6 +15,10 @@ cur_frm.add_fetch("bank_account", "branch_code", "branch_code");
 cur_frm.add_fetch("bank", "swift_number", "swift_number");
 
 frappe.ui.form.on('Bank Guarantee-BG', {
+
+    // ============================================================================================
+    // FORM LIFECYCLE AND FIELD EVENT HANDLERS
+    // ============================================================================================
     setup(frm) {
         frm.set_query("bank_account", function () {
             return {
@@ -102,8 +109,9 @@ frappe.ui.form.on('Bank Guarantee-BG', {
         }
     },
 
-    // functions called by field events    ==================================================================================================================
-
+    // ============================================================================================
+    // CUSTOM BUTTON ACTIONS
+    // ============================================================================================
     custom_button(frm) {
         if (frm.doc.docstatus > 0) {
             frm.add_custom_button(__('Ledger'), function () {
@@ -219,6 +227,9 @@ frappe.ui.form.on('Bank Guarantee-BG', {
         }
 
     },
+    // ============================================================================================
+    // DERIVED FIELD CALCULATIONS
+    // ============================================================================================
     set_beneficiary_name: function (frm) {
         frm.set_value("name_of_beneficiary", frm.doc.company);
     },
@@ -234,6 +245,9 @@ frappe.ui.form.on('Bank Guarantee-BG', {
         let facilities_amount = frm.doc.bank_guarantee_amount * (frm.doc.facilities_rate_ / 100);
         frm.set_value("facility_amount", facilities_amount);
     },
+    // ============================================================================================
+    // REFERENCE DOCTYPE HANDLING
+    // ============================================================================================
     reset_fields: function (frm) {
 
         fields = ["reference_docname", "customer", "supplier", "project", "cost_center", "net_amount", "tax_amount", "amount"];
@@ -251,6 +265,6 @@ frappe.ui.form.on('Bank Guarantee-BG', {
         } else {
             frm.set_value("reference_doctype", "Purchase Order");
         }
-    }
-
+    },
+    
 })
