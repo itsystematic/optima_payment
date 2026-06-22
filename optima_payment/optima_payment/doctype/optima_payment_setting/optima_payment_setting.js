@@ -2,9 +2,33 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("Optima Payment Setting", {
-    refresh(frm) {
+
+    // ============================================================================================
+    // FORM LIFECYCLE HOOKS
+    // ============================================================================================
+    setup(frm) {
         frm.trigger("query_filters");
-	},
+    },
+
+    before_save(frm) {
+        frm.trigger("validate_unique_currency");
+    },
+
+    // ============================================================================================
+    // VALIDATION
+    // ============================================================================================
+    validate_unique_currency(frm) {
+        let array_of_currency = frm.doc.cheque_accounts.map((row) => row.default_currency );
+        let unique_currency = [...new Set(array_of_currency)];
+
+        if (array_of_currency.length >  unique_currency.length ) {
+            frappe.throw(__("Please Remove Duplicated Currency")) ;
+        }
+    },
+
+    // ============================================================================================
+    // SHARED HELPERS
+    // ============================================================================================
     query_filters: function (frm , cdt ,cdn) {
         frm.set_query("bank_guarantee_bank_fees_account", () => {
             return {
@@ -88,16 +112,6 @@ frappe.ui.form.on("Optima Payment Setting", {
 
     },
 
-    before_save(frm) {
-        
-        let array_of_currency = frm.doc.cheque_accounts.map((row) => row.default_currency );
-        let unique_currency = [...new Set(array_of_currency)];
-
-        if (array_of_currency.length >  unique_currency.length ) {
-            frappe.throw(__("Please Remove Duplicated Currency")) ;
-        }
-    }
-
 });
 
 
@@ -117,5 +131,5 @@ frappe.ui.form.on("Cheque Accounts" , {
         row.default_currency = "" ;
         frm.refresh_fields();
     }
-    
+
 })
