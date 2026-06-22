@@ -308,13 +308,13 @@
    "default": "100",
    "fieldname": "bank_rate_",
    "fieldtype": "Percent",
-   "label": "Bank Rate (%)",
+   "label": "Cash Margin Rate (%)",
    "read_only": 1
   },
   {
    "fieldname": "bank_amount",
    "fieldtype": "Float",
-   "label": "Bank Amount",
+   "label": "Cash Margin Amount",
    "read_only": 1
   },
   {
