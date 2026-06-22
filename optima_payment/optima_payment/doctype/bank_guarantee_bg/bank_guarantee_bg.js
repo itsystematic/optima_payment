@@ -56,6 +56,14 @@ frappe.ui.form.on('Bank Guarantee-BG', {
                 },
             };
         });
+
+        frm.set_query("bank_guarantee_account", function () {
+            return {
+                filters: {
+                    is_group: 0,
+                },
+            };
+        });
     },
 
     onload(frm) {
