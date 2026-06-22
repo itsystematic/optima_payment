@@ -192,6 +192,7 @@ frappe.ui.form.on('Bank Guarantee-BG', {
                         label: 'Has a Commission?',
                         fieldname: 'has_commission',
                         fieldtype: 'Check',
+                        default: 0,
                         hidden: frm.doc.bg_type !== "Providing",
                     },
                     {
@@ -216,7 +217,7 @@ frappe.ui.form.on('Bank Guarantee-BG', {
                         method: "make_extend_action",
                         doc: frm.doc,
                         args: {
-                            has_commission: values.has_commission,
+                            has_commission: values.has_commission || false,
                             amount: values.issue_commission_amount || 0,
                             end_date: frappe.datetime.add_days(cur_frm.doc.new_end_date ? cur_frm.doc.new_end_date : cur_frm.doc.end_date, values.extended_days - 1),
                             days: values.extended_days,
