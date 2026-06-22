@@ -101,7 +101,7 @@ frappe.ui.form.on('Bank Guarantee-BG', {
         var last_end_date = frappe.datetime.add_days(cur_frm.doc.end_date, cur_frm.doc.no_of_extended_days - 1);
         cur_frm.set_value("new_end_date", last_end_date);
     },
-    
+
     banking_facilities(frm) {
         if (frm.doc.banking_facilities == "Without Facilities") {
             frm.set_value("bank_rate_", 100);
@@ -188,18 +188,18 @@ frappe.ui.form.on('Bank Guarantee-BG', {
                         reqd: 1
                     },
                     {
-                        label: 'No of Extended Days',
-                        fieldname: 'extended_days',
-                        fieldtype: 'Int',
-                        reqd: 1
+                        label: 'Has a Commission?',
+                        fieldname: 'has_commission',
+                        fieldtype: 'Check',
                     },
                     {
                         fieldtype: "Column Break",
                     },
                     {
-                        label: 'Has a Commission?',
-                        fieldname: 'has_commission',
-                        fieldtype: 'Check',
+                        label: 'No of Extended Days',
+                        fieldname: 'extended_days',
+                        fieldtype: 'Int',
+                        reqd: 1
                     },
                     {
                         label: 'Issue Commission Amount',
