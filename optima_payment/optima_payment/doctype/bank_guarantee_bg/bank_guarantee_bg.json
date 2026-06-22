@@ -9,16 +9,16 @@
  "field_order": [
   "masters_tab",
   "bg_type",
+  "reference_doctype",
   "reference_docname",
-  "project",
-  "cost_center",
-  "company",
-  "column_break_6",
-  "posting_date",
-  "bank_guarantee_status",
   "customer",
   "supplier",
-  "reference_doctype",
+  "column_break_sbum",
+  "posting_date",
+  "bank_guarantee_status",
+  "company",
+  "project",
+  "cost_center",
   "section_break_14",
   "amended_from",
   "bank_tab",
@@ -151,10 +151,6 @@
    "label": "Guarantee Type",
    "options": "Initial\nFinal\nAdvanced Payment\nFinancial",
    "reqd": 1
-  },
-  {
-   "fieldname": "column_break_6",
-   "fieldtype": "Column Break"
   },
   {
    "default": "Today",
@@ -499,11 +495,15 @@
    "hidden": 1,
    "label": "Bank Guarantee Purpose",
    "options": "Bank Guarantee"
+  },
+  {
+   "fieldname": "column_break_sbum",
+   "fieldtype": "Column Break"
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2026-06-22 14:27:47.423675",
+ "modified": "2026-06-22 14:57:22.768668",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Bank Guarantee-BG",
