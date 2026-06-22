@@ -16,9 +16,9 @@
   "column_break_6",
   "posting_date",
   "bank_guarantee_status",
-  "reference_doctype",
   "customer",
   "supplier",
+  "reference_doctype",
   "section_break_14",
   "amended_from",
   "bank_tab",
@@ -157,7 +157,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "allow_on_submit": 1,
    "default": "Today",
    "fieldname": "posting_date",
    "fieldtype": "Date",
@@ -504,7 +503,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2026-06-22 11:03:46.903643",
+ "modified": "2026-06-22 14:27:47.423675",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Bank Guarantee-BG",
