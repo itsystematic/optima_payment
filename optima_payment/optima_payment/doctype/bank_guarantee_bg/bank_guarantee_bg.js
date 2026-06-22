@@ -32,6 +32,10 @@ frappe.ui.form.on('Bank Guarantee-BG', {
     // FORM LIFECYCLE HOOKS
     // ============================================================================================
     setup(frm) {
+        frm.trigger("query_filters");
+    },
+
+    query_filters(frm) {
         frm.set_query("bank_account", function () {
             return {
                 filters: {
