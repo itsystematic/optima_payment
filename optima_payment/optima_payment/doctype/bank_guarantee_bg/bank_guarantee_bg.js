@@ -192,6 +192,7 @@ frappe.ui.form.on('Bank Guarantee-BG', {
                         label: 'Has a Commission?',
                         fieldname: 'has_commission',
                         fieldtype: 'Check',
+                        hidden: frm.doc.bg_type !== "Providing",
                     },
                     {
                         fieldtype: "Column Break",
