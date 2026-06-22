@@ -39,6 +39,7 @@ frappe.ui.form.on("Optima Payment Setting", {
                 }
             };
         });
+
         frm.set_query("bank_guarantee_loss_expense_account", () => {
             return {
                 filters: {
@@ -48,6 +49,23 @@ frappe.ui.form.on("Optima Payment Setting", {
                 }
             };
         });
+
+        frm.set_query("bank_guarantee_receiving_insurance_account",  ()  =>  {
+            return {
+                filters : {
+                    is_group: 0,
+                }
+            }
+        });
+
+        frm.set_query("bank_guarantee_insurance_account",  ()  =>  {
+            return {
+                filters : {
+                    is_group: 0,
+                }
+            }
+        });
+
         frm.set_query("bank_fees_expense_account", "cheque_accounts",  (doc, cdt ,cdn)  =>  {
             let current_row = frappe.get_doc(cdt , cdn)
             return {
@@ -59,6 +77,7 @@ frappe.ui.form.on("Optima Payment Setting", {
                 },
             };
         });
+
         frm.set_query("bank_commission_account", "cheque_accounts",  (doc, cdt ,cdn)  =>  {
             let current_row = frappe.get_doc(cdt , cdn)
             return {
@@ -70,6 +89,7 @@ frappe.ui.form.on("Optima Payment Setting", {
                 },
             };
         });
+
         frm.set_query("incoming_cheque_wallet_account", "cheque_accounts",  (doc, cdt ,cdn)  =>  {
             let current_row = frappe.get_doc(cdt , cdn);
             return {
@@ -91,7 +111,7 @@ frappe.ui.form.on("Optima Payment Setting", {
                     is_group: 0 ,
                 },
             };
-        })
+        });
 
         frm.set_query("default_mode_of_payment" ,"cheque_accounts",  (doc, cdt ,cdn)  =>  {
             let current_row = frappe.get_doc(cdt , cdn);
@@ -108,7 +128,7 @@ frappe.ui.form.on("Optima Payment Setting", {
                 //     ["Account" , "default_currency" , "=" , current_row.default_currency]
                 // ]
             }
-        })
+        });
 
     },
 
