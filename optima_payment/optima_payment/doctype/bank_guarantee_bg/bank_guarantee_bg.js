@@ -101,10 +101,12 @@ frappe.ui.form.on('Bank Guarantee-BG', {
         var last_end_date = frappe.datetime.add_days(cur_frm.doc.end_date, cur_frm.doc.no_of_extended_days - 1);
         cur_frm.set_value("new_end_date", last_end_date);
     },
-    banking_facilities: function (frm) {
+    
+    banking_facilities(frm) {
         if (frm.doc.banking_facilities == "Without Facilities") {
             frm.set_value("bank_rate_", 100);
         }
+        optima_payment.utils.clear_fields(frm, ["facilities_rate_", "facility_amount", "bank_facilities_account"]);
     },
     bg_type(frm) {
         optima_payment.utils.clear_fields(frm, BG_TYPE_DEPENDENT_FIELDS);
