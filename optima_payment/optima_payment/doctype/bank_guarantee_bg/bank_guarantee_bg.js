@@ -29,7 +29,7 @@ const BG_TYPE_DEPENDENT_FIELDS = [
 frappe.ui.form.on('Bank Guarantee-BG', {
 
     // ============================================================================================
-    // FORM LIFECYCLE AND FIELD EVENT HANDLERS
+    // FORM LIFECYCLE HOOKS
     // ============================================================================================
     setup(frm) {
         frm.set_query("bank_account", function () {
@@ -62,19 +62,23 @@ frappe.ui.form.on('Bank Guarantee-BG', {
         frm.trigger("set_reference_doctype_options");
     },
 
-    bank(frm) {
-        optima_payment.utils.clear_fields(frm, ["bank_account", "account", "bank_guarantee_account"]);
-    },
-
     refresh(frm) {
         frm.trigger("custom_button");
         frm.trigger("set_beneficiary_name");
+    },
+
+    // ============================================================================================
+    // FIELD EVENT HANDLERS
+    // ============================================================================================
+    bank(frm) {
+        optima_payment.utils.clear_fields(frm, ["bank_account", "account", "bank_guarantee_account"]);
     },
 
     start_date(frm) {
         let end_date = frappe.datetime.add_days(frm.doc.start_date, frm.doc.validity - 1);
         frm.set_value("end_date", end_date);
     },
+
     validity(frm) {
         let end_date = frappe.datetime.add_days(frm.doc.start_date, frm.doc.validity - 1);
         frm.set_value("end_date", end_date);
@@ -83,24 +87,29 @@ frappe.ui.form.on('Bank Guarantee-BG', {
     bank_rate_(frm) {
         frm.trigger("calculte_bank_amount")
     },
+
     bank_guarantee_percent(frm) {
         frm.trigger("calculate_bank_guarantee_amount")
     },
+
     bank_guarantee_amount(frm) {
         frm.trigger("calculte_bank_amount")
         frm.trigger("calculate_custom_facility_amount")
     },
+
     facilities_rate_(frm) {
         frm.trigger("calculate_custom_facility_amount")
         frm.set_value("bank_rate_", 100 - frm.doc.facilities_rate_)
     },
+
     issue_commission(frm) {
         optima_payment.utils.clear_fields(frm, ["issue_commission_amount"]);
         frm.trigger("bank_rate_");
     },
-    no_of_extended_days: function (frm) {
-        var last_end_date = frappe.datetime.add_days(cur_frm.doc.end_date, cur_frm.doc.no_of_extended_days - 1);
-        cur_frm.set_value("new_end_date", last_end_date);
+
+    no_of_extended_days(frm) {
+        var last_end_date = frappe.datetime.add_days(frm.doc.end_date, frm.doc.no_of_extended_days - 1);
+        frm.set_value("new_end_date", last_end_date);
     },
 
     banking_facilities(frm) {
@@ -109,12 +118,13 @@ frappe.ui.form.on('Bank Guarantee-BG', {
         }
         optima_payment.utils.clear_fields(frm, ["facilities_rate_", "facility_amount", "bank_facilities_account"]);
     },
+
     bg_type(frm) {
         optima_payment.utils.clear_fields(frm, BG_TYPE_DEPENDENT_FIELDS);
         frm.trigger("set_reference_doctype_options");
     },
 
-    reference_doctype: function (frm) {
+    reference_doctype(frm) {
         optima_payment.utils.clear_fields(frm, ["reference_docname", "customer", "supplier", "project", "cost_center", "net_amount", "tax_amount", "amount"]);
     },
 
@@ -257,6 +267,7 @@ frappe.ui.form.on('Bank Guarantee-BG', {
         }
 
     },
+
     // ============================================================================================
     // DERIVED FIELD CALCULATIONS
     // ============================================================================================
@@ -275,10 +286,10 @@ frappe.ui.form.on('Bank Guarantee-BG', {
         let facilities_amount = frm.doc.bank_guarantee_amount * (frm.doc.facilities_rate_ / 100);
         frm.set_value("facility_amount", facilities_amount);
     },
-    // ============================================================================================
-    // REFERENCE DOCTYPE HANDLING
-    // ============================================================================================
 
+    // ============================================================================================
+    // SHARED HELPERS
+    // ============================================================================================
     set_reference_doctype_options: function (frm) {
 
         // Auto-set reference_doctype based on bg_type
@@ -288,5 +299,5 @@ frappe.ui.form.on('Bank Guarantee-BG', {
             frm.set_value("reference_doctype", "Purchase Order");
         }
     },
-    
+
 })
