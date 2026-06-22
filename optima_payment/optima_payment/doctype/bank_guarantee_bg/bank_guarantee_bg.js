@@ -23,6 +23,7 @@ const BG_TYPE_DEPENDENT_FIELDS = [
     "facilities_rate_", "facility_amount",
     "issue_commission", "issue_commission_amount",
     "banking_facilities",
+    "validity", "start_date", "end_date", "new_end_date",
 ];
 
 frappe.ui.form.on('Bank Guarantee-BG', {
