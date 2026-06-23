@@ -1,10 +1,20 @@
-"""Shared test helpers for Optima Payment."""
+"""Shared test factories for Optima Payment.
+
+Provides reusable, defensive (frappe.db.exists/get_value-guarded) builders for
+the fixtures Optima Payment's integration tests need: Payment Entry overrides,
+and the full chain required to submit a Bank Guarantee-BG (Optima Payment
+Setting, Bank, Account, Cost Center, Project, Customer/Supplier, and a
+reference Sales/Purchase Order with its own taxes table pre-populated to dodge
+this site's KSA/ZATCA mandatory-field customizations). Tests import these
+factories instead of constructing documents inline.
+"""
 
 import frappe
 import erpnext
-from frappe.utils import nowdate
+from frappe.utils import add_days, nowdate
 
 from optima_payment.override.doctype_class.payment_entry import CustomPaymentEntry
+from optima_payment.optima_payment.doctype.bank_guarantee_bg.bank_guarantee_bg import BankGuaranteeBG
 
 
 def get_payment_entry_naming_series() -> str:
@@ -59,3 +69,278 @@ def make_payment_entry(
         }
     )
     return pe
+
+
+def get_or_create_account(
+    account_name: str, company: str, root_type: str, account_type: str | None = None
+) -> str:
+    """Find or create a leaf Account of the given root_type under company's account tree."""
+    existing = frappe.db.get_value("Account", {"account_name": account_name, "company": company}, "name")
+    if existing:
+        return existing
+
+    parent_account = frappe.db.get_value(
+        "Account", {"company": company, "root_type": root_type, "is_group": 1}, "name"
+    )
+    if not parent_account:
+        frappe.throw(f"No {root_type} group account found for company {company}")
+
+    account = frappe.get_doc(
+        {
+            "doctype": "Account",
+            "account_name": account_name,
+            "parent_account": parent_account,
+            "company": company,
+            "is_group": 0,
+            "account_type": account_type,
+        }
+    )
+    account.insert(ignore_permissions=True)
+    return account.name
+
+
+def get_or_create_bank(bank_name: str = "Optima Test Bank") -> str:
+    """Find or create the Bank used by Bank Guarantee-BG tests."""
+    if not frappe.db.exists("Bank", bank_name):
+        frappe.get_doc({"doctype": "Bank", "bank_name": bank_name}).insert(ignore_permissions=True)
+    return bank_name
+
+
+def get_or_create_cost_center(company: str) -> str:
+    """Return an existing leaf Cost Center for company."""
+    cost_center = frappe.db.get_value("Cost Center", {"company": company, "is_group": 0}, "name")
+    if not cost_center:
+        frappe.throw(f"No cost center found for company {company}")
+    return cost_center
+
+
+def get_or_create_project(company: str, project_name: str = "Optima Test Project") -> str:
+    """Find or create a Project for company."""
+    name = frappe.db.get_value("Project", {"project_name": project_name, "company": company}, "name")
+    if name:
+        return name
+
+    project = frappe.get_doc(
+        {"doctype": "Project", "project_name": project_name, "company": company}
+    )
+    project.insert(ignore_permissions=True)
+    return project.name
+
+
+def get_or_create_customer(customer_name: str = "Optima Test Customer") -> str:
+    """Find or create the Customer used as the default Sales Order party in tests."""
+    if not frappe.db.exists("Customer", customer_name):
+        customer_group = frappe.db.get_value("Customer Group", {"is_group": 0}, "name")
+        frappe.get_doc(
+            {"doctype": "Customer", "customer_name": customer_name, "customer_group": customer_group}
+        ).insert(ignore_permissions=True)
+    return customer_name
+
+
+def get_or_create_supplier(supplier_name: str = "Optima Test Supplier") -> str:
+    """Find or create the Supplier used as the default Purchase Order party in tests."""
+    if not frappe.db.exists("Supplier", supplier_name):
+        supplier_group = frappe.db.get_value("Supplier Group", {"is_group": 0}, "name")
+        # KSA/ZATCA customizations on this site make tax_category mandatory on Supplier.
+        tax_category = frappe.db.get_value("Tax Category", {}, "name")
+        frappe.get_doc(
+            {
+                "doctype": "Supplier",
+                "supplier_name": supplier_name,
+                "supplier_group": supplier_group,
+                "tax_category": tax_category,
+            }
+        ).insert(ignore_permissions=True)
+    return supplier_name
+
+
+def get_or_create_item(item_code: str = "Optima Test Item") -> str:
+    """Find or create a non-stock Item usable on both Sales and Purchase Orders."""
+    if not frappe.db.exists("Item", item_code):
+        item_group = frappe.db.get_value("Item Group", {"is_group": 0}, "name")
+        # KSA/ZATCA customizations on this site make the Item Tax Template table mandatory.
+        item_tax_template = frappe.db.get_value("Item Tax Template", {}, "name")
+        frappe.get_doc(
+            {
+                "doctype": "Item",
+                "item_code": item_code,
+                "item_name": item_code,
+                "item_group": item_group,
+                "stock_uom": "Nos",
+                "is_stock_item": 0,
+                "taxes": [{"item_tax_template": item_tax_template}],
+            }
+        ).insert(ignore_permissions=True)
+    return item_code
+
+
+def get_item_tax_charge() -> tuple[str, float]:
+    """Return (account_head, tax_rate) of an existing Item Tax Template's single tax row.
+
+    Used to pre-populate the order's own ``taxes`` table so that ERPNext's
+    "Add taxes from item tax template" Accounts Settings option doesn't
+    auto-append a Sales/Purchase Taxes and Charges row without a cost_center
+    (which this site's customizations make mandatory).
+    """
+    item_tax_template = frappe.db.get_value("Item Tax Template", {}, "name")
+    detail = frappe.db.get_value(
+        "Item Tax Template Detail", {"parent": item_tax_template}, ["tax_type", "tax_rate"]
+    )
+    return detail
+
+
+def make_reference_sales_order(company: str, customer: str) -> str:
+    """Create and submit a minimal Sales Order to use as a Bank Guarantee-BG reference."""
+    item = get_or_create_item()
+    cost_center = get_or_create_cost_center(company)
+    account_head, tax_rate = get_item_tax_charge()
+    so = frappe.get_doc(
+        {
+            "doctype": "Sales Order",
+            "company": company,
+            "customer": customer,
+            "cost_center": cost_center,
+            "delivery_date": nowdate(),
+            "items": [{"item_code": item, "qty": 1, "rate": 100, "cost_center": cost_center}],
+            "taxes": [
+                {
+                    "charge_type": "On Net Total",
+                    "account_head": account_head,
+                    "rate": tax_rate,
+                    "cost_center": cost_center,
+                    "description": account_head,
+                }
+            ],
+        }
+    )
+    so.insert(ignore_permissions=True)
+    so.submit()
+    return so.name
+
+
+def make_reference_purchase_order(company: str, supplier: str) -> str:
+    """Create and submit a minimal Purchase Order to use as a Bank Guarantee-BG reference."""
+    item = get_or_create_item()
+    cost_center = get_or_create_cost_center(company)
+    account_head, tax_rate = get_item_tax_charge()
+    po = frappe.get_doc(
+        {
+            "doctype": "Purchase Order",
+            "company": company,
+            "supplier": supplier,
+            "cost_center": cost_center,
+            "schedule_date": nowdate(),
+            "items": [{"item_code": item, "qty": 1, "rate": 100, "cost_center": cost_center}],
+            "taxes": [
+                {
+                    "charge_type": "On Net Total",
+                    "account_head": account_head,
+                    "rate": tax_rate,
+                    "cost_center": cost_center,
+                    "description": account_head,
+                }
+            ],
+        }
+    )
+    po.insert(ignore_permissions=True)
+    po.submit()
+    return po.name
+
+
+def make_optima_payment_setting(company: str | None = None, **overrides) -> frappe.model.document.Document:
+    """Find or create the (unique, per-company) Optima Payment Setting with all
+    Bank Guarantee-BG accounts populated, so validate_company_account() passes."""
+    company = company or erpnext.get_default_company()
+
+    existing = frappe.db.get_value("Optima Payment Setting", {"company": company}, "name")
+    if existing:
+        return frappe.get_doc("Optima Payment Setting", existing)
+
+    fields = {
+        "company": company,
+        "bank_guarantee_insurance_account": get_or_create_account(
+            "Optima BG Insurance", company, "Asset"
+        ),
+        "bank_guarantee_receiving_insurance_account": get_or_create_account(
+            "Optima BG Receiving Insurance", company, "Asset"
+        ),
+        "bank_guarantee_bank_fees_account": get_or_create_account(
+            "Optima BG Bank Fees", company, "Expense"
+        ),
+        "bank_guarantee_loss_expense_account": get_or_create_account(
+            "Optima BG Loss Expense", company, "Expense"
+        ),
+    }
+    fields.update(overrides)
+
+    setting = frappe.get_doc({"doctype": "Optima Payment Setting", **fields})
+    setting.insert(ignore_permissions=True)
+    return setting
+
+
+def make_bank_guarantee_bg(
+    *,
+    bg_type: str = "Providing",
+    company: str | None = None,
+    issue_commission: int = 0,
+    do_not_submit: bool = False,
+    **overrides,
+) -> BankGuaranteeBG:
+    """Build a minimally valid Bank Guarantee-BG document for integration tests."""
+    company = company or erpnext.get_default_company()
+    make_optima_payment_setting(company)
+
+    bank = get_or_create_bank()
+    account = get_or_create_account("Optima BG Test Account", company, "Asset", account_type="Bank")
+    cost_center = get_or_create_cost_center(company)
+    project = get_or_create_project(company)
+
+    if bg_type == "Providing":
+        customer = get_or_create_customer()
+        reference_doctype = "Sales Order"
+        reference_docname = make_reference_sales_order(company, customer)
+        party_fields = {"customer": customer}
+    else:
+        supplier = get_or_create_supplier()
+        reference_doctype = "Purchase Order"
+        reference_docname = make_reference_purchase_order(company, supplier)
+        party_fields = {"supplier": supplier}
+
+    fields = {
+        "doctype": "Bank Guarantee-BG",
+        "bg_type": bg_type,
+        "guarantee_type": "Initial",
+        "company": company,
+        "posting_date": nowdate(),
+        "start_date": nowdate(),
+        "validity": 30,
+        "end_date": add_days(nowdate(), 29),
+        "no_of_extended_days": 0,
+        "bank": bank,
+        "account": account,
+        "cost_center": cost_center,
+        "project": project,
+        "reference_doctype": reference_doctype,
+        "reference_docname": reference_docname,
+        "net_amount": 1000,
+        "tax_amount": 0,
+        "amount": 1000,
+        "bank_guarantee_percent": 10,
+        "bank_guarantee_amount": 100,
+        "bank_rate_": 100,
+        "bank_amount": 100,
+        "name_of_beneficiary": company,
+        "bank_guarantee_number": frappe.generate_hash(length=10),
+        "issue_commission": issue_commission,
+        "issue_commission_amount": 50 if issue_commission else 0,
+    }
+    fields.update(party_fields)
+    fields.update(overrides)
+
+    doc = frappe.get_doc(fields)
+    doc.insert(ignore_permissions=True)
+
+    if not do_not_submit:
+        doc.submit()
+
+    return doc
