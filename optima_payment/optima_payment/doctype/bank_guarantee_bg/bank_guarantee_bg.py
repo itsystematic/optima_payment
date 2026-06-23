@@ -557,5 +557,4 @@ class BankGuaranteeBG(Document):
 
     def update_fields_dict(self, dict_updated):
         frappe.db.set_value("Bank Guarantee-BG", self.name , dict_updated , update_modified=True)
-        frappe.db.commit()
         self.reload()
