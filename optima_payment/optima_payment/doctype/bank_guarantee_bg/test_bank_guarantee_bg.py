@@ -23,7 +23,8 @@ class TestBankGuaranteeBG(FrappeTestCase):
     def tearDown(self):
         frappe.db.rollback()
 
-    def get_gle(self, voucher_no, include_cancelled=False):
+    def get_gle(self, voucher_no: str, include_cancelled: bool = False) -> list[frappe._dict]:
+        """Return GL Entry rows for voucher_no, excluding cancelled rows by default."""
         gl_entries = frappe.db.sql(
             """select account, debit, credit, is_cancelled, is_bank_guarantee_comission_entry
                from `tabGL Entry` where voucher_type='Bank Guarantee-BG' and voucher_no=%s
@@ -33,10 +34,14 @@ class TestBankGuaranteeBG(FrappeTestCase):
         )
         if include_cancelled:
             return gl_entries
-        return [gle for gle in gl_entries if not gle.is_cancelled]
+        return [gle for gle in gl_entries if not gle.is_cancelled] # exclude cancelled rows by default
 
-    def validate_gl_entries(self, voucher_no, expected_gle):
-        """expected_gle: set of (account, debit, credit) tuples."""
+    def validate_gl_entries(self, voucher_no: str, expected_gle: set[tuple[str, float, float]]) -> None:
+        """Assert the active GL Entry rows for voucher_no match expected_gle exactly.
+        expected_gle is a set of (account, debit, credit) tuples, e.g.
+        {("Bank - ABC", 1000, 0), ("Expense - XYZ", 0, 1000)}.
+        each tuple represents a GL Entry row that should exist for the given voucher_no.
+        """
         gl_entries = self.get_gle(voucher_no)
         actual = {(gle.account, gle.debit, gle.credit) for gle in gl_entries}
         self.assertEqual(actual, expected_gle)

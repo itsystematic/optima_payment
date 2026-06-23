@@ -17,6 +17,11 @@ from optima_payment.override.doctype_class.payment_entry import CustomPaymentEnt
 from optima_payment.optima_payment.doctype.bank_guarantee_bg.bank_guarantee_bg import BankGuaranteeBG
 
 
+# ====================================================================================================
+# PAYMENT ENTRY FACTORIES
+# ====================================================================================================
+
+
 def get_payment_entry_naming_series() -> str:
     """Return the default naming series used by Payment Entry tests."""
     return frappe.get_meta("Payment Entry").get_field("naming_series").default or "PAY-.FY.-"
@@ -69,6 +74,13 @@ def make_payment_entry(
         }
     )
     return pe
+
+
+# ====================================================================================================
+# ACCOUNT TREE / COMPANY FIXTURES
+# ====================================================================================================
+# Shared financial fixtures (account, bank, cost center, project) reused across
+# Bank Guarantee-BG and Payment Entry factories below.
 
 
 def get_or_create_account(
@@ -127,6 +139,11 @@ def get_or_create_project(company: str, project_name: str = "Optima Test Project
     return project.name
 
 
+# ====================================================================================================
+# PARTY FIXTURES
+# ====================================================================================================
+
+
 def get_or_create_customer(customer_name: str = "Optima Test Customer") -> str:
     """Find or create the Customer used as the default Sales Order party in tests."""
     if not frappe.db.exists("Customer", customer_name):
@@ -152,6 +169,13 @@ def get_or_create_supplier(supplier_name: str = "Optima Test Supplier") -> str:
             }
         ).insert(ignore_permissions=True)
     return supplier_name
+
+
+# ====================================================================================================
+# ITEM / TAX FIXTURES
+# ====================================================================================================
+# Item.taxes and the order-level taxes table are pre-populated here to dodge this
+# site's KSA/ZATCA mandatory-field customizations (see get_item_tax_charge).
 
 
 def get_or_create_item(item_code: str = "Optima Test Item") -> str:
@@ -187,6 +211,11 @@ def get_item_tax_charge() -> tuple[str, float]:
         "Item Tax Template Detail", {"parent": item_tax_template}, ["tax_type", "tax_rate"]
     )
     return detail
+
+
+# ====================================================================================================
+# REFERENCE SALES / PURCHASE ORDERS
+# ====================================================================================================
 
 
 def make_reference_sales_order(company: str, customer: str) -> str:
@@ -245,6 +274,11 @@ def make_reference_purchase_order(company: str, supplier: str) -> str:
     po.insert(ignore_permissions=True)
     po.submit()
     return po.name
+
+
+# ====================================================================================================
+# BANK GUARANTEE-BG FACTORIES
+# ====================================================================================================
 
 
 def make_optima_payment_setting(company: str | None = None, **overrides) -> frappe.model.document.Document:
