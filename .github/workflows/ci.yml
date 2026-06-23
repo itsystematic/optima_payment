@@ -109,9 +109,12 @@ jobs:
           from pathlib import Path
 
           root = Path(os.environ["GITHUB_WORKSPACE"])
-          tests_dir = root / "optima_payment" / "tests"
+          package_dir = root / "optima_payment"
 
-          for path in sorted(tests_dir.glob("test_*.py")):
+          # Discover every test_*.py under the package, not just optima_payment/tests/,
+          # so doctype-local test files (e.g. <doctype>/test_<doctype>.py) run too.
+          # New test files are picked up automatically; no edits needed here.
+          for path in sorted(package_dir.rglob("test_*.py")):
               print(".".join(path.relative_to(root).with_suffix("").parts))
           PY
           )
