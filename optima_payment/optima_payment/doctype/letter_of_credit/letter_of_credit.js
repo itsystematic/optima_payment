@@ -260,7 +260,7 @@ frappe.ui.form.on('Letter of Credit', {
                         depends_on: "extend_amount",
                         mandatory_depends_on: "extend_amount",
                         onchange: function () {
-                            recalculate_extend_amounts(this.frm);
+                            recalculate_extend_amounts(this.layout);
                         }
                     },
                     {
@@ -275,7 +275,7 @@ frappe.ui.form.on('Letter of Credit', {
                         fieldtype: 'Check',
                         default: 0,
                         onchange: function () {
-                            recalculate_extend_amounts(this.frm);
+                            recalculate_extend_amounts(this.layout);
                         }
                     },
                     {
@@ -288,7 +288,7 @@ frappe.ui.form.on('Letter of Credit', {
                         depends_on: "with_facilities",
                         mandatory_depends_on: "with_facilities",
                         onchange: function () {
-                            recalculate_extend_amounts(this.frm);
+                            recalculate_extend_amounts(this.layout);
                         }
                     },
                     {
