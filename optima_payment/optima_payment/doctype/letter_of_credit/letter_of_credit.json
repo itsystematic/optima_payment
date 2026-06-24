@@ -63,6 +63,10 @@
   "bank_amount",
   "column_break_bljw",
   "facility_amount",
+  "extended_amounts_section",
+  "extended_cash_margin_amount",
+  "column_break_pbgl",
+  "extended_facility_amount",
   "commission_section",
   "issue_commission",
   "column_break_pqlk",
@@ -309,7 +313,7 @@
   },
   {
    "fieldname": "bank_amount",
-   "fieldtype": "Float",
+   "fieldtype": "Currency",
    "label": "Cash Margin Amount",
    "read_only": 1
   },
@@ -337,7 +341,7 @@
   {
    "depends_on": "eval:doc.banking_facilities == \"With Facilities\"",
    "fieldname": "facility_amount",
-   "fieldtype": "Float",
+   "fieldtype": "Currency",
    "label": "Facility Amount",
    "read_only": 1
   },
@@ -496,11 +500,32 @@
    "fieldtype": "Data",
    "label": "IBAN",
    "read_only": 1
+  },
+  {
+   "fieldname": "extended_amounts_section",
+   "fieldtype": "Section Break",
+   "label": "Extended Amounts"
+  },
+  {
+   "fieldname": "extended_cash_margin_amount",
+   "fieldtype": "Currency",
+   "label": "Extended Cash Margin Amount"
+  },
+  {
+   "fieldname": "column_break_pbgl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.banking_facilities == \"With Facilities\"",
+   "fieldname": "extended_facility_amount",
+   "fieldtype": "Currency",
+   "label": "Extended Facility Amount",
+   "read_only": 1
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2026-06-24 12:48:31.390517",
+ "modified": "2026-06-24 12:51:24.787109",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Letter of Credit",

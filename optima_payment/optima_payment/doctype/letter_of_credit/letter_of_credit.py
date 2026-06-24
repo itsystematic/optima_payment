@@ -22,7 +22,7 @@ class LetterofCredit(Document):
         bank: DF.Link
         bank_account: DF.Link | None
         bank_account_no: DF.Data | None
-        bank_amount: DF.Float
+        bank_amount: DF.Currency
         bank_facilities_account: DF.Link | None
         bank_rate_: DF.Percent
         banking_facilities: DF.Literal["Without Facilities", "With Facilities"]
@@ -32,8 +32,10 @@ class LetterofCredit(Document):
         customer: DF.Link | None
         end_date: DF.Date | None
         extend_validity: DF.Check
+        extended_cash_margin_amount: DF.Currency
+        extended_facility_amount: DF.Currency
         facilities_rate_: DF.Percent
-        facility_amount: DF.Float
+        facility_amount: DF.Currency
         iban: DF.Data | None
         issue_commission: DF.Check
         issue_commission_amount: DF.Float
