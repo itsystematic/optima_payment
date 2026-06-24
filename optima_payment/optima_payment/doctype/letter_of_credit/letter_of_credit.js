@@ -197,6 +197,11 @@ frappe.ui.form.on('Letter of Credit', {
                         reqd: 1
                     },
                     {
+                        // Section Break ----------------------------------------------
+                        fieldtype: "Section Break",
+                        fieldname: "section_break_1",
+                    },
+                    {
                         label: 'Has a Commission?',
                         fieldname: 'has_commission',
                         fieldtype: 'Check',
@@ -207,17 +212,104 @@ frappe.ui.form.on('Letter of Credit', {
                         fieldtype: "Column Break",
                     },
                     {
-                        label: 'No of Extended Days',
-                        fieldname: 'extended_days',
-                        fieldtype: 'Int',
-                        reqd: 1
-                    },
-                    {
                         label: 'Issue Commission Amount',
                         fieldname: 'issue_commission_amount',
-                        fieldtype: 'Float',
+                        fieldtype: 'Currency',
                         depends_on: "has_commission",
                         mandatory_depends_on: "has_commission"
+                    },
+                    {
+                        // Section Break ----------------------------------------------
+                        fieldtype: "Section Break",
+                        fieldname: "section_break_2",
+                    },
+                    {
+                        label: 'Extend Days?',
+                        fieldname: 'extend_days',
+                        fieldtype: 'Check',
+                        default: 0,
+                    },
+                    {
+                        fieldtype: "Column Break",
+                    },
+                    {
+                        label: 'Number of Extended Days',
+                        fieldname: 'extended_days',
+                        fieldtype: 'Int',
+                        depends_on: "extend_days",
+                        mandatory_depends_on: "extend_days"
+                    },
+                    {
+                        // Section Break ----------------------------------------------
+                        fieldtype: "Section Break",
+                        fieldname: "section_break_3",
+                    },
+                    {
+                        label: 'Extend Amount?',
+                        fieldname: 'extend_amount',
+                        fieldtype: 'Check',
+                        default: 0,
+                    },
+                    {
+                        fieldtype: "Column Break",
+                    },
+                    {
+                        label: 'Extended Amount',
+                        fieldname: 'extended_amount',
+                        fieldtype: 'Currency',
+                        depends_on: "extend_amount",
+                        mandatory_depends_on: "extend_amount",
+                        onchange: function () {
+                            recalculate_extend_amounts(this.frm);
+                        }
+                    },
+                    {
+                        // Section Break ----------------------------------------------
+                        fieldtype: "Section Break",
+                        fieldname: "section_break_4",
+                        depends_on: "eval:doc.extend_amount == 1",
+                    },
+                    {
+                        label: 'With Facilities?',
+                        fieldname: 'with_facilities',
+                        fieldtype: 'Check',
+                        default: 0,
+                        onchange: function () {
+                            recalculate_extend_amounts(this.frm);
+                        }
+                    },
+                    {
+                        fieldtype: "Column Break",
+                    },
+                    {
+                        label: 'New Facilities Rate',
+                        fieldname: 'new_facilities_rate',
+                        fieldtype: 'Percent',
+                        depends_on: "with_facilities",
+                        mandatory_depends_on: "with_facilities",
+                        onchange: function () {
+                            recalculate_extend_amounts(this.frm);
+                        }
+                    },
+                    {
+                        // Section Break ----------------------------------------------
+                        fieldtype: "Section Break",
+                        fieldname: "section_break_5",
+                    },
+                    {
+                        label: 'New Cash Margin Amount',
+                        fieldname: 'new_cash_margin_amount',
+                        fieldtype: 'Currency',
+                        read_only: 1,
+                    },
+                    {
+                        fieldtype: "Column Break",
+                    },
+                    {
+                        label: 'New Facilities Amount',
+                        fieldname: 'new_facilities_amount',
+                        fieldtype: 'Currency',
+                        read_only: 1,
                     },
 
                 ], (values) => {
@@ -299,3 +391,18 @@ frappe.ui.form.on('Letter of Credit', {
     },
 
 })
+
+// ================================================================================================
+// EXTEND DIALOG - DERIVED FIELD CALCULATIONS
+// ================================================================================================
+// Recomputes the Extend dialog's read-only "New Cash Margin Amount" / "New Facilities Amount"
+// fields from extended_amount and new_facilities_rate, mirroring how bank_amount/facility_amount
+// are derived from lc_amount on the main form.
+function recalculate_extend_amounts(dialog) {
+    const extended_amount = dialog.get_value('extended_amount') || 0;
+    const facilities_rate = dialog.get_value('with_facilities') ? (dialog.get_value('new_facilities_rate') || 0) : 0;
+    const cash_margin_rate = 100 - facilities_rate;
+
+    dialog.set_value('new_cash_margin_amount', extended_amount * (cash_margin_rate / 100));
+    dialog.set_value('new_facilities_amount', extended_amount * (facilities_rate / 100));
+}
