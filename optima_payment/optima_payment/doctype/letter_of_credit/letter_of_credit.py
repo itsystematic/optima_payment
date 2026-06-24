@@ -41,7 +41,7 @@ class LetterofCredit(Document):
         issue_commission_amount: DF.Float
         lc_account: DF.Link | None
         lc_amount: DF.Currency
-        lc_category: DF.Literal["Initial", "Final", "Advanced Payment", "Financial"]
+        lc_category: DF.Literal["Sight", "Deferred"]
         lc_number: DF.Data
         lc_percent: DF.Percent
         lc_status: DF.Literal["New", "Exists", "Issued", "Returned", "Expired", "Extended", "Lost"]

@@ -153,7 +153,7 @@
    "fieldname": "lc_category",
    "fieldtype": "Select",
    "label": "Letter of Credit Category",
-   "options": "Initial\nFinal\nAdvanced Payment\nFinancial",
+   "options": "Sight\nDeferred",
    "reqd": 1
   },
   {
@@ -526,7 +526,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2026-06-24 13:00:30.534053",
+ "modified": "2026-06-24 13:03:02.903970",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Letter of Credit",
