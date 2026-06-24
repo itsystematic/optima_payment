@@ -502,6 +502,7 @@
    "read_only": 1
   },
   {
+   "depends_on": "eval:doc.extend_validity == 1",
    "fieldname": "extended_amounts_section",
    "fieldtype": "Section Break",
    "label": "Extended Amounts"
@@ -525,7 +526,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2026-06-24 12:51:24.787109",
+ "modified": "2026-06-24 13:00:30.534053",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Letter of Credit",
