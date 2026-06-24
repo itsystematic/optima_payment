@@ -395,14 +395,13 @@ frappe.ui.form.on('Letter of Credit', {
 // ================================================================================================
 // EXTEND DIALOG - DERIVED FIELD CALCULATIONS
 // ================================================================================================
-// Recomputes the Extend dialog's read-only "New Cash Margin Amount" / "New Facilities Amount"
-// fields from extended_amount and new_facilities_rate, mirroring how bank_amount/facility_amount
-// are derived from lc_amount on the main form.
+// Use this.layout (not this.frm) inside a dialog field's onchange - frappe.prompt dialogs
+// have no frm, but Layout#init_field always sets fieldobj.layout to the owning Dialog.
 function recalculate_extend_amounts(dialog) {
-    const extended_amount = dialog.get_value('extended_amount') || 0;
-    const facilities_rate = dialog.get_value('with_facilities') ? (dialog.get_value('new_facilities_rate') || 0) : 0;
-    const cash_margin_rate = 100 - facilities_rate;
+    const extended_amount = dialog.get_value("extended_amount") || 0;
+    const with_facilities = dialog.get_value("with_facilities");
+    const facilities_rate = with_facilities ? (dialog.get_value("new_facilities_rate") || 0) : 0;
 
-    dialog.set_value('new_cash_margin_amount', extended_amount * (cash_margin_rate / 100));
-    dialog.set_value('new_facilities_amount', extended_amount * (facilities_rate / 100));
+    dialog.set_value("new_cash_margin_amount", extended_amount * (1 - facilities_rate / 100));
+    dialog.set_value("new_facilities_amount", extended_amount * (facilities_rate / 100));
 }
