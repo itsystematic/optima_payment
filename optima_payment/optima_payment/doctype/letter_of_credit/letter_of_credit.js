@@ -365,7 +365,7 @@ frappe.ui.form.on('Letter of Credit', {
         frm.set_value("name_of_beneficiary", frm.doc.company);
     },
     calculate_lc_amount: function (frm) {
-        let lc_amount = frm.doc.net_amount * (frm.doc.lc_percent / 100);
+        let lc_amount = frm.doc.amount * (frm.doc.lc_percent / 100);
         frm.set_value("lc_amount", lc_amount);
     },
     calculte_bank_amount: function (frm) {
