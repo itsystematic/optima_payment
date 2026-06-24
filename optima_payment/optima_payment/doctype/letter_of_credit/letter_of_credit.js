@@ -6,7 +6,7 @@
 // ================================================================================================
 // Letter of Credit is a fully independent doctype, so the field-fetch wiring that
 // ERPNext core ships for similar bank-linked doctypes must be reproduced here explicitly.
-cur_frm.add_fetch("bank_account", "lc_account", "lc_account");
+cur_frm.add_fetch("bank_account", "letter_of_credit_account", "lc_account");
 cur_frm.add_fetch("bank_account", "account", "account");
 cur_frm.add_fetch("bank_account", "bank_account_no", "bank_account_no");
 cur_frm.add_fetch("bank_account", "iban", "iban");
