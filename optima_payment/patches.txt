@@ -7,3 +7,4 @@
 # optima_payment.patches.bank_guarantee
 optima_payment.patches.migrate_bank_guarantee_accounts_to_settings
 optima_payment.patches.remove_legacy_bank_guarantee_company_fields
+optima_payment.patches.sync_banking_account_fields
