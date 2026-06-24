@@ -14,6 +14,12 @@
   "column_break_vvdr",
   "bank_guarantee_bank_fees_account",
   "bank_guarantee_loss_expense_account",
+  "letter_of_credit_accounts_section",
+  "lc_insurance_account",
+  "lc_receiving_insurance_account",
+  "column_break_lcacc",
+  "lc_bank_fees_account",
+  "lc_loss_expense_account",
   "section_break_yner",
   "cheque_accounts",
   "optima_payment_scheduler_section",
@@ -100,6 +106,39 @@
   },
   {
    "fieldname": "column_break_vvdr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "letter_of_credit_accounts_section",
+   "fieldtype": "Section Break",
+   "label": "Letter of Credit Accounts"
+  },
+  {
+   "fieldname": "lc_insurance_account",
+   "fieldtype": "Link",
+   "label": "Provided Letter of Credit Account",
+   "options": "Account"
+  },
+  {
+   "fieldname": "lc_receiving_insurance_account",
+   "fieldtype": "Link",
+   "label": "Receiving Letter of Credit Account",
+   "options": "Account"
+  },
+  {
+   "fieldname": "lc_bank_fees_account",
+   "fieldtype": "Link",
+   "label": "Letter of Credit Bank Fees Account",
+   "options": "Account"
+  },
+  {
+   "fieldname": "lc_loss_expense_account",
+   "fieldtype": "Link",
+   "label": "Letter of Credit Loss Expense Account",
+   "options": "Account"
+  },
+  {
+   "fieldname": "column_break_lcacc",
    "fieldtype": "Column Break"
   }
  ],
