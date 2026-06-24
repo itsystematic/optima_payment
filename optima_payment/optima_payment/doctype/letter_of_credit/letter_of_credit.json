@@ -53,6 +53,7 @@
   "lc_amount",
   "column_break_mmpf",
   "lc_percent",
+  "number_of_deferred_days",
   "facilities_section",
   "banking_facilities",
   "bank_rate_",
@@ -522,11 +523,18 @@
    "fieldtype": "Currency",
    "label": "Extended Facility Amount",
    "read_only": 1
+  },
+  {
+   "depends_on": "eval: doc.lc_category == \"Deferred\"",
+   "fieldname": "number_of_deferred_days",
+   "fieldtype": "Int",
+   "label": "Number of Deferred Days",
+   "mandatory_depends_on": "eval: doc.lc_category == \"Deferred\""
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2026-06-24 13:03:02.903970",
+ "modified": "2026-06-24 13:07:13.244066",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Letter of Credit",

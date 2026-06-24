@@ -51,6 +51,7 @@ class LetterofCredit(Document):
         net_amount: DF.Currency
         new_end_date: DF.Date | None
         no_of_extended_days: DF.Int
+        number_of_deferred_days: DF.Int
         posting_date: DF.Date
         project: DF.Link
         reference_docname: DF.DynamicLink
