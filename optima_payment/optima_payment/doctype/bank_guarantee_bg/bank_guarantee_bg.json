@@ -31,11 +31,12 @@
   "bank_guarantee_account",
   "validity_section",
   "start_date",
-  "extend_validity",
   "column_break_jddo",
+  "extend_validity",
+  "section_break_wbcp",
   "validity",
   "no_of_extended_days",
-  "column_break_scnc",
+  "column_break_pnuh",
   "end_date",
   "new_end_date",
   "returned_date",
@@ -48,10 +49,9 @@
   "amount",
   "guarantee_amounts_section",
   "guarantee_type",
+  "bank_guarantee_amount",
   "column_break_mmpf",
   "bank_guarantee_percent",
-  "column_break_sukj",
-  "bank_guarantee_amount",
   "facilities_section",
   "banking_facilities",
   "bank_rate_",
@@ -67,13 +67,13 @@
   "column_break_pqlk",
   "issue_commission_amount",
   "terms_tab",
-  "bank_guarantee_purpose",
   "conditions",
   "more_information",
   "reference_tab",
   "name_of_beneficiary",
   "column_break_vbsq",
   "bank_guarantee_number",
+  "bank_guarantee_purpose",
   "section_break_pljm",
   "remarks"
  ],
@@ -225,6 +225,7 @@
    "depends_on": "eval: doc.bank_guarantee_status == 'Extended'",
    "fieldname": "extend_validity",
    "fieldtype": "Check",
+   "hidden": 1,
    "label": "Extend Validity"
   },
   {
@@ -407,10 +408,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "column_break_sukj",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "bank_tab",
    "fieldtype": "Tab Break",
    "label": "Bank"
@@ -461,10 +458,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "column_break_scnc",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "bank_info_section",
    "fieldtype": "Section Break",
    "label": "Bank Info"
@@ -499,11 +492,19 @@
   {
    "fieldname": "column_break_sbum",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_wbcp",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_pnuh",
+   "fieldtype": "Column Break"
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2026-06-22 14:57:22.768668",
+ "modified": "2026-06-24 08:53:27.058272",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Bank Guarantee-BG",
