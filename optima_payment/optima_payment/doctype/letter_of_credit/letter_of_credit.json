@@ -283,7 +283,7 @@
    "options": "Bank Account"
   },
   {
-   "depends_on": "eval:doc.bank ;",
+   "depends_on": "eval:doc.bank",
    "fieldname": "lc_account",
    "fieldtype": "Link",
    "label": "Letter of Credit Account",
@@ -534,7 +534,7 @@
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2026-06-24 13:07:13.244066",
+ "modified": "2026-06-24 23:28:48.280284",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Letter of Credit",
