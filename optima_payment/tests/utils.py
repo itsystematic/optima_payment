@@ -15,6 +15,7 @@ from frappe.utils import add_days, nowdate
 
 from optima_payment.override.doctype_class.payment_entry import CustomPaymentEntry
 from optima_payment.optima_payment.doctype.bank_guarantee_bg.bank_guarantee_bg import BankGuaranteeBG
+from optima_payment.optima_payment.doctype.letter_of_credit.letter_of_credit import LetterofCredit
 
 
 # ====================================================================================================
@@ -283,12 +284,31 @@ def make_reference_purchase_order(company: str, supplier: str) -> str:
 
 def make_optima_payment_setting(company: str | None = None, **overrides) -> frappe.model.document.Document:
     """Find or create the (unique, per-company) Optima Payment Setting with all
-    Bank Guarantee-BG accounts populated, so validate_company_account() passes."""
+    Bank Guarantee-BG and Letter of Credit accounts populated, so each doctype's
+    validate_company_account() passes."""
     company = company or erpnext.get_default_company()
 
     existing = frappe.db.get_value("Optima Payment Setting", {"company": company}, "name")
     if existing:
-        return frappe.get_doc("Optima Payment Setting", existing)
+        setting = frappe.get_doc("Optima Payment Setting", existing)
+        missing_account_fields = {
+            "lc_insurance_account": lambda: get_or_create_account("Optima LC Insurance", company, "Asset"),
+            "lc_receiving_insurance_account": lambda: get_or_create_account(
+                "Optima LC Receiving Insurance", company, "Asset"
+            ),
+            "lc_bank_fees_account": lambda: get_or_create_account("Optima LC Bank Fees", company, "Expense"),
+            "lc_loss_expense_account": lambda: get_or_create_account(
+                "Optima LC Loss Expense", company, "Expense"
+            ),
+        }
+        dirty = False
+        for fieldname, make_value in missing_account_fields.items():
+            if not setting.get(fieldname):
+                setting.set(fieldname, make_value())
+                dirty = True
+        if dirty:
+            setting.save(ignore_permissions=True)
+        return setting
 
     fields = {
         "company": company,
@@ -303,6 +323,18 @@ def make_optima_payment_setting(company: str | None = None, **overrides) -> frap
         ),
         "bank_guarantee_loss_expense_account": get_or_create_account(
             "Optima BG Loss Expense", company, "Expense"
+        ),
+        "lc_insurance_account": get_or_create_account(
+            "Optima LC Insurance", company, "Asset"
+        ),
+        "lc_receiving_insurance_account": get_or_create_account(
+            "Optima LC Receiving Insurance", company, "Asset"
+        ),
+        "lc_bank_fees_account": get_or_create_account(
+            "Optima LC Bank Fees", company, "Expense"
+        ),
+        "lc_loss_expense_account": get_or_create_account(
+            "Optima LC Loss Expense", company, "Expense"
         ),
     }
     fields.update(overrides)
@@ -365,6 +397,79 @@ def make_bank_guarantee_bg(
         "bank_amount": 100,
         "name_of_beneficiary": company,
         "bank_guarantee_number": frappe.generate_hash(length=10),
+        "issue_commission": issue_commission,
+        "issue_commission_amount": 50 if issue_commission else 0,
+    }
+    fields.update(party_fields)
+    fields.update(overrides)
+
+    doc = frappe.get_doc(fields)
+    doc.insert(ignore_permissions=True)
+
+    if not do_not_submit:
+        doc.submit()
+
+    return doc
+
+
+# ====================================================================================================
+# LETTER OF CREDIT FACTORIES
+# ====================================================================================================
+
+
+def make_letter_of_credit(
+    *,
+    lc_type: str = "Providing",
+    company: str | None = None,
+    issue_commission: int = 0,
+    do_not_submit: bool = False,
+    **overrides,
+) -> LetterofCredit:
+    """Build a minimally valid Letter of Credit document for integration tests."""
+    company = company or erpnext.get_default_company()
+    make_optima_payment_setting(company)
+
+    bank = get_or_create_bank()
+    account = get_or_create_account("Optima LC Test Account", company, "Asset", account_type="Bank")
+    cost_center = get_or_create_cost_center(company)
+    project = get_or_create_project(company)
+
+    if lc_type == "Providing":
+        customer = get_or_create_customer()
+        reference_doctype = "Sales Order"
+        reference_docname = make_reference_sales_order(company, customer)
+        party_fields = {"customer": customer}
+    else:
+        supplier = get_or_create_supplier()
+        reference_doctype = "Purchase Order"
+        reference_docname = make_reference_purchase_order(company, supplier)
+        party_fields = {"supplier": supplier}
+
+    fields = {
+        "doctype": "Letter of Credit",
+        "lc_type": lc_type,
+        "lc_category": "Initial",
+        "company": company,
+        "posting_date": nowdate(),
+        "start_date": nowdate(),
+        "validity": 30,
+        "end_date": add_days(nowdate(), 29),
+        "no_of_extended_days": 0,
+        "bank": bank,
+        "account": account,
+        "cost_center": cost_center,
+        "project": project,
+        "reference_doctype": reference_doctype,
+        "reference_docname": reference_docname,
+        "net_amount": 1000,
+        "tax_amount": 0,
+        "amount": 1000,
+        "lc_percent": 10,
+        "lc_amount": 100,
+        "bank_rate_": 100,
+        "bank_amount": 100,
+        "name_of_beneficiary": company,
+        "lc_number": frappe.generate_hash(length=10),
         "issue_commission": issue_commission,
         "issue_commission_amount": 50 if issue_commission else 0,
     }
