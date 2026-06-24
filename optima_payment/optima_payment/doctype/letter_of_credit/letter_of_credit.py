@@ -34,6 +34,7 @@ class LetterofCredit(Document):
         extend_validity: DF.Check
         facilities_rate_: DF.Percent
         facility_amount: DF.Float
+        iban: DF.Data | None
         issue_commission: DF.Check
         issue_commission_amount: DF.Float
         lc_account: DF.Link | None

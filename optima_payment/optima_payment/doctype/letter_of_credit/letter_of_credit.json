@@ -1,7 +1,7 @@
 {
  "actions": [],
  "autoname": "ACC-LC-.YYYY.-.#####",
- "creation": "2026-06-24 00:00:00",
+ "creation": "2026-06-24 10:49:41.516831",
  "doctype": "DocType",
  "document_type": "Document",
  "editable_grid": 1,
@@ -29,6 +29,7 @@
   "column_break_muxr",
   "bank_account",
   "lc_account",
+  "iban",
   "validity_section",
   "start_date",
   "column_break_jddo",
@@ -266,7 +267,6 @@
   {
    "fieldname": "bank_account_no",
    "fieldtype": "Data",
-   "hidden": 1,
    "label": "Bank Account No",
    "read_only": 1
   },
@@ -490,11 +490,17 @@
   {
    "fieldname": "column_break_pnuh",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "iban",
+   "fieldtype": "Data",
+   "label": "IBAN",
+   "read_only": 1
   }
  ],
  "is_submittable": 1,
  "links": [],
- "modified": "2026-06-24 00:00:00.000000",
+ "modified": "2026-06-24 12:48:31.390517",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Letter of Credit",
