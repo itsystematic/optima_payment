@@ -534,8 +534,13 @@
   }
  ],
  "is_submittable": 1,
- "links": [],
- "modified": "2026-06-25 09:44:22.036982",
+ "links": [
+  {
+   "link_doctype": "Payment Entry",
+   "link_fieldname": "letter_of_credit"
+  }
+ ],
+ "modified": "2026-06-25 12:19:13.268708",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Letter of Credit",

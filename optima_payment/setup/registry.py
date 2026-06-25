@@ -13,6 +13,7 @@ from .features import (
     bank_guarantee,
     banking,
     hrms_integration,
+    letter_of_credit,
     payment_workflow,
 )
 from .runner import describe_exception, run_setup_steps
@@ -67,6 +68,11 @@ def get_feature_specs() -> list[FeatureSpec]:
             label="Bank guarantee customizations",
             get_custom_fields=bank_guarantee.get_custom_fields,
             get_property_setters=bank_guarantee.get_property_setters,
+        ),
+        FeatureSpec(
+            key="letter_of_credit",
+            label="Letter of Credit customizations",
+            get_custom_fields=letter_of_credit.get_custom_fields,
         ),
         FeatureSpec(
             key="hrms_integration",

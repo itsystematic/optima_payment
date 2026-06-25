@@ -70,8 +70,9 @@ class LetterofCredit(Document):
     # Frappe's submittable-document hooks, in the order they actually fire:
     # validate -> before_submit -> on_submit -> on_cancel -> on_trash
     #
-    # GL/Payment Entry integration is deferred to a later phase. For now, submit/cancel/
-    # return/extend/loss only update status fields - no ledger entries are created here.
+    # GL impact is posted/reversed through ERPNext Payment Entry documents
+    # (payment_type "Internal Transfer") rather than hand-rolled GL Entry rows -
+    # see the PAYMENT ENTRY CONSTRUCTION section below.
 
     def validate(self):
         self.validate_customer_or_supplier()
@@ -83,10 +84,21 @@ class LetterofCredit(Document):
 
     def on_submit(self):
         self.set_status()
-        # TODO(phase 2): post GL via Payment Entry
+        self.make_payment_entries()
 
     def on_cancel(self):
-        pass
+        self.ignore_linked_doctypes = (
+            "Payment Entry",
+            "GL Entry",
+            "Payment Ledger Entry",
+            "Repost Payment Ledger",
+            "Repost Payment Ledger Items",
+            "Repost Accounting Ledger",
+            "Repost Accounting Ledger Items",
+            "Unreconcile Payment",
+            "Unreconcile Payment Entries",
+        )
+        self.cancel_linked_payment_entries()
 
     def on_trash(self):
         pass
@@ -118,6 +130,9 @@ class LetterofCredit(Document):
         if not settings.lc_loss_expense_account:
             frappe.throw(_("Please set the Loss Expense Account under Optima Payment Setting."))
 
+        if not settings.lc_mode_of_payment:
+            frappe.throw(_("Please set the Mode of Payment under Optima Payment Setting."))
+
     # ================================================================================================
     # SUBMIT / STATUS HELPERS
     # ================================================================================================
@@ -135,10 +150,122 @@ class LetterofCredit(Document):
             self.remarks = _("({}) project + ({}) Letter of Credit Number").format(self.project, self.lc_number)
 
     # ================================================================================================
+    # PAYMENT ENTRY CONSTRUCTION
+    # ================================================================================================
+    # GL impact is posted via Payment Entry (Internal Transfer) documents instead of
+    # raw GL Entry rows - submitting/cancelling the Payment Entry handles GL
+    # posting/reversal automatically through its own controller.
+
+    def make_payment_entries(self):
+        print("*"* 50)
+        print("Making payment entries for Letter of Credit:", self.name)
+        paid_to, paid_from = self.get_payment_entry_accounts()
+
+        self.make_payment_entry(paid_to, paid_from, self.bank_amount, posting_date=self.posting_date)
+
+        if self.lc_type == "Providing" and self.issue_commission:
+            settings = self.get_optima_payment_setting()
+            self.make_payment_entry(
+                settings.lc_bank_fees_account,
+                self.account,
+                self.issue_commission_amount,
+                posting_date=self.posting_date,
+                is_lc_commission_entry=True,
+            )
+
+    def get_payment_entry_accounts(self):
+        """Return (paid_to, paid_from) for the initial submit-time posting."""
+        settings = self.get_optima_payment_setting()
+
+        if self.lc_type == "Providing":
+            paid_to = self.lc_account or settings.lc_insurance_account
+            paid_from = self.account
+        else:
+            paid_to = self.account
+            paid_from = self.lc_account or settings.lc_receiving_insurance_account
+
+        return paid_to, paid_from
+
+    def make_extend_commission_payment_entry(self, extend_to_date, amount):
+        if self.lc_type != "Providing":
+            return
+
+        settings = self.get_optima_payment_setting()
+        company = self.get_company()
+
+        self.make_payment_entry(
+            settings.lc_bank_fees_account,
+            self.account or company.default_bank_account,
+            amount,
+            posting_date=extend_to_date,
+            is_lc_commission_entry=True,
+        )
+
+    def make_loss_payment_entry(self, loss_date):
+        settings = self.get_optima_payment_setting()
+
+        if self.lc_type == "Providing":
+            paid_to, paid_from = settings.lc_loss_expense_account, self.account
+        else:
+            paid_to, paid_from = self.account, settings.lc_receiving_insurance_account
+
+        self.make_payment_entry(paid_to, paid_from, self.lc_amount, posting_date=loss_date, is_lc_loss_entry=True)
+
+    def make_payment_entry(
+        self,
+        paid_to,
+        paid_from,
+        amount,
+        posting_date=None,
+        is_lc_commission_entry=False,
+        is_lc_loss_entry=False,
+    ):
+        settings = self.get_optima_payment_setting()
+
+        pe = frappe.new_doc("Payment Entry")
+        pe.update(
+            {
+                "payment_type": "Internal Transfer",
+                "company": self.company,
+                "posting_date": posting_date or self.posting_date,
+                "mode_of_payment": settings.lc_mode_of_payment,
+                "paid_from": paid_from,
+                "paid_to": paid_to,
+                "paid_amount": amount,
+                "received_amount": amount,
+                "cost_center": self.cost_center,
+                "project": self.project,
+                "reference_no": self.lc_number,
+                "reference_date": posting_date or self.posting_date,
+                "letter_of_credit": self.name,
+                "is_lc_commission_entry": is_lc_commission_entry,
+                "is_lc_loss_entry": is_lc_loss_entry,
+            }
+        )
+        pe.insert(ignore_permissions=True)
+        pe.submit()
+        return pe
+
+    def cancel_linked_payment_entries(self, skip_commission=False, skip_loss=False):
+        payment_entries = frappe.get_all(
+            "Payment Entry",
+            filters={"letter_of_credit": self.name, "docstatus": 1},
+            fields=["name", "is_lc_commission_entry", "is_lc_loss_entry"],
+            order_by="creation desc",
+        )
+
+        for pe in payment_entries:
+            if skip_commission and pe.is_lc_commission_entry:
+                continue
+
+            if skip_loss and pe.is_lc_loss_entry:
+                continue
+
+            frappe.get_doc("Payment Entry", pe.name).cancel()
+
+    # ================================================================================================
     # WHITELISTED ACTIONS - Return / Extend / Loss custom buttons
     # ================================================================================================
-    # GL postings/reversals are deferred to phase 2 (Payment Entry). These actions only
-    # validate dates and update status fields for now.
 
     @frappe.whitelist()
     def lc_return(self, returned_date):
@@ -150,7 +277,7 @@ class LetterofCredit(Document):
         if returned_date < recent_transaction_date:
             frappe.throw(_("Return date cannot be before posting date"))
 
-        # TODO(phase 2): reverse GL entries via Payment Entry
+        self.cancel_linked_payment_entries(skip_commission=True)
 
         self.update_fields_dict({"lc_status": "Returned", "returned_date": returned_date})
 
@@ -175,7 +302,8 @@ class LetterofCredit(Document):
             }
         )
 
-        # TODO(phase 2): if has_commission, post commission GL via Payment Entry
+        if has_commission:
+            self.make_extend_commission_payment_entry(extend_to_date, amount)
 
         frappe.msgprint(_("Letter of Credit has been extended successfully"))
 
@@ -188,7 +316,8 @@ class LetterofCredit(Document):
         if loss_date < recent_transaction_date:
             frappe.throw(_("Loss date cannot be before posting date"))
 
-        # TODO(phase 2): reverse original GL entries and post the loss pair via Payment Entry
+        self.cancel_linked_payment_entries(skip_commission=True, skip_loss=True)
+        self.make_loss_payment_entry(loss_date)
 
         self.update_fields_dict({"lc_status": "Lost"})
 
@@ -226,10 +355,20 @@ class LetterofCredit(Document):
     def get_recent_transaction_date(self):
         """Floor date for Return/Extend/Loss date validation.
 
-        No GL history exists yet (GL/Payment Entry integration is phase 2), so this
-        simply falls back to posting_date.
+        Sourced from the most recent linked Payment Entry, falling back to
+        posting_date when none exists yet (e.g. before the LC has been submitted).
         """
-        return frappe.utils.getdate(self.posting_date)
+        dates = frappe.get_all(
+            "Payment Entry",
+            filters={"letter_of_credit": self.name, "docstatus": 1},
+            pluck="posting_date",
+            order_by="posting_date desc",
+            limit=1,
+        )
+
+        recent_transaction_date = dates[0] if dates else self.posting_date
+
+        return frappe.utils.getdate(recent_transaction_date)
 
     def update_fields_dict(self, dict_updated):
         frappe.db.set_value("Letter of Credit", self.name, dict_updated, update_modified=True)
