@@ -6,6 +6,8 @@
 // ================================================================================================
 // Letter of Credit is a fully independent doctype, so the field-fetch wiring that
 // ERPNext core ships for similar bank-linked doctypes must be reproduced here explicitly.
+frappe.provide("optima_payment.utils");
+
 cur_frm.add_fetch("bank_account", "letter_of_credit_account", "lc_account");
 cur_frm.add_fetch("bank_account", "account", "account");
 cur_frm.add_fetch("bank_account", "bank_account_no", "bank_account_no");
@@ -249,6 +251,15 @@ frappe.ui.form.on('Letter of Credit', {
                         fieldname: 'extend_amount',
                         fieldtype: 'Check',
                         default: 0,
+                        onchange: function () {
+                            optima_payment.utils.clear_fields(this.layout, [
+                                    "new_cash_margin_amount", 
+                                    "new_facilities_amount",
+                                    "new_facilities_rate",
+                                    "with_facilities",
+                                    "extended_amount"
+                            ]);
+                        }
                     },
                     {
                         fieldtype: "Column Break",
@@ -267,7 +278,7 @@ frappe.ui.form.on('Letter of Credit', {
                         // Section Break ----------------------------------------------
                         fieldtype: "Section Break",
                         fieldname: "section_break_4",
-                        depends_on: "eval:doc.extend_amount == 1",
+                        depends_on: "extend_amount",
                     },
                     {
                         label: 'With Facilities?',
@@ -295,6 +306,7 @@ frappe.ui.form.on('Letter of Credit', {
                         // Section Break ----------------------------------------------
                         fieldtype: "Section Break",
                         fieldname: "section_break_5",
+                        depends_on: "extend_amount",
                     },
                     {
                         label: 'New Cash Margin Amount',
@@ -310,6 +322,7 @@ frappe.ui.form.on('Letter of Credit', {
                         fieldname: 'new_facilities_amount',
                         fieldtype: 'Currency',
                         read_only: 1,
+                        depends_on: "with_facilities",
                     },
 
                 ], (values) => {
