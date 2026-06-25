@@ -448,7 +448,7 @@ def make_letter_of_credit(
     fields = {
         "doctype": "Letter of Credit",
         "lc_type": lc_type,
-        "lc_category": "Initial",
+        "lc_category": "Sight",
         "company": company,
         "posting_date": nowdate(),
         "start_date": nowdate(),
