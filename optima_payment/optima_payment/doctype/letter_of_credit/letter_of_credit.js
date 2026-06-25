@@ -21,7 +21,7 @@ const LC_TYPE_DEPENDENT_FIELDS = [
     "bank_rate_", "bank_amount",
     "facilities_rate_", "facility_amount",
     "issue_commission", "issue_commission_amount",
-    "banking_facilities",
+    "banking_facilities", "number_of_deferred_days",
     "validity", "start_date", "end_date", "new_end_date",
 ];
 
