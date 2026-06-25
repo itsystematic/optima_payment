@@ -45,7 +45,7 @@ class LetterofCredit(Document):
         lc_percent: DF.Percent
         lc_status: DF.Literal["New", "Exists", "Issued", "Returned", "Expired", "Extended", "Lost"]
         lc_type: DF.Literal["Providing", "Receiving"]
-        mode_of_payment: DF.Link | None
+        mode_of_payment: DF.Link
         more_information: DF.TextEditor | None
         name_of_beneficiary: DF.Data
         net_amount: DF.Currency
@@ -78,6 +78,7 @@ class LetterofCredit(Document):
         self.validate_customer_or_supplier()
         self.validate_lc_number_and_beneficiary()
         self.validate_company_account()
+        self.validate_mode_of_payment()
 
     def before_submit(self):
         self.add_remarks()
@@ -133,6 +134,11 @@ class LetterofCredit(Document):
         if not settings.lc_mode_of_payment:
             frappe.throw(_("Please set the Mode of Payment under Optima Payment Setting."))
 
+    def validate_mode_of_payment(self):
+        
+        if not self.mode_of_payment:
+            frappe.throw(_("Mode of Payment must be set."))
+
     # ================================================================================================
     # SUBMIT / STATUS HELPERS
     # ================================================================================================
@@ -157,8 +163,6 @@ class LetterofCredit(Document):
     # posting/reversal automatically through its own controller.
 
     def make_payment_entries(self):
-        print("*"* 50)
-        print("Making payment entries for Letter of Credit:", self.name)
         paid_to, paid_from = self.get_payment_entry_accounts()
 
         self.make_payment_entry(paid_to, paid_from, self.bank_amount, posting_date=self.posting_date)
@@ -220,7 +224,6 @@ class LetterofCredit(Document):
         is_lc_commission_entry=False,
         is_lc_loss_entry=False,
     ):
-        settings = self.get_optima_payment_setting()
 
         pe = frappe.new_doc("Payment Entry")
         pe.update(
@@ -228,7 +231,7 @@ class LetterofCredit(Document):
                 "payment_type": "Internal Transfer",
                 "company": self.company,
                 "posting_date": posting_date or self.posting_date,
-                "mode_of_payment": settings.lc_mode_of_payment,
+                "mode_of_payment": self.mode_of_payment,
                 "paid_from": paid_from,
                 "paid_to": paid_to,
                 "paid_amount": amount,
@@ -240,6 +243,7 @@ class LetterofCredit(Document):
                 "letter_of_credit": self.name,
                 "is_lc_commission_entry": is_lc_commission_entry,
                 "is_lc_loss_entry": is_lc_loss_entry,
+                "is_system_generated": 1,
             }
         )
         pe.insert(ignore_permissions=True)
@@ -250,7 +254,7 @@ class LetterofCredit(Document):
         payment_entries = frappe.get_all(
             "Payment Entry",
             filters={"letter_of_credit": self.name, "docstatus": 1},
-            fields=["name", "is_lc_commission_entry", "is_lc_loss_entry"],
+            fields=["name", "is_lc_commission_entry", "is_lc_loss_entry", "is_system_generated"],
             order_by="creation desc",
         )
 
