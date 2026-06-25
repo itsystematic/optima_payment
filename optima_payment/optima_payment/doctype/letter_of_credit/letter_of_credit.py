@@ -36,7 +36,6 @@ class LetterofCredit(Document):
         extended_facility_amount: DF.Currency
         facilities_rate_: DF.Percent
         facility_amount: DF.Currency
-        iban: DF.Data | None
         issue_commission: DF.Check
         issue_commission_amount: DF.Float
         lc_account: DF.Link | None
@@ -46,6 +45,7 @@ class LetterofCredit(Document):
         lc_percent: DF.Percent
         lc_status: DF.Literal["New", "Exists", "Issued", "Returned", "Expired", "Extended", "Lost"]
         lc_type: DF.Literal["Providing", "Receiving"]
+        mode_of_payment: DF.Link | None
         more_information: DF.TextEditor | None
         name_of_beneficiary: DF.Data
         net_amount: DF.Currency
