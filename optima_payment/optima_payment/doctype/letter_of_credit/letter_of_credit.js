@@ -19,7 +19,7 @@ cur_frm.add_fetch("bank", "swift_number", "swift_number");
 // stale values here would misrepresent the new direction, so they reset on every lc_type change.
 const LC_TYPE_DEPENDENT_FIELDS = [
     "bank", "bank_account", "account", "lc_account",
-    "lc_percent", "lc_amount",
+    "lc_percent", "lc_amount","mode_of_payment",
     "bank_rate_", "bank_amount",
     "facilities_rate_", "facility_amount",
     "issue_commission", "issue_commission_amount",
@@ -84,7 +84,12 @@ frappe.ui.form.on('Letter of Credit', {
     // FIELD EVENT HANDLERS
     // ============================================================================================
     bank(frm) {
-        optima_payment.utils.clear_fields(frm, ["bank_account", "account", "lc_account"]);
+        optima_payment.utils.clear_fields(frm, [
+            "bank_account",
+            "account",
+            "lc_account",
+            "mode_of_payment",
+        ]);
     },
 
     start_date(frm) {
