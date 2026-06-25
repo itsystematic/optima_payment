@@ -196,6 +196,7 @@
    "fieldname": "lc_percent",
    "fieldtype": "Percent",
    "label": "Letter of Credit Percent",
+   "no_copy": 1,
    "reqd": 1
   },
   {
@@ -540,7 +541,7 @@
    "link_fieldname": "letter_of_credit"
   }
  ],
- "modified": "2026-06-25 12:19:13.268708",
+ "modified": "2026-06-25 15:21:38.064875",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Letter of Credit",
