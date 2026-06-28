@@ -2,8 +2,8 @@
 # For license information, please see license.txt
 
 import frappe
-import frappe.utils
 from frappe import _
+from frappe.utils import flt, getdate
 from frappe.model.document import Document
 
 
@@ -293,7 +293,7 @@ class LetterofCredit(Document):
     def lc_return(self, returned_date):
         recent_transaction_date = self.get_recent_transaction_date()
 
-        returned_date = frappe.utils.getdate(returned_date)
+        returned_date = getdate(returned_date)
 
         # ensure return date is after posting date
         if returned_date < recent_transaction_date:
@@ -306,26 +306,41 @@ class LetterofCredit(Document):
         frappe.msgprint(_("Letter of Credit has been returned successfully"), indicator="green", alert=True)
 
     @frappe.whitelist()
-    def lc_extend_action(self, amount, end_date, days, extend_to_date, has_commission):
+    def lc_extend_action(
+        self, commission_amount, end_date, extended_days, extend_to_date, has_commission,
+        has_amount_extension=False, lc_amount_extension=0,
+        new_cash_margin_amount=0, new_facilities_amount=0,
+    ):
         last_transaction_date = self.get_recent_transaction_date()
 
         # ensure extend date is after posting date
-        extend_to_date = frappe.utils.getdate(extend_to_date)
+        extend_to_date = getdate(extend_to_date)
         if extend_to_date < last_transaction_date:
             frappe.throw(_("Extend date cannot be before posting date"))
 
         self.update_fields_dict(
             {
-                "no_of_extended_days": self.no_of_extended_days + days,
+                "no_of_extended_days": self.no_of_extended_days + extended_days,
                 "lc_status": "Extended",
-                "issue_commission_amount": self.issue_commission_amount + amount,
+                "issue_commission_amount": self.issue_commission_amount + commission_amount,
                 "new_end_date": end_date,
                 "extend_validity": 1,
+                "extended_cash_margin_amount": self.extended_cash_margin_amount + flt(new_cash_margin_amount),
+                "extended_facility_amount": self.extended_facility_amount + flt(new_facilities_amount),
             }
         )
 
+        if has_amount_extension and flt(lc_amount_extension):
+            paid_to, paid_from = self.get_payment_entry_accounts()
+            self.make_payment_entry(
+                paid_to,
+                paid_from,
+                flt(lc_amount_extension),
+                posting_date=extend_to_date,
+            )
+
         if has_commission:
-            self.make_extend_commission_payment_entry(extend_to_date, amount)
+            self.make_extend_commission_payment_entry(extend_to_date, commission_amount)
 
         frappe.msgprint(_("Letter of Credit has been extended successfully"))
 
@@ -334,7 +349,7 @@ class LetterofCredit(Document):
         # ensure loss date is after posting date
         recent_transaction_date = self.get_recent_transaction_date()
 
-        loss_date = frappe.utils.getdate(loss_date)
+        loss_date = getdate(loss_date)
         if loss_date < recent_transaction_date:
             frappe.throw(_("Loss date cannot be before posting date"))
 
@@ -390,7 +405,7 @@ class LetterofCredit(Document):
 
         recent_transaction_date = dates[0] if dates else self.posting_date
 
-        return frappe.utils.getdate(recent_transaction_date)
+        return getdate(recent_transaction_date)
 
     def update_fields_dict(self, dict_updated):
         frappe.db.set_value("Letter of Credit", self.name, dict_updated, update_modified=True)

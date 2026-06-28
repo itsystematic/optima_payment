@@ -219,8 +219,8 @@ frappe.ui.form.on('Letter of Credit', {
                         fieldtype: "Column Break",
                     },
                     {
-                        label: 'Issue Commission Amount',
-                        fieldname: 'issue_commission_amount',
+                        label: 'Commission Amount',
+                        fieldname: 'commission_amount',
                         fieldtype: 'Currency',
                         depends_on: "has_commission",
                         mandatory_depends_on: "has_commission"
@@ -232,7 +232,7 @@ frappe.ui.form.on('Letter of Credit', {
                     },
                     {
                         label: 'Extend Days?',
-                        fieldname: 'extend_days',
+                        fieldname: 'has_days_extension',
                         fieldtype: 'Check',
                         default: 0,
                     },
@@ -243,8 +243,8 @@ frappe.ui.form.on('Letter of Credit', {
                         label: 'Number of Extended Days',
                         fieldname: 'extended_days',
                         fieldtype: 'Int',
-                        depends_on: "extend_days",
-                        mandatory_depends_on: "extend_days"
+                        depends_on: "has_days_extension",
+                        mandatory_depends_on: "has_days_extension"
                     },
                     {
                         // Section Break ----------------------------------------------
@@ -253,16 +253,16 @@ frappe.ui.form.on('Letter of Credit', {
                     },
                     {
                         label: 'Extend Amount?',
-                        fieldname: 'extend_amount',
+                        fieldname: 'has_amount_extension',
                         fieldtype: 'Check',
                         default: 0,
                         onchange: function () {
                             optima_payment.utils.clear_fields(this.layout, [
-                                    "new_cash_margin_amount", 
+                                    "new_cash_margin_amount",
                                     "new_facilities_amount",
                                     "new_facilities_rate",
                                     "with_facilities",
-                                    "extended_amount"
+                                    "lc_amount_extension"
                             ]);
                         }
                     },
@@ -270,11 +270,11 @@ frappe.ui.form.on('Letter of Credit', {
                         fieldtype: "Column Break",
                     },
                     {
-                        label: 'Extended Amount',
-                        fieldname: 'extended_amount',
+                        label: 'LC Amount Extension',
+                        fieldname: 'lc_amount_extension',
                         fieldtype: 'Currency',
-                        depends_on: "extend_amount",
-                        mandatory_depends_on: "extend_amount",
+                        depends_on: "has_amount_extension",
+                        mandatory_depends_on: "has_amount_extension",
                         onchange: function () {
                             recalculate_extend_amounts(this.layout);
                         }
@@ -283,7 +283,7 @@ frappe.ui.form.on('Letter of Credit', {
                         // Section Break ----------------------------------------------
                         fieldtype: "Section Break",
                         fieldname: "section_break_4",
-                        depends_on: "extend_amount",
+                        depends_on: "has_amount_extension",
                     },
                     {
                         label: 'With Facilities?',
@@ -311,7 +311,7 @@ frappe.ui.form.on('Letter of Credit', {
                         // Section Break ----------------------------------------------
                         fieldtype: "Section Break",
                         fieldname: "section_break_5",
-                        depends_on: "extend_amount",
+                        depends_on: "has_amount_extension",
                     },
                     {
                         label: 'New Cash Margin Amount',
@@ -336,10 +336,14 @@ frappe.ui.form.on('Letter of Credit', {
                         doc: frm.doc,
                         args: {
                             has_commission: values.has_commission || false,
-                            amount: values.issue_commission_amount || 0,
+                            commission_amount: values.commission_amount || 0,
                             end_date: frappe.datetime.add_days(cur_frm.doc.new_end_date ? cur_frm.doc.new_end_date : cur_frm.doc.end_date, values.extended_days - 1),
-                            days: values.extended_days,
-                            extend_to_date: values.extend_to_date
+                            extended_days: values.extended_days,
+                            extend_to_date: values.extend_to_date,
+                            has_amount_extension: values.has_amount_extension || false,
+                            lc_amount_extension: values.lc_amount_extension || 0,
+                            new_cash_margin_amount: values.new_cash_margin_amount || 0,
+                            new_facilities_amount: values.new_facilities_amount || 0,
                         },
                         callback: (r) => {
                             frm.reload_doc()
@@ -416,7 +420,7 @@ frappe.ui.form.on('Letter of Credit', {
 // Use this.layout (not this.frm) inside a dialog field's onchange - frappe.prompt dialogs
 // have no frm, but Layout#init_field always sets fieldobj.layout to the owning Dialog.
 function recalculate_extend_amounts(dialog) {
-    const extended_amount = dialog.get_value("extended_amount") || 0;
+    const extended_amount = dialog.get_value("lc_amount_extension") || 0;
     const with_facilities = dialog.get_value("with_facilities");
     const facilities_rate = with_facilities ? (dialog.get_value("new_facilities_rate") || 0) : 0;
 
