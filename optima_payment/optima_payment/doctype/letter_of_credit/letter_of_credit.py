@@ -154,6 +154,10 @@ class LetterofCredit(Document):
     # GL impact is posted via Payment Entry (Internal Transfer) documents instead of
     # raw GL Entry rows - submitting/cancelling the Payment Entry handles GL
     # posting/reversal automatically through its own controller.
+    #
+    # Commission rule: commissions are a permanent bank cost — they are NEVER reversed,
+    # regardless of what happens to the LC (Return, Cancel, etc.).  Collateral transfers
+    # (the main submit PE and any extend amount PEs) ARE reversed on Return.
 
     def make_payment_entries(self):
         paid_to, paid_from = self.get_payment_entry_accounts()
@@ -184,13 +188,29 @@ class LetterofCredit(Document):
         return paid_to, paid_from
 
     def make_return_payment_entry(self, returned_date):
-        paid_to, paid_from = self.get_payment_entry_accounts()
-        self.make_payment_entry(
-            paid_from,
-            paid_to,
-            self.bank_amount,
-            posting_date=returned_date,
+        # Reverse every collateral PE (submit + extend amount PEs) by swapping
+        # paid_from/paid_to on each.  Commission PEs are excluded — commissions
+        # are a permanent bank cost that survive a Return.
+        collateral_entries = frappe.get_all(
+            "Payment Entry",
+            filters={
+                "letter_of_credit": self.name,
+                "docstatus": 1,
+                "is_lc_commission_entry": 0,
+                "is_lc_loss_entry": 0,
+                "is_lc_return_entry": 0,
+                "is_system_generated": 1,
+            },
+            fields=["paid_from", "paid_to", "paid_amount"],
         )
+        for pe in collateral_entries:
+            self.make_payment_entry(
+                pe.paid_from,
+                pe.paid_to,
+                pe.paid_amount,
+                posting_date=returned_date,
+                is_lc_return_entry=True,
+            )
 
     def make_extend_commission_payment_entry(self, extend_to_date, amount):
         if self.lc_type != "Providing":
@@ -225,6 +245,7 @@ class LetterofCredit(Document):
         posting_date=None,
         is_lc_commission_entry=False,
         is_lc_loss_entry=False,
+        is_lc_return_entry=False,
         commission_amount=None,
     ):
 
@@ -246,6 +267,7 @@ class LetterofCredit(Document):
                 "letter_of_credit": self.name,
                 "is_lc_commission_entry": is_lc_commission_entry,
                 "is_lc_loss_entry": is_lc_loss_entry,
+                "is_lc_return_entry": is_lc_return_entry,
                 "is_system_generated": 1,
             }
         )
@@ -272,7 +294,7 @@ class LetterofCredit(Document):
         payment_entries = frappe.get_all(
             "Payment Entry",
             filters={"letter_of_credit": self.name, "docstatus": 1},
-            fields=["name", "is_lc_commission_entry", "is_lc_loss_entry", "is_system_generated"],
+            fields=["name", "is_lc_commission_entry", "is_lc_loss_entry", "is_lc_return_entry", "is_system_generated"],
             order_by="creation desc",
         )
 
@@ -331,6 +353,8 @@ class LetterofCredit(Document):
         )
 
         if has_amount_extension and flt(lc_amount_extension):
+            # Collateral PE for the extended amount.  Commission is folded in as a
+            # taxes row so both post in one document — same pattern as submit.
             paid_to, paid_from = self.get_payment_entry_accounts()
             self.make_payment_entry(
                 paid_to,
@@ -340,6 +364,8 @@ class LetterofCredit(Document):
                 commission_amount=flt(commission_amount) if has_commission else None,
             )
         elif has_commission:
+            # Validity-only extension — no collateral PE to host the commission,
+            # so it gets its own standalone PE (permanent cost, never reversed).
             self.make_extend_commission_payment_entry(extend_to_date, commission_amount)
 
         frappe.msgprint(_("Letter of Credit has been extended successfully"), indicator="green", alert=True)
