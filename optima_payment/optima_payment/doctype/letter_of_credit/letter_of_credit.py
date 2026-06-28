@@ -337,12 +337,12 @@ class LetterofCredit(Document):
                 paid_from,
                 flt(lc_amount_extension),
                 posting_date=extend_to_date,
+                commission_amount=flt(commission_amount) if has_commission else None,
             )
-
-        if has_commission:
+        elif has_commission:
             self.make_extend_commission_payment_entry(extend_to_date, commission_amount)
 
-        frappe.msgprint(_("Letter of Credit has been extended successfully"))
+        frappe.msgprint(_("Letter of Credit has been extended successfully"), indicator="green", alert=True)
 
     @frappe.whitelist()
     def lc_loss_action(self, loss_date):
