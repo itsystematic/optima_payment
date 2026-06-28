@@ -67,13 +67,6 @@ class LetterofCredit(Document):
     # ================================================================================================
     # DOCTYPE LIFECYCLE
     # ================================================================================================
-    # Frappe's submittable-document hooks, in the order they actually fire:
-    # validate -> before_submit -> on_submit -> on_cancel -> on_trash
-    #
-    # GL impact is posted/reversed through ERPNext Payment Entry documents
-    # (payment_type "Internal Transfer") rather than hand-rolled GL Entry rows -
-    # see the PAYMENT ENTRY CONSTRUCTION section below.
-
     def validate(self):
         self.validate_customer_or_supplier()
         self.validate_lc_number_and_beneficiary()
@@ -190,6 +183,15 @@ class LetterofCredit(Document):
 
         return paid_to, paid_from
 
+    def make_return_payment_entry(self, returned_date):
+        paid_to, paid_from = self.get_payment_entry_accounts()
+        self.make_payment_entry(
+            paid_from,
+            paid_to,
+            self.bank_amount,
+            posting_date=returned_date,
+        )
+
     def make_extend_commission_payment_entry(self, extend_to_date, amount):
         if self.lc_type != "Providing":
             return
@@ -297,11 +299,11 @@ class LetterofCredit(Document):
         if returned_date < recent_transaction_date:
             frappe.throw(_("Return date cannot be before posting date"))
 
-        self.cancel_linked_payment_entries(skip_commission=True)
+        self.make_return_payment_entry(returned_date)
 
         self.update_fields_dict({"lc_status": "Returned", "returned_date": returned_date})
 
-        frappe.msgprint(_("Letter of Credit has been returned successfully"))
+        frappe.msgprint(_("Letter of Credit has been returned successfully"), indicator="green", alert=True)
 
     @frappe.whitelist()
     def lc_extend_action(self, amount, end_date, days, extend_to_date, has_commission):
