@@ -46,3 +46,20 @@ def get_custom_fields() -> dict[str, list[dict]]:
             },
         ],
     }
+
+
+def get_property_setters() -> list[dict]:
+    """Return Letter of Credit property setters owned by Optima Payment."""
+    return [
+        {
+            "doctype": "Payment Entry",
+            "fieldname": "taxes",
+            "property": "depends_on",
+            "property_type": "Data",
+            "value": (
+                "eval: doc.party_type == 'Supplier' || doc.party_type == 'Customer' "
+                "|| (doc.letter_of_credit && doc.is_system_generated)"
+            ),
+            "doctype_or_field": "DocField",
+        },
+    ]

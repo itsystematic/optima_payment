@@ -73,6 +73,7 @@ def get_feature_specs() -> list[FeatureSpec]:
             key="letter_of_credit",
             label="Letter of Credit customizations",
             get_custom_fields=letter_of_credit.get_custom_fields,
+            get_property_setters=letter_of_credit.get_property_setters,
         ),
         FeatureSpec(
             key="hrms_integration",
