@@ -165,17 +165,17 @@ class LetterofCredit(Document):
     def make_payment_entries(self):
         paid_to, paid_from = self.get_payment_entry_accounts()
 
-        self.make_payment_entry(paid_to, paid_from, self.bank_amount, posting_date=self.posting_date)
-
+        commission_amount = None
         if self.lc_type == "Providing" and self.issue_commission:
-            settings = self.get_optima_payment_setting()
-            self.make_payment_entry(
-                settings.lc_bank_fees_account,
-                self.account,
-                self.issue_commission_amount,
-                posting_date=self.posting_date,
-                is_lc_commission_entry=True,
-            )
+            commission_amount = self.issue_commission_amount
+
+        self.make_payment_entry(
+            paid_to,
+            paid_from,
+            self.bank_amount,
+            posting_date=self.posting_date,
+            commission_amount=commission_amount,
+        )
 
     def get_payment_entry_accounts(self):
         """Return (paid_to, paid_from) for the initial submit-time posting."""
@@ -223,6 +223,7 @@ class LetterofCredit(Document):
         posting_date=None,
         is_lc_commission_entry=False,
         is_lc_loss_entry=False,
+        commission_amount=None,
     ):
 
         pe = frappe.new_doc("Payment Entry")
@@ -246,6 +247,21 @@ class LetterofCredit(Document):
                 "is_system_generated": 1,
             }
         )
+
+        if commission_amount:
+            settings = self.get_optima_payment_setting()
+            pe.append(
+                "taxes",
+                {
+                    "charge_type": "Actual",
+                    "account_head": settings.lc_bank_fees_account,
+                    "add_deduct_tax": "Add",
+                    "tax_amount": commission_amount,
+                    "description": _("Letter of Credit Issue Commission"),
+                    "cost_center": self.cost_center,
+                },
+            )
+
         pe.insert(ignore_permissions=True)
         pe.submit()
         return pe
