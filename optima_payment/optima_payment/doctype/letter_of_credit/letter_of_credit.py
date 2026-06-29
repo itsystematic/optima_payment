@@ -44,6 +44,8 @@ class LetterofCredit(Document):
         lc_number: DF.Data
         lc_percent: DF.Percent
         lc_status: DF.Literal["New", "Exists", "Issued", "Returned", "Expired", "Extended", "Closed"]
+        pre_close_status: DF.Data | None
+        reopen_date: DF.Date | None
         lc_type: DF.Literal["Providing", "Receiving"]
         mode_of_payment: DF.Link
         more_information: DF.TextEditor | None
@@ -380,9 +382,25 @@ class LetterofCredit(Document):
 
         self.make_close_payment_entry(close_date, close_amount)
 
-        self.update_fields_dict({"lc_status": "Closed"})
+        self.update_fields_dict({"pre_close_status": self.lc_status, "lc_status": "Closed"})
 
         frappe.msgprint(_("Letter of Credit has been closed successfully"), indicator="green", alert=True)
+
+    @frappe.whitelist()
+    def lc_reopen_action(self, reopen_date):
+        if self.lc_status != "Closed":
+            frappe.throw(_("Letter of Credit is not in Closed status"))
+
+        if not self.pre_close_status:
+            frappe.throw(_("Cannot determine previous status — pre_close_status is missing"))
+
+        self.update_fields_dict({
+            "lc_status": self.pre_close_status,
+            "pre_close_status": None,
+            "reopen_date": reopen_date,
+        })
+
+        frappe.msgprint(_("Letter of Credit has been re-opened successfully"), indicator="green", alert=True)
 
     # ================================================================================================
     # SHARED HELPERS

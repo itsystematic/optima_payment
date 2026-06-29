@@ -169,6 +169,30 @@ frappe.ui.form.on('Letter of Credit', {
     // CUSTOM BUTTON ACTIONS
     // ============================================================================================
     custom_button(frm) {
+        if (frm.doc.lc_status === "Closed" && frm.doc.docstatus == 1) {
+            frm.add_custom_button(__('Re-Open'), () => {
+                frappe.prompt([
+                    {
+                        label: 'Re-Open Date',
+                        fieldname: 'reopen_date',
+                        fieldtype: 'Date',
+                        reqd: 1,
+                    },
+                ], (values) => {
+                    frm.call({
+                        method: "lc_reopen_action",
+                        doc: frm.doc,
+                        args: {
+                            reopen_date: values.reopen_date,
+                        },
+                        callback: (r) => {
+                            frm.reload_doc()
+                        }
+                    })
+                })
+            }).css({ "background-color": "#2e7d32", "color": "white" })
+        }
+
         let status = ["Returned", "Closed"]
         if (status.includes(frm.doc.lc_status) == false && frm.doc.docstatus == 1) {
             frm.add_custom_button(__('Return'), () => {

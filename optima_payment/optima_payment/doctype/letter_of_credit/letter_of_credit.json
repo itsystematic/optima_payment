@@ -256,6 +256,21 @@
    "read_only": 1
   },
   {
+   "fieldname": "pre_close_status",
+   "fieldtype": "Data",
+   "label": "Pre-Close Status",
+   "hidden": 1,
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "reopen_date",
+   "fieldtype": "Date",
+   "label": "Re-Open Date",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
    "fieldname": "bank",
    "fieldtype": "Link",
    "label": "Bank",
