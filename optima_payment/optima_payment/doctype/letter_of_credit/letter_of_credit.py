@@ -223,6 +223,7 @@ class LetterofCredit(Document):
             settings.lc_bank_fees_account,
             self.account or company.default_bank_account,
             amount,
+            self.cost_center,
             posting_date=extend_to_date,
             is_lc_commission_entry=True,
         )
@@ -243,6 +244,7 @@ class LetterofCredit(Document):
         paid_to,
         paid_from,
         amount,
+        cost_center=None,
         posting_date=None,
         is_lc_commission_entry=False,
         is_lc_loss_entry=False,
@@ -274,6 +276,10 @@ class LetterofCredit(Document):
             }
         )
 
+        # Balance Sheet accounts (e.g. Insurance, Bank) do not require a cost center, but P&L accounts (e.g. Loss Expense, Bank Fees) do.  If the user has set a cost center on the LC, use it; otherwise leave it blank and let the PE validation handle it.
+        if cost_center:
+            pe.cost_center = cost_center
+
         if commission_amount:
             settings = self.get_optima_payment_setting()
             pe.append(
@@ -284,7 +290,7 @@ class LetterofCredit(Document):
                     "add_deduct_tax": "Add",
                     "tax_amount": commission_amount,
                     "description": _("Letter of Credit Issue Commission"),
-                    "cost_center": self.cost_center,
+                    "cost_center": cost_center,
                 },
             )
 
