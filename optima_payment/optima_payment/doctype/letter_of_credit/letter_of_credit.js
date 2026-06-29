@@ -437,9 +437,9 @@ frappe.ui.form.on('Letter of Credit', {
 
         // Auto-set reference_doctype based on lc_type
         if (frm.doc.lc_type === "Providing") {
-            frm.set_value("reference_doctype", "Sales Order");
-        } else {
             frm.set_value("reference_doctype", "Purchase Order");
+        } else {
+            frm.set_value("reference_doctype", "Sales Order");
         }
     },
 
