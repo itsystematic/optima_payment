@@ -71,6 +71,7 @@ frappe.ui.form.on("Optima Payment Setting", {
             return {
                 filters : {
                     is_group: 0,
+                    root_type: "Asset",
                 }
             }
         });
@@ -79,6 +80,7 @@ frappe.ui.form.on("Optima Payment Setting", {
             return {
                 filters : {
                     is_group: 0,
+                    root_type: "Liability",
                 }
             }
         });
