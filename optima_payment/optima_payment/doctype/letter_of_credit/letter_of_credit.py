@@ -125,7 +125,7 @@ class LetterofCredit(Document):
 
         if not settings.lc_loss_expense_account:
             frappe.throw(_("Please set the Loss Expense Account under Optima Payment Setting."))
-            
+
 
     def validate_mode_of_payment(self):
         
@@ -262,7 +262,6 @@ class LetterofCredit(Document):
                 "paid_to": paid_to,
                 "paid_amount": amount,
                 "received_amount": amount,
-                "cost_center": self.cost_center,
                 "project": self.project,
                 "reference_no": self.lc_number,
                 "reference_date": posting_date or self.posting_date,
