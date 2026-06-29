@@ -66,6 +66,39 @@ frappe.ui.form.on("Optima Payment Setting", {
             }
         });
 
+        // Letter of Credit
+        frm.set_query("lc_insurance_account",  ()  =>  {
+            return {
+                filters : {
+                    is_group: 0,
+                }
+            }
+        });
+
+        frm.set_query("lc_receiving_insurance_account",  ()  =>  {
+            return {
+                filters : {
+                    is_group: 0,
+                }
+            }
+        });
+
+        frm.set_query("lc_bank_fees_account",  ()  =>  {
+            return {
+                filters : {
+                    is_group: 0,
+                }
+            }
+        });
+
+        frm.set_query("lc_loss_expense_account",  ()  =>  {
+            return {
+                filters : {
+                    is_group: 0,
+                }
+            }
+        });
+
         frm.set_query("bank_fees_expense_account", "cheque_accounts",  (doc, cdt ,cdn)  =>  {
             let current_row = frappe.get_doc(cdt , cdn)
             return {
