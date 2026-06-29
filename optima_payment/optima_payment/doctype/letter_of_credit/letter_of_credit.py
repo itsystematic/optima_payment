@@ -43,7 +43,7 @@ class LetterofCredit(Document):
         lc_category: DF.Literal["Sight", "Deferred"]
         lc_number: DF.Data
         lc_percent: DF.Percent
-        lc_status: DF.Literal["New", "Exists", "Issued", "Returned", "Expired", "Extended", "Lost"]
+        lc_status: DF.Literal["New", "Exists", "Issued", "Returned", "Expired", "Extended", "Closed"]
         lc_type: DF.Literal["Providing", "Receiving"]
         mode_of_payment: DF.Link
         more_information: DF.TextEditor | None
@@ -227,15 +227,16 @@ class LetterofCredit(Document):
             is_lc_commission_entry=True,
         )
 
-    def make_loss_payment_entry(self, loss_date):
-        settings = self.get_optima_payment_setting()
-
-        if self.lc_type == "Providing":
-            paid_to, paid_from = settings.lc_loss_expense_account, self.account
-        else:
-            paid_to, paid_from = self.account, settings.lc_receiving_insurance_account
-
-        self.make_payment_entry(paid_to, paid_from, self.lc_amount, posting_date=loss_date, is_lc_loss_entry=True)
+    def make_close_payment_entry(self, close_date, close_amount):
+        # Reversed direction — same account swap logic as Return.
+        paid_to, paid_from = self.get_payment_entry_accounts()
+        self.make_payment_entry(
+            paid_from,
+            paid_to,
+            flt(close_amount),
+            posting_date=close_date,
+            is_lc_close_entry=True,
+        )
 
     def make_payment_entry(
         self,
@@ -246,6 +247,7 @@ class LetterofCredit(Document):
         is_lc_commission_entry=False,
         is_lc_loss_entry=False,
         is_lc_return_entry=False,
+        is_lc_close_entry=False,
         commission_amount=None,
     ):
 
@@ -268,6 +270,7 @@ class LetterofCredit(Document):
                 "is_lc_commission_entry": is_lc_commission_entry,
                 "is_lc_loss_entry": is_lc_loss_entry,
                 "is_lc_return_entry": is_lc_return_entry,
+                "is_lc_close_entry": is_lc_close_entry,
                 "is_system_generated": 1,
             }
         )
@@ -290,19 +293,16 @@ class LetterofCredit(Document):
         pe.submit()
         return pe
 
-    def cancel_linked_payment_entries(self, skip_commission=False, skip_loss=False):
+    def cancel_linked_payment_entries(self, skip_commission=False):
         payment_entries = frappe.get_all(
             "Payment Entry",
             filters={"letter_of_credit": self.name, "docstatus": 1},
-            fields=["name", "is_lc_commission_entry", "is_lc_loss_entry", "is_lc_return_entry", "is_system_generated"],
+            fields=["name", "is_lc_commission_entry", "is_lc_loss_entry", "is_lc_return_entry", "is_lc_close_entry", "is_system_generated"],
             order_by="creation desc",
         )
 
         for pe in payment_entries:
             if skip_commission and pe.is_lc_commission_entry:
-                continue
-
-            if skip_loss and pe.is_lc_loss_entry:
                 continue
 
             frappe.get_doc("Payment Entry", pe.name).cancel()
@@ -371,20 +371,18 @@ class LetterofCredit(Document):
         frappe.msgprint(_("Letter of Credit has been extended successfully"), indicator="green", alert=True)
 
     @frappe.whitelist()
-    def lc_loss_action(self, loss_date):
-        # ensure loss date is after posting date
+    def lc_close_action(self, close_date, close_amount):
         recent_transaction_date = self.get_recent_transaction_date()
 
-        loss_date = getdate(loss_date)
-        if loss_date < recent_transaction_date:
-            frappe.throw(_("Loss date cannot be before posting date"))
+        close_date = getdate(close_date)
+        if close_date < recent_transaction_date:
+            frappe.throw(_("Close date cannot be before the last transaction date"))
 
-        self.cancel_linked_payment_entries(skip_commission=True, skip_loss=True)
-        self.make_loss_payment_entry(loss_date)
+        self.make_close_payment_entry(close_date, close_amount)
 
-        self.update_fields_dict({"lc_status": "Lost"})
+        self.update_fields_dict({"lc_status": "Closed"})
 
-        frappe.msgprint(_("Letter of Credit has been marked as lost successfully"))
+        frappe.msgprint(_("Letter of Credit has been closed successfully"), indicator="green", alert=True)
 
     # ================================================================================================
     # SHARED HELPERS

@@ -169,7 +169,7 @@
    "fieldtype": "Select",
    "label": "Letter of Credit Status",
    "no_copy": 1,
-   "options": "New\nExists\nIssued\nReturned\nExpired\nExtended\nLost",
+   "options": "New\nExists\nIssued\nReturned\nExpired\nExtended\nClosed",
    "read_only": 1
   },
   {

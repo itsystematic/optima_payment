@@ -44,6 +44,15 @@ def get_custom_fields() -> dict[str, list[dict]]:
                 "no_copy": 1,
             },
             {
+                "fieldname": "is_lc_close_entry",
+                "fieldtype": "Check",
+                "label": "Is Letter of Credit Close Entry",
+                "insert_after": "is_lc_return_entry",
+                "default": 0,
+                "hidden": 1,
+                "no_copy": 1,
+            },
+            {
                 "fieldname": "is_system_generated",
                 "fieldtype": "Check",
                 "label": "Is System Generated",

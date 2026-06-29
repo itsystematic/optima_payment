@@ -169,7 +169,7 @@ frappe.ui.form.on('Letter of Credit', {
     // CUSTOM BUTTON ACTIONS
     // ============================================================================================
     custom_button(frm) {
-        let status = ["Returned", 'Lost']
+        let status = ["Returned", "Closed"]
         if (status.includes(frm.doc.lc_status) == false && frm.doc.docstatus == 1) {
             frm.add_custom_button(__('Return'), () => {
                 frappe.prompt([
@@ -353,27 +353,34 @@ frappe.ui.form.on('Letter of Credit', {
 
             }).css({ "background-color": "#0070cc", "color": "white" })
 
-            frm.add_custom_button(__('Loss'), () => {
+            frm.add_custom_button(__('Close'), () => {
                 frappe.prompt([
                     {
-                        label: 'Loss Date',
-                        fieldname: 'loss_date',
+                        label: 'Close Date',
+                        fieldname: 'close_date',
                         fieldtype: 'Date',
-                        reqd: 1
+                        reqd: 1,
+                    },
+                    {
+                        label: 'Close Amount',
+                        fieldname: 'close_amount',
+                        fieldtype: 'Currency',
+                        reqd: 1,
                     },
                 ], (values) => {
                     frm.call({
-                        method: "lc_loss_action",
+                        method: "lc_close_action",
                         doc: frm.doc,
                         args: {
-                            loss_date: values.loss_date
+                            close_date: values.close_date,
+                            close_amount: values.close_amount,
                         },
                         callback: (r) => {
                             frm.reload_doc()
                         }
                     })
                 })
-            }).css({ "background-color": "red", "color": "white" })
+            }).css({ "background-color": "#e65100", "color": "white" })
 
 
         }
