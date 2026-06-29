@@ -213,7 +213,9 @@ scheduler_events = {
 # 	"Task": "optima_payment.task.get_dashboard_data"
 # }
 override_doctype_dashboards = {
-	"Purchase Invoice": "optima_payment.override.dashboard.purchase_invoice.get_data"
+	"Purchase Invoice": "optima_payment.override.dashboard.purchase_invoice.get_data",
+	"Sales Order": "optima_payment.override.dashboard.sales_order.get_data",
+	"Purchase Order": "optima_payment.override.dashboard.purchase_order.get_data",
 }
 
 # exempt linked doctypes from being automatically cancelled
