@@ -334,8 +334,9 @@ class LetterofCredit(Document):
 
     @frappe.whitelist()
     def lc_extend_action(
-        self, commission_amount, end_date, extended_days, extend_to_date, has_commission,
+        self, commission_amount, end_date, extended_days=0, extend_to_date=None, has_commission=False,
         has_amount_extension=False, lc_amount_extension=0,
+        with_facilities=False, new_facilities_rate=0,
         new_cash_margin_amount=0, new_facilities_amount=0,
     ):
         last_transaction_date = self.get_recent_transaction_date()
@@ -358,13 +359,15 @@ class LetterofCredit(Document):
         )
 
         if has_amount_extension and flt(lc_amount_extension):
+            
+            extend_amount = self.get_extended_amount(with_facilities, new_cash_margin_amount, lc_amount_extension)
             # Collateral PE for the extended amount.  Commission is folded in as a
             # taxes row so both post in one document — same pattern as submit.
             paid_to, paid_from = self.get_payment_entry_accounts()
             self.make_payment_entry(
                 paid_to,
                 paid_from,
-                flt(lc_amount_extension),
+                extend_amount,
                 posting_date=extend_to_date,
                 commission_amount=flt(commission_amount) if has_commission else None,
             )
@@ -455,6 +458,18 @@ class LetterofCredit(Document):
     def update_fields_dict(self, dict_updated):
         frappe.db.set_value("Letter of Credit", self.name, dict_updated, update_modified=True)
         self.reload()
+
+    def get_extended_amount(
+        self,
+        with_facilities: bool, 
+        new_cash_margin_amount: float,
+        lc_amount_extension: float
+    ) -> float:
+            """when extending with facilities, the extended amount is the new cash margin amount;
+            otherwise take the lc_amount_extension,
+            """
+            extend_amount = new_cash_margin_amount if with_facilities else lc_amount_extension
+            return flt(extend_amount)
 
 
 # ================================================================================================
