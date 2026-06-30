@@ -81,11 +81,11 @@ class ChequeDepositSlip(Document):
             make_cheque_slip_gl(doc , reverse=reverse)
 
 
-    def update_cheque_status(self , status) :
+    # def update_cheque_status(self , status) :
 
-        names = list(map(lambda x : x.get("payment_entry") , self.cheque_deposit_slip_items))
-        pe = frappe.qb.DocType("Payment Entry")
-        frappe.qb.update(pe).set(pe.cheque_status, status).set(pe.from_slip, 1 if self.docstatus == 1 else 0).where( (pe.name.isin(names)) ).run()
+    #     names = list(map(lambda x : x.get("payment_entry") , self.cheque_deposit_slip_items))
+    #     pe = frappe.qb.DocType("Payment Entry")
+    #     frappe.qb.update(pe).set(pe.cheque_status, status).set(pe.from_slip, 1 if self.docstatus == 1 else 0).where( (pe.name.isin(names)) ).run()
 
 
     # def on_cancel(self) :

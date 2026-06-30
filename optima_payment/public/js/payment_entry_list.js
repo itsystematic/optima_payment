@@ -1,6 +1,6 @@
 
 
-frappe.listview_settings['Payment Entry'].add_fields = ["cheque_status", "from_slip", "payment_type"]
+frappe.listview_settings['Payment Entry'].add_fields = ["cheque_status", "payment_type"]
 
 frappe.listview_settings['Payment Entry'].get_indicator = (doc) => {
 
