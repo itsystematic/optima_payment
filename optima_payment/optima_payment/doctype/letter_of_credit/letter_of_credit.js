@@ -69,6 +69,13 @@ frappe.ui.form.on('Letter of Credit', {
                 },
             };
         });
+
+        frm.set_query("mode_of_payment", function () {
+            return {
+                query: "optima_payment.optima_payment.doctype.letter_of_credit.letter_of_credit.get_mode_of_payment_by_account",
+                filters: { account: frm.doc.account },
+            };
+        });
     },
 
     onload(frm) {
@@ -90,6 +97,10 @@ frappe.ui.form.on('Letter of Credit', {
             "lc_account",
             "mode_of_payment",
         ]);
+    },
+
+    bank_account(frm) {
+        optima_payment.utils.clear_fields(frm, ["mode_of_payment"]);
     },
 
     start_date(frm) {

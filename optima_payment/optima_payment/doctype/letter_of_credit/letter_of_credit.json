@@ -80,7 +80,9 @@
   "column_break_vbsq",
   "lc_number",
   "section_break_pljm",
-  "remarks"
+  "remarks",
+  "pre_close_status",
+  "reopen_date"
  ],
  "fields": [
   {
@@ -258,8 +260,8 @@
   {
    "fieldname": "pre_close_status",
    "fieldtype": "Data",
-   "label": "Pre-Close Status",
    "hidden": 1,
+   "label": "Pre-Close Status",
    "no_copy": 1,
    "read_only": 1
   },
@@ -543,7 +545,7 @@
    "mandatory_depends_on": "eval: doc.lc_category == \"Deferred\""
   },
   {
-   "depends_on": "eval: doc.bank",
+   "depends_on": "eval: doc.bank && doc.bank_account",
    "fieldname": "mode_of_payment",
    "fieldtype": "Link",
    "label": "Mode of Payment",
@@ -558,7 +560,7 @@
    "link_fieldname": "letter_of_credit"
   }
  ],
- "modified": "2026-06-25 15:45:28.006629",
+ "modified": "2026-06-30 09:33:00.540938",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Letter of Credit",

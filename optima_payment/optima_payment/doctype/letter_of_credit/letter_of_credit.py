@@ -44,8 +44,6 @@ class LetterofCredit(Document):
         lc_number: DF.Data
         lc_percent: DF.Percent
         lc_status: DF.Literal["New", "Exists", "Issued", "Returned", "Expired", "Extended", "Closed"]
-        pre_close_status: DF.Data | None
-        reopen_date: DF.Date | None
         lc_type: DF.Literal["Providing", "Receiving"]
         mode_of_payment: DF.Link
         more_information: DF.TextEditor | None
@@ -55,10 +53,12 @@ class LetterofCredit(Document):
         no_of_extended_days: DF.Int
         number_of_deferred_days: DF.Int
         posting_date: DF.Date
+        pre_close_status: DF.Data | None
         project: DF.Link
         reference_docname: DF.DynamicLink
         reference_doctype: DF.Literal["Sales Order", "Purchase Order"]
         remarks: DF.SmallText | None
+        reopen_date: DF.Date | None
         returned_date: DF.Date | None
         start_date: DF.Date
         supplier: DF.Link | None
@@ -455,3 +455,28 @@ class LetterofCredit(Document):
     def update_fields_dict(self, dict_updated):
         frappe.db.set_value("Letter of Credit", self.name, dict_updated, update_modified=True)
         self.reload()
+
+
+# ================================================================================================
+# WHITELISTED SEARCH HELPERS
+# ================================================================================================
+@frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def get_mode_of_payment_by_account(doctype, txt, searchfield, start, page_len, filters):
+    account = filters.get("account") if filters else None
+    if not account:
+        return []
+
+    return frappe.db.sql(
+        """
+        SELECT DISTINCT mop.name
+        FROM `tabMode of Payment` mop
+        INNER JOIN `tabMode of Payment Account` mopa ON mopa.parent = mop.name
+        WHERE mopa.default_account = %(account)s
+          AND mop.enabled = 1
+          AND mop.name LIKE %(txt)s
+        ORDER BY mop.name
+        LIMIT %(start)s, %(page_len)s
+        """,
+        {"account": account, "txt": f"%{txt}%", "start": start, "page_len": page_len},
+    )
