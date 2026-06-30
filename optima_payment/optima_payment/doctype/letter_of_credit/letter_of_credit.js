@@ -376,7 +376,7 @@ frappe.ui.form.on('Letter of Credit', {
                         args: {
                             has_commission: values.has_commission || false,
                             commission_amount: values.commission_amount || 0,
-                            end_date: frappe.datetime.add_days(cur_frm.doc.new_end_date ? cur_frm.doc.new_end_date : cur_frm.doc.end_date, values.extended_days - 1),
+                            end_date: frappe.datetime.add_days(cur_frm.doc.new_end_date ? cur_frm.doc.new_end_date : cur_frm.doc.end_date, values.extended_days || 0),
                             extended_days: values.extended_days || 0,
                             extend_to_date: values.extend_to_date,
                             has_amount_extension: values.has_amount_extension || false,
