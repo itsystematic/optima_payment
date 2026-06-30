@@ -31,9 +31,13 @@ def add_standard_data() -> None:
 
 def update_fields_in_database() -> None:
     """Keep standard field options aligned with Optima Payment expectations."""
+    add_cheque_and_letter_of_credit_type()
+
+def add_cheque_and_letter_of_credit_type() -> None:
+    """Add 'Cheque' and 'Letter of Credit' as new options to the 'Payment Type' field in the 'Payment Entry' DocType."""
     frappe.db.sql(
         """ UPDATE `tabDocField`
-                SET options = "Cash\nBank\nCheque\nGeneral\nPhone"
+                SET options = "Cash\nBank\nCheque\nGeneral\nPhone\nLetter of Credit"
             WHERE fieldname = 'type'
                 AND parent = "Mode of Payment"
     """,
