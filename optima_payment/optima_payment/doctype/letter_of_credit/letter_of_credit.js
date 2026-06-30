@@ -142,10 +142,14 @@ frappe.ui.form.on('Letter of Credit', {
     },
 
     banking_facilities(frm) {
+        optima_payment.utils.clear_fields(frm, ["facilities_rate_", "facility_amount", "bank_facilities_account"]);
+        
         if (frm.doc.banking_facilities == "Without Facilities") {
             frm.set_value("bank_rate_", 100);
         }
-        optima_payment.utils.clear_fields(frm, ["facilities_rate_", "facility_amount", "bank_facilities_account"]);
+        else {
+            frm.set_value("bank_facilities_account", frm.doc.bank_account);
+        }
     },
 
     lc_type(frm) {
