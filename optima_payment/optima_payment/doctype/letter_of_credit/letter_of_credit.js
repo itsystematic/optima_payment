@@ -8,12 +8,8 @@
 // ERPNext core ships for similar bank-linked doctypes must be reproduced here explicitly.
 frappe.provide("optima_payment.utils");
 
-cur_frm.add_fetch("bank_account", "letter_of_credit_account", "lc_account");
 cur_frm.add_fetch("bank_account", "account", "account");
 cur_frm.add_fetch("bank_account", "bank_account_no", "bank_account_no");
-cur_frm.add_fetch("bank_account", "iban", "iban");
-cur_frm.add_fetch("bank_account", "branch_code", "branch_code");
-cur_frm.add_fetch("bank", "swift_number", "swift_number");
 
 // Banking and calculated fields that depend on lc_type ("Providing" vs "Receiving") -
 // stale values here would misrepresent the new direction, so they reset on every lc_type change.
@@ -101,6 +97,7 @@ frappe.ui.form.on('Letter of Credit', {
 
     bank_account(frm) {
         optima_payment.utils.clear_fields(frm, ["mode_of_payment"]);
+        frm.trigger("fetch_lc_account");
     },
 
     start_date(frm) {
@@ -155,6 +152,7 @@ frappe.ui.form.on('Letter of Credit', {
     lc_type(frm) {
         optima_payment.utils.clear_fields(frm, LC_TYPE_DEPENDENT_FIELDS);
         frm.trigger("set_reference_doctype_options");
+        frm.trigger("fetch_lc_account");
     },
 
     reference_doctype(frm) {
@@ -450,6 +448,19 @@ frappe.ui.form.on('Letter of Credit', {
     // ============================================================================================
     // SHARED HELPERS
     // ============================================================================================
+    fetch_lc_account: function (frm) {
+        // lc_account's source field on Bank Account depends on lc_type - add_fetch can't
+        // express that, so it's fetched manually here instead of a static add_fetch wire.
+        if (!frm.doc.bank_account || !frm.doc.lc_type) return;
+
+        const source_field = frm.doc.lc_type === "Providing"
+            ? "providing_letter_of_credit_account"
+            : "receiving_letter_of_credit_account";
+
+        frappe.db.get_value("Bank Account", frm.doc.bank_account, source_field).then((r) => {
+            frm.set_value("lc_account", r.message[source_field]);
+        });
+    },
     set_reference_doctype_options: function (frm) {
 
         // Auto-set reference_doctype based on lc_type
