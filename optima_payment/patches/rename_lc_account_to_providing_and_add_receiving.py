@@ -35,7 +35,7 @@ def execute() -> None:
 
 def _migrate_existing_data() -> None:
     """Copy letter_of_credit_account values into providing_letter_of_credit_account."""
-    if not frappe.db.has_column("tabBank Account", OLD_FIELDNAME):
+    if not frappe.db.has_column("Bank Account", OLD_FIELDNAME):
         return
 
     frappe.db.sql(

@@ -86,7 +86,7 @@ def execute() -> None:
     # create new fields via create_custom_fields_safely + sync_custom_field_schema
 
 def _migrate_existing_data() -> None:
-    if not frappe.db.has_column("tabBank Account", OLD_FIELDNAME):
+    if not frappe.db.has_column("Bank Account", OLD_FIELDNAME):
         return  # guard: column may not exist if the patch runs twice
     frappe.db.sql(
         f"UPDATE `tabBank Account` SET `{NEW_FIELDNAME}` = `{OLD_FIELDNAME}` "
