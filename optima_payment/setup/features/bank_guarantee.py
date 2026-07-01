@@ -302,7 +302,28 @@ def get_custom_fields() -> dict[str, list[dict]]:
                 "fieldtype": "Date",
                 "hidden": 1,
             },
-        ]
+        ],
+        #######################################################
+        "Bank Account": [
+            {
+                "fieldname": "bank_guarantee_account",
+                "fieldtype": "Link",
+                "label": "Bank Guarantee Account",
+                "insert_after": "account_subtype",
+                "options": "Account",
+            },
+        ],
+        #######################################################
+        "GL Entry": [
+            {
+                "fieldname": "is_bank_guarantee_comission_entry",
+                "fieldtype": "Check",
+                "label": "Bank Guarantee Comission Entry",
+                "insert_after": "transaction_exchange_rate",
+                "default": 0,
+                "hidden": 1,
+            }
+        ],
     }
 
 
