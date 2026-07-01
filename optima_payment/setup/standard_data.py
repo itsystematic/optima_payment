@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
-from os import listdir
-
 import click
 import frappe
 from frappe import get_app_path
 from frappe.core.doctype.data_import.data_import import import_doc
+
+STANDARD_DATA_FILES = [
+    "role.json",
+    "print_format.json",
+    "custom_docperm.json",
+]
 
 
 def add_standard_data() -> None:
@@ -17,14 +21,18 @@ def add_standard_data() -> None:
         click.secho("Files directory not found, skipping data import", fg="yellow")
         return
 
-    all_files_in_folders = listdir(files_path)[::-1]
     click.secho(
-        "Install DocTypes From Files => {}".format(", ".join(all_files_in_folders)),
+        "Install DocTypes From Files => {}".format(", ".join(STANDARD_DATA_FILES)),
         fg="blue",
     )
 
-    for file in all_files_in_folders:
+    for file in STANDARD_DATA_FILES:
         file_path = get_app_path("optima_payment", f"files/{file}")
+        
+        if not frappe.os.path.exists(file_path):
+            click.secho(f"Skipping missing file: {file}", fg="yellow")
+            continue
+        
         import_doc(file_path)
         click.secho(f"Successfully imported: {file}", fg="green")
 
