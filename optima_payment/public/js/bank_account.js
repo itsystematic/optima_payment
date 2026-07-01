@@ -5,7 +5,15 @@ frappe.ui.form.on('Bank Account', {
      },
 
     query_filters(frm) {
-        frm.set_query('letter_of_credit_account', function() {
+        frm.set_query('providing_letter_of_credit_account', function() {
+            return {
+                filters: {
+                    'is_group': 0
+                }
+            }
+        });
+
+        frm.set_query('receiving_letter_of_credit_account', function() {
             return {
                 filters: {
                     'is_group': 0
