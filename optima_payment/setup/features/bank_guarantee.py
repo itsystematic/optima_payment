@@ -128,13 +128,6 @@ def get_custom_fields() -> dict[str, list[dict]]:
                 "read_only": 1,
             },
             {
-                "fieldname": "returned_date",
-                "fieldtype": "Date",
-                "label": "Returned Date",
-                "insert_after": "Grand Amount",
-                "read_only": 1,
-            },
-            {
                 "fieldname": "section_break_123",
                 "fieldtype": "Section Break",
                 "label": "",
