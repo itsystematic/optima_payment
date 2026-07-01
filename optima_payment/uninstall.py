@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from click import secho
 
-from optima_payment.setup import before_uninstall as run_before_uninstall
+from optima_payment.setup.registry import before_uninstall as run_before_uninstall
 
 
 def before_uninstall_entrypoint() -> None:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from click import secho
 
-from optima_payment.setup import update_fields_in_database
+from optima_payment.setup.standard_data import update_fields_in_database
 
 
 def after_migrate() -> None:
