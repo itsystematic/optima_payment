@@ -8,12 +8,17 @@ already-installed sites need this patch to pick up both changes.
 
 import click
 
-from optima_payment.setup.features import banking
+from optima_payment.setup.features import bank_guarantee, letter_of_credit
 from optima_payment.setup.metadata import create_custom_fields_safely, sync_custom_field_schema
 
 
 def execute() -> None:
-    custom_fields = {"Bank Account": banking.get_custom_fields()["Bank Account"]}
+    custom_fields = {
+        "Bank Account": [
+            *bank_guarantee.get_custom_fields()["Bank Account"],
+            *letter_of_credit.get_custom_fields()["Bank Account"],
+        ]
+    }
 
     create_custom_fields_safely(custom_fields)
     sync_custom_field_schema(custom_fields)
