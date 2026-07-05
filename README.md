@@ -18,6 +18,7 @@ Optima Payment enhances financial processes with the following features:
   - Issue cheques to suppliers.
   - Endorse cheques to suppliers.
   - Clear supplier cheques in the bank on their due date.
+- See the **[Cheque User Guide](docs/cheque/user-guide.md)** for the full workflow.
 
 ### **Company Expenses**
 - Easily manage non-taxable company and petty cash expenses.
@@ -28,6 +29,7 @@ Optima Payment enhances financial processes with the following features:
 - Handle the lifecycle of bank guarantee letters efficiently.
 - Generate accurate journal entries for every workflow related to bank guarantees.
 - Access a detailed **Bank Guarantee Report** to monitor guarantees.
+- See the **[Bank Guarantee User Guide](docs/bank-guarantee/user-guide.md)** to get started.
 
 ### **Letters of Credit**
 - Track Providing and Receiving Letters of Credit against Sales/Purchase Orders.
@@ -99,8 +101,8 @@ Optima Payment is designed to be simple and intuitive. Refer to our **[Youtube c
 
 The [`docs/`](docs/) folder holds guides for both users and developers:
 
-- **Users / implementers:** [Letter of Credit User Guide](docs/letter-of-credit/user-guide.md)
-- **Developers:** [Letter of Credit reference](docs/letter-of-credit/reference.md) · [Testing](docs/development/testing.md) · [Setup architecture](docs/setup/architecture.md)
+- **Users / implementers:** [Cheque](docs/cheque/user-guide.md) · [Bank Guarantee](docs/bank-guarantee/user-guide.md) · [Letter of Credit](docs/letter-of-credit/user-guide.md)
+- **Developers:** [Cheque](docs/cheque/reference.md) · [Bank Guarantee](docs/bank-guarantee/reference.md) · [Letter of Credit](docs/letter-of-credit/reference.md) · [Testing](docs/development/testing.md) · [Setup architecture](docs/setup/architecture.md)
 
 ### First-time onboarding checklist
 
