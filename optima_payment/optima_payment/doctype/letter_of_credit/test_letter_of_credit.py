@@ -1,7 +1,7 @@
 # Copyright (c) 2026, IT Systematic and Contributors
 # See license.txt
 
-"""Tier-4 integration tests for Letter of Credit.
+""" integration tests for Letter of Credit.
 
 Builds real, submitted documents via the factories in optima_payment.tests.utils
 and asserts on the Payment Entry documents they generate. Unlike Bank Guarantee-BG
@@ -15,9 +15,21 @@ commission, and the insurance-account fallback), return, extend, close/reopen an
 cancel - including the asymmetry that Receiving reverses the transfer direction and
 that commission is never carried into a reversal.
 
-Note: a `Loss` action exists for Bank Guarantee-BG but is not yet wired for Letter of
-Credit (the is_lc_loss_entry flag and lc_loss_expense_account setting are plumbed but
-unused), so there are no loss tests here.
+These tests target standard ERPNext and use the tolerant factories in
+optima_payment.tests.utils; see docs/testing.md for the environment/KSA rationale.
+
+TODO (future maintainability):
+- Loss: `is_lc_loss_entry` / `lc_loss_expense_account` are plumbed through the Payment
+  Entry builder but no `lc_loss_action` exists yet (Bank Guarantee-BG has one). Add the
+  action and a loss test when it lands.
+- The validity-only *extend with commission* path books a standalone Internal Transfer
+  that mixes a Balance Sheet (bank) leg and a P&L (bank fees) leg under one cost center.
+  Standard ERPNext accepts it, but sites with stricter per-line cost-center rules reject
+  it. Folding the commission into a tax row (as the submit path already does) is the
+  durable fix; afterwards, assert the tax row here instead of a standalone entry.
+- KSA/ZATCA mandatory-field paths are only handled defensively in the factory and are
+  inert on the clean CI site. If CI starts installing optima_zatca (see docs/testing.md),
+  revisit whether those workarounds are still needed or should become real assertions.
 """
 
 import frappe
@@ -25,23 +37,6 @@ from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days, getdate, nowdate
 
 from optima_payment.tests.utils import make_letter_of_credit, make_optima_payment_setting
-
-
-def strict_cost_center_pe_validation() -> bool:
-    """True when this site enforces the (WTS) rule that a Balance Sheet GL line must carry
-    no cost center while a P&L line must carry one.
-
-    The validity-only extend commission posts a *standalone* Payment Entry (Internal
-    Transfer) that mixes a bank (Balance Sheet) line and an expense (P&L) line under a
-    single cost center - which cannot satisfy that rule either way. This helper lets the
-    corresponding test skip on such sites; the CI site has no WTS app, so it runs there.
-    """
-    if not frappe.db.exists("DocType", "WTS Setting"):
-        return False
-    if not frappe.db.get_single_value("WTS Setting", "enable_validate_in_cost_center"):
-        return False
-    rows = frappe.get_cached_doc("WTS Setting").get("doctype_for_validation") or []
-    return "Payment Entry" in {row.doctype_name for row in rows}
 
 
 class TestLetterofCredit(FrappeTestCase):
@@ -205,12 +200,9 @@ class TestLetterofCredit(FrappeTestCase):
     # ============================================================================================
 
     def test_lc_extend_validity_only_with_commission_books_standalone_pe(self):
-        if strict_cost_center_pe_validation():
-            self.skipTest(
-                "Site enforces the WTS Balance-Sheet/P&L cost-center rule, which the "
-                "standalone commission Internal Transfer cannot satisfy."
-            )
-
+        # TODO: this standalone commission entry mixes a Balance Sheet and a P&L leg under
+        # one cost center; if the controller is changed to fold commission into a tax row
+        # (like submit), assert the tax row here instead. See the module TODO block.
         doc = make_letter_of_credit(lc_type="Providing")
         before = len(self.get_lc_payment_entries(doc.name))
 
