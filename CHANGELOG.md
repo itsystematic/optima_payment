@@ -5,6 +5,21 @@ All notable changes to the Optima Payment app will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Letter of Credit** doctype: Providing/Receiving LCs that book cash-margin collateral via
+  system-generated Payment Entries, with Extend, Return, Close, and Re-Open actions.
+- Integration test suite for Letter of Credit (`test_letter_of_credit.py`) asserting the
+  generated Payment Entries; runs automatically in CI via test auto-discovery.
+- Documentation: Letter of Credit developer reference and user guide (with Mermaid
+  diagrams), a testing guide, and a first-time onboarding checklist in the README (EN/AR).
+
+### Fixed
+- Test factory (`tests/utils.py`) now back-fills Bank Guarantee accounts on a pre-existing
+  Optima Payment Setting and satisfies KSA site customizations (Arabic name fields), so the
+  Bank Guarantee and Letter of Credit suites run on customized sites.
+
 ## [15.1.1] - 2026-06-04
 
 ### Fixed

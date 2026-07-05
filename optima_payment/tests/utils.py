@@ -150,7 +150,16 @@ def get_or_create_customer(customer_name: str = "Optima Test Customer") -> str:
     if not frappe.db.exists("Customer", customer_name):
         customer_group = frappe.db.get_value("Customer Group", {"is_group": 0}, "name")
         frappe.get_doc(
-            {"doctype": "Customer", "customer_name": customer_name, "customer_group": customer_group}
+            {
+                "doctype": "Customer",
+                "customer_name": customer_name,
+                "customer_group": customer_group,
+                # customer_type=Individual dodges KSA site customizations that make
+                # registration_type / registration_value / tax_id mandatory for Companies.
+                "customer_type": "Individual",
+                # Site-specific mandatory custom field; the key is ignored where it doesn't exist.
+                "customer_name_in_arabic": customer_name,
+            }
         ).insert(ignore_permissions=True)
     return customer_name
 
@@ -158,7 +167,11 @@ def get_or_create_customer(customer_name: str = "Optima Test Customer") -> str:
 def get_or_create_supplier(supplier_name: str = "Optima Test Supplier") -> str:
     """Find or create the Supplier used as the default Purchase Order party in tests."""
     if not frappe.db.exists("Supplier", supplier_name):
-        supplier_group = frappe.db.get_value("Supplier Group", {"is_group": 0}, "name")
+        # KSA sites make tax_id mandatory for local suppliers; prefer an "external" supplier
+        # group when the site defines one, otherwise fall back to any leaf group.
+        supplier_group = frappe.db.get_value(
+            "Supplier Group", {"supplier_group_name": "موردين خارجيين"}, "name"
+        ) or frappe.db.get_value("Supplier Group", {"is_group": 0}, "name")
         # KSA/ZATCA customizations on this site make tax_category mandatory on Supplier.
         tax_category = frappe.db.get_value("Tax Category", {}, "name")
         frappe.get_doc(
@@ -167,9 +180,43 @@ def get_or_create_supplier(supplier_name: str = "Optima Test Supplier") -> str:
                 "supplier_name": supplier_name,
                 "supplier_group": supplier_group,
                 "tax_category": tax_category,
+                # Site-specific mandatory custom field; ignored where it doesn't exist.
+                "supplier_name_in_arabic": supplier_name,
             }
         ).insert(ignore_permissions=True)
     return supplier_name
+
+
+# ====================================================================================================
+# MODE OF PAYMENT FIXTURE
+# ====================================================================================================
+
+
+def get_or_create_mode_of_payment(
+    company: str, account: str, mode_name: str = "Optima LC Transfer"
+) -> str:
+    """Find or create a Mode of Payment whose per-company account maps to ``account``.
+
+    Letter of Credit requires a Mode of Payment (validate_mode_of_payment) and every
+    system-generated Payment Entry copies it over, so the mode must have a Mode of
+    Payment Account row for this company pointing at a real (Bank/Cash) account.
+    """
+    if not frappe.db.exists("Mode of Payment", mode_name):
+        frappe.get_doc(
+            {
+                "doctype": "Mode of Payment",
+                "mode_of_payment": mode_name,
+                "type": "Bank",
+                "accounts": [{"company": company, "default_account": account}],
+            }
+        ).insert(ignore_permissions=True)
+        return mode_name
+
+    mop = frappe.get_doc("Mode of Payment", mode_name)
+    if not any(row.company == company for row in mop.accounts):
+        mop.append("accounts", {"company": company, "default_account": account})
+        mop.save(ignore_permissions=True)
+    return mode_name
 
 
 # ====================================================================================================
@@ -291,7 +338,21 @@ def make_optima_payment_setting(company: str | None = None, **overrides) -> frap
     existing = frappe.db.get_value("Optima Payment Setting", {"company": company}, "name")
     if existing:
         setting = frappe.get_doc("Optima Payment Setting", existing)
+        # Backfill any account the persisted setting is missing - a real site may already
+        # have an Optima Payment Setting that predates some of these BG/LC account fields.
         missing_account_fields = {
+            "bank_guarantee_insurance_account": lambda: get_or_create_account(
+                "Optima BG Insurance", company, "Asset"
+            ),
+            "bank_guarantee_receiving_insurance_account": lambda: get_or_create_account(
+                "Optima BG Receiving Insurance", company, "Asset"
+            ),
+            "bank_guarantee_bank_fees_account": lambda: get_or_create_account(
+                "Optima BG Bank Fees", company, "Expense"
+            ),
+            "bank_guarantee_loss_expense_account": lambda: get_or_create_account(
+                "Optima BG Loss Expense", company, "Expense"
+            ),
             "lc_insurance_account": lambda: get_or_create_account("Optima LC Insurance", company, "Asset"),
             "lc_receiving_insurance_account": lambda: get_or_create_account(
                 "Optima LC Receiving Insurance", company, "Asset"
@@ -431,6 +492,11 @@ def make_letter_of_credit(
 
     bank = get_or_create_bank()
     account = get_or_create_account("Optima LC Test Account", company, "Asset", account_type="Bank")
+    # Explicit collateral account so the generated Payment Entry uses the primary
+    # get_payment_entry_accounts() path (self.lc_account) rather than the
+    # settings.lc_insurance_account fallback. Pass lc_account=None to exercise the fallback.
+    lc_account = get_or_create_account("Optima LC Collateral Account", company, "Asset", account_type="Bank")
+    mode_of_payment = get_or_create_mode_of_payment(company, account)
     cost_center = get_or_create_cost_center(company)
     project = get_or_create_project(company)
 
@@ -449,14 +515,23 @@ def make_letter_of_credit(
         "doctype": "Letter of Credit",
         "lc_type": lc_type,
         "lc_category": "Sight",
+        # lc_status has no JSON default; set_status() only promotes it to Issued/Exists
+        # when it starts as "New", so seed it here.
+        "lc_status": "New",
         "company": company,
         "posting_date": nowdate(),
         "start_date": nowdate(),
         "validity": 30,
         "end_date": add_days(nowdate(), 29),
         "no_of_extended_days": 0,
+        # Seed the extend accumulators to 0 so the in-memory doc matches a DB-loaded one
+        # (these Currency columns default to 0.0); lc_extend_action increments them.
+        "extended_cash_margin_amount": 0,
+        "extended_facility_amount": 0,
         "bank": bank,
         "account": account,
+        "lc_account": lc_account,
+        "mode_of_payment": mode_of_payment,
         "cost_center": cost_center,
         "project": project,
         "reference_doctype": reference_doctype,

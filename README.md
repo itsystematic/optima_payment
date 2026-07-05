@@ -29,6 +29,11 @@ Optima Payment enhances financial processes with the following features:
 - Generate accurate journal entries for every workflow related to bank guarantees.
 - Access a detailed **Bank Guarantee Report** to monitor guarantees.
 
+### **Letters of Credit**
+- Track Providing and Receiving Letters of Credit against Sales/Purchase Orders.
+- Automatically move cash-margin collateral through the ledger on issue, extend, return, and close.
+- See the **[Letter of Credit User Guide](docs/user-guide-letter-of-credit.md)** to get started.
+
 ### **Custom Cheque Printing**
 - Print cheques directly from the system.
 - Supports over **40 official cheque templates**.
@@ -87,6 +92,24 @@ Optima Payment is designed to be simple and intuitive. Refer to our **[Youtube c
 
 ### Supported ERPNext Versions
 - ERPNext Version 15
+
+---
+
+## 📚 Documentation
+
+The [`docs/`](docs/) folder holds guides for both users and developers:
+
+- **Users / implementers:** [Letter of Credit User Guide](docs/user-guide-letter-of-credit.md)
+- **Developers:** [Letter of Credit reference](docs/letter-of-credit.md) · [Testing](docs/testing.md) · [Setup architecture](docs/setup-architecture.md)
+
+### First-time onboarding checklist
+
+Configure these once per company before using bank guarantees or letters of credit:
+
+- [ ] **Optima Payment Setting** — create it for the company and fill the Bank Guarantee and Letter of Credit accounts (insurance, bank fees, loss expense).
+- [ ] **Bank Account** — set the Providing / Receiving Letter of Credit account fields.
+- [ ] **Mode of Payment** — ensure it has an account for the company (required to submit an LC).
+- [ ] Confirm a **Cost Center** and **Project** exist for the postings.
 
 ---
 
