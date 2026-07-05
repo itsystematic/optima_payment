@@ -138,12 +138,11 @@ erDiagram
 
 - **Loss** — `is_lc_loss_entry` and `lc_loss_expense_account` are plumbed through the
   Payment Entry builder but no `lc_loss_action` exists yet (Bank Guarantee-BG has one).
-- **Strict cost-center sites** — the validity-only *extend with commission* path books a
-  standalone Internal Transfer that mixes a Balance Sheet (bank) leg and a P&L (bank fees)
-  leg under one cost center. On sites that enforce "Balance Sheet lines must have no cost
-  center, P&L lines must have one" (e.g. the WTS rule), that single entry cannot satisfy
-  both constraints. The test suite skips this case on such sites; folding the commission
-  into a tax row (as the submit path does) would be the durable fix.
+- **Mixed cost-center on the standalone commission entry** — the validity-only *extend
+  with commission* path books a standalone Internal Transfer that puts both a Balance Sheet
+  (bank) leg and a P&L (bank fees) leg under one cost center. Standard ERPNext accepts this,
+  but installations that enforce stricter per-line cost-center rules may reject it. Folding
+  the commission into a tax row (as the submit path already does) would be the durable fix.
 
 ---
 
