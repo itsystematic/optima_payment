@@ -2,7 +2,7 @@
 
 A plain-language guide for accountants and implementers. It explains what the Letter of
 Credit (LC) form does, what you must set up first, and how to run each action. For the
-technical/accounting internals, see [letter-of-credit.md](letter-of-credit.md).
+technical/accounting internals, see [reference.md](reference.md).
 
 ---
 
@@ -103,12 +103,12 @@ If submit or an action stops with a red message, match it here:
 | *Please set the … Account under Optima Payment Setting.* | A required LC account is blank | Open **Optima Payment Setting** for the company and fill all four LC accounts |
 | *Please create Optima Payment Setting for company …* | No setting for this company | Create one and fill the LC accounts |
 | *Return / Extend / Close date cannot be before …* | The date you entered predates the last transaction | Use a date on or after the most recent linked Payment Entry |
-| *Cost Center must be empty / is required for Account …* | Site enforces strict cost-center rules and an *extend with commission* was attempted | See the note in [letter-of-credit.md](letter-of-credit.md#not-yet-wired); fold commission differently or contact your developer |
+| *Cost Center must be empty / is required for Account …* | Site enforces strict cost-center rules and an *extend with commission* was attempted | See the note in [reference.md](reference.md#not-yet-wired); fold commission differently or contact your developer |
 
 ---
 
 ## Related
 
-- [letter-of-credit.md](letter-of-credit.md) — technical reference (accounting model,
+- [reference.md](reference.md) — technical reference (accounting model,
   diagrams, action signatures)
-- [testing.md](testing.md) — how the automated tests exercise all of the above
+- [testing.md](../development/testing.md) — how the automated tests exercise all of the above

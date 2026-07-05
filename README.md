@@ -32,7 +32,7 @@ Optima Payment enhances financial processes with the following features:
 ### **Letters of Credit**
 - Track Providing and Receiving Letters of Credit against Sales/Purchase Orders.
 - Automatically move cash-margin collateral through the ledger on issue, extend, return, and close.
-- See the **[Letter of Credit User Guide](docs/user-guide-letter-of-credit.md)** to get started.
+- See the **[Letter of Credit User Guide](docs/letter-of-credit/user-guide.md)** to get started.
 
 ### **Custom Cheque Printing**
 - Print cheques directly from the system.
@@ -99,8 +99,8 @@ Optima Payment is designed to be simple and intuitive. Refer to our **[Youtube c
 
 The [`docs/`](docs/) folder holds guides for both users and developers:
 
-- **Users / implementers:** [Letter of Credit User Guide](docs/user-guide-letter-of-credit.md)
-- **Developers:** [Letter of Credit reference](docs/letter-of-credit.md) · [Testing](docs/testing.md) · [Setup architecture](docs/setup-architecture.md)
+- **Users / implementers:** [Letter of Credit User Guide](docs/letter-of-credit/user-guide.md)
+- **Developers:** [Letter of Credit reference](docs/letter-of-credit/reference.md) · [Testing](docs/development/testing.md) · [Setup architecture](docs/setup/architecture.md)
 
 ### First-time onboarding checklist
 

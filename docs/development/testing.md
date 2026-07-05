@@ -15,7 +15,7 @@ creates survives the test.
   (`get_gle` / `validate_gl_entries`).
 - **Letter of Credit** posts **Payment Entry (Internal Transfer)** documents, so its tests
   assert on those Payment Entries (`get_lc_payment_entries`, filtered by the `is_lc_*`
-  flags). See [letter-of-credit.md](letter-of-credit.md).
+  flags). See [letter-of-credit/reference.md](../letter-of-credit/reference.md).
 
 ---
 

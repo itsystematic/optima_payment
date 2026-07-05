@@ -1,18 +1,23 @@
 # Optima Payment — Docs
 
-## For users (accountants & implementers)
+Documentation is organized **by domain**. Each folder has its own index.
 
-| Document | What it covers |
-|----------|----------------|
-| [user-guide-letter-of-credit.md](user-guide-letter-of-credit.md) | Step-by-step Letter of Credit: setup, creating an LC, Extend/Return/Close/Re-Open, troubleshooting |
+## Domains
 
-## For developers
+| Area | For | Start here |
+|------|-----|-----------|
+| [Letter of Credit](letter-of-credit/) | Accountants, implementers & developers | [letter-of-credit/](letter-of-credit/README.md) |
+| [Setup framework](setup/) | Developers | [setup/](setup/README.md) |
 
-| Document | What it covers |
-|----------|----------------|
-| [letter-of-credit.md](letter-of-credit.md) | Letter of Credit reference — accounting model, status/flow/entity diagrams, action signatures |
-| [testing.md](testing.md) | How the test suites are written, run locally, and auto-discovered in CI |
-| [setup-architecture.md](setup-architecture.md) | Full call graph, layer map, how install/migrate/uninstall work |
-| [how-to-add-a-feature.md](how-to-add-a-feature.md) | Adding a new group of custom fields and property setters |
-| [how-to-alter-a-feature.md](how-to-alter-a-feature.md) | Adding, changing, renaming, or removing fields/property setters |
-| [how-to-write-a-patch.md](how-to-write-a-patch.md) | Writing a migration patch for already-installed sites |
+## Cross-cutting
+
+| Area | For | Start here |
+|------|-----|-----------|
+| [Development](development/) | Developers | [Testing](development/testing.md) |
+
+---
+
+### Quick links by audience
+
+- **Accountants / implementers:** [Letter of Credit user guide](letter-of-credit/user-guide.md)
+- **Developers:** [Letter of Credit reference](letter-of-credit/reference.md) · [Setup architecture](setup/architecture.md) · [Testing](development/testing.md)

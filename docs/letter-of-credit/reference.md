@@ -2,7 +2,7 @@
 
 Developer + power-user reference for the **Letter of Credit** (LC) doctype: its data
 model, how it books accounting, and the lifecycle actions. For a click-by-click guide
-aimed at accountants, see [user-guide-letter-of-credit.md](user-guide-letter-of-credit.md).
+aimed at accountants, see [user-guide.md](user-guide.md).
 
 ---
 
@@ -148,7 +148,7 @@ erDiagram
 
 ## Tests
 
-See [testing.md](testing.md). The suite lives at
+See [testing.md](../development/testing.md). The suite lives at
 `optima_payment/optima_payment/doctype/letter_of_credit/test_letter_of_credit.py` and
 asserts on the generated Payment Entries. Fixtures come from
 `optima_payment/tests/utils.py` (`make_letter_of_credit`, `make_optima_payment_setting`).

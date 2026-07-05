@@ -33,7 +33,7 @@ Two doctypes book collateral through the ledger, but differently — don't confl
 - **Bank Guarantee-BG** writes **raw `GL Entry` rows** directly. Its tests assert GL rows.
 - **Letter of Credit** posts via **system-generated Payment Entry (Internal Transfer)**
   documents, linked by the `letter_of_credit` field and tagged with `is_lc_*` flags. Its
-  tests assert those Payment Entries. See `docs/letter-of-credit.md`.
+  tests assert those Payment Entries. See `docs/letter-of-credit/reference.md`.
 
 For both, per-company accounts live on **Optima Payment Setting** and are validated as
 mandatory before submit. Issue **commission is never reversed** on return/cancel.
@@ -49,7 +49,7 @@ mandatory before submit. Issue **commission is never reversed** on return/cancel
 - CI (`.github/workflows/ci.yml`, targets `version-15`) **auto-discovers every `test_*.py`**
   under the package via `rglob` — new test files need no registration. Some assertions skip
   on sites with extra customizations (e.g. the WTS cost-center rule); CI's `test_site` has
-  none, so they run fully there. Details in `docs/testing.md`.
+  none, so they run fully there. Details in `docs/development/testing.md`.
 
 ## Docs
 
