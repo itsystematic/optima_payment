@@ -27,7 +27,7 @@ Optima Payment enhances financial processes with the following features:
 
 ### **Bank Guarantee Letters**
 - Handle the lifecycle of bank guarantee letters efficiently.
-- Generate accurate journal entries for every workflow related to bank guarantees.
+- Generate accurate ledger entries for every workflow related to bank guarantees.
 - Access a detailed **Bank Guarantee Report** to monitor guarantees.
 - See the **[Bank Guarantee User Guide](docs/bank-guarantee/user-guide.md)** to get started.
 
