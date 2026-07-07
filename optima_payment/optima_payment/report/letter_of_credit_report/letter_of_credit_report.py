@@ -9,7 +9,7 @@ from pypika.functions import Concat
 
 
 def execute(filters=None):
-    columns = get_coloums()
+    columns = get_coloums(filters or {})
     data = get_data(filters)
 
     return columns, data
@@ -114,9 +114,13 @@ def get_conditions(filters: dict, query: list[dict]) -> MySQLQueryBuilder:
     return query
 
 
-def get_coloums() -> list[dict]:
+def get_coloums(filters: dict) -> list[dict]:
+    # reference_doctype is "Sales Order" (customer) or "Purchase Order" (supplier) -
+    # the two fields are mutually exclusive per row, so drop whichever doesn't apply
+    # to the chosen filter. Show both when no reference_doctype filter is set.
+    reference_doctype = filters.get("reference_doctype")
 
-    return [
+    columns = [
         {
             "fieldname": "posting_date",
             "label": _("Posting Date"),
@@ -259,3 +263,10 @@ def get_coloums() -> list[dict]:
             "fieldtype": "Data"
         },
     ]
+
+    if reference_doctype == "Sales Order":
+        columns = [c for c in columns if c["fieldname"] != "supplier"]
+    elif reference_doctype == "Purchase Order":
+        columns = [c for c in columns if c["fieldname"] != "customer"]
+
+    return columns
