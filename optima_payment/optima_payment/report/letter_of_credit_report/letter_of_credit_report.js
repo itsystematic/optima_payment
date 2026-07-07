@@ -84,5 +84,16 @@ frappe.query_reports["Letter of Credit Report"] = {
 			label: __("Letter of Credit Number"),
 			fieldtype: "Data",
 		},
-	]
+	],
+
+	formatter: function (value, row, column, data, default_formatter) {
+		value = default_formatter(value, row, column, data);
+
+		if (column.fieldname === "lc_status" && data.lc_status) {
+			const color = optima_payment.utils.lc_status_colors[data.lc_status] || "gray";
+			value = `<span class="indicator-pill ${color}">${data.lc_status}</span>`;
+		}
+
+		return value;
+	},
 };

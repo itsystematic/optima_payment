@@ -81,6 +81,7 @@ frappe.ui.form.on('Letter of Credit', {
     refresh(frm) {
         frm.trigger("custom_button");
         frm.trigger("set_beneficiary_name");
+        frm.trigger("set_status_indicator");
     },
 
     // ============================================================================================
@@ -429,6 +430,12 @@ frappe.ui.form.on('Letter of Credit', {
     // ============================================================================================
     // DERIVED FIELD CALCULATIONS
     // ============================================================================================
+    set_status_indicator: function (frm) {
+        if (!frm.doc.lc_status) return;
+
+        const color = optima_payment.utils.lc_status_colors[frm.doc.lc_status] || "gray";
+        frm.page.set_indicator(__(frm.doc.lc_status), color);
+    },
     set_beneficiary_name: function (frm) {
         frm.set_value("name_of_beneficiary", frm.doc.company);
     },
