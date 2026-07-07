@@ -18,10 +18,10 @@ frappe.query_reports["Letter of Credit Report"] = {
 			reqd: 1
 		},
 		{
-			fieldname: "lc_status",
-			label: __("Letter of Credit Status"),
-			fieldtype: "Select",
-			options: "\nNew\nExists\nIssued\nReturned\nExpired\nExtended\nClosed",
+			fieldname: "project",
+			label: __("Project"),
+			fieldtype: "Link",
+			options: "Project",
 		},
 		{
 			fieldname: "reference_doctype",
@@ -39,16 +39,16 @@ frappe.query_reports["Letter of Credit Report"] = {
 			get_query: () => ({ filters: { docstatus: 1 } }),
 		},
 		{
+			fieldname: "lc_status",
+			label: __("Letter of Credit Status"),
+			fieldtype: "Select",
+			options: "\nNew\nExists\nIssued\nReturned\nExpired\nExtended\nClosed",
+		},
+		{
 			fieldname: "cost_center",
 			label: __("Cost Center"),
 			fieldtype: "Link",
 			options: "Cost Center",
-		},
-		{
-			fieldname: "project",
-			label: __("Project"),
-			fieldtype: "Link",
-			options: "Project",
 		},
 		{
 			fieldname: "customer",

@@ -151,13 +151,13 @@ def get_coloums(filters: dict) -> list[dict]:
         {
             "fieldname": "reference_doctype",
             "label": _("Reference DocType"),
-            "width": 150,
+            "width": 110,
         },
         {
             "fieldname": "reference_docname",
-            "label": _("Reference Documnet"),
+            "label": _("Reference Document Name"),
             "fieldtype": "Data",
-            "width": 200,
+            "width": 150,
         },
         {
             "fieldname": "start_date",
@@ -185,7 +185,7 @@ def get_coloums(filters: dict) -> list[dict]:
             "label": _("Project"),
             "fieldtype": "Link",
             "options": "Project",
-            "width": 100,
+            "width": 120,
         },
         {
             "fieldname": "cost_center",
@@ -209,6 +209,7 @@ def get_coloums(filters: dict) -> list[dict]:
             "fieldname": "lc_number",
             "label": _("Letter of Credit Number"),
             "fieldtype": "Data",
+            "width": 120,
         },
         {
             "fieldname": "banking_facilities",
@@ -229,11 +230,13 @@ def get_coloums(filters: dict) -> list[dict]:
             "fieldname": "lc_percent",
             "label": _("Letter of Credit Percent"),
             "fieldtype": "Percent",
+            "width": 70
         },
         {
             "fieldname": "lc_amount",
             "label": _("Letter of Credit Amount"),
             "fieldtype": "Currency",
+            "width": 70
         },
         {
             "fieldname": "bank_rate_",
@@ -255,7 +258,8 @@ def get_coloums(filters: dict) -> list[dict]:
         {
             "fieldname": "facility_amount",
             "label": _("Facilities Amount"),
-            "fieldtype": "Currency"
+            "fieldtype": "Currency",
+            "width": 70
         },
         {
             "fieldname": "remarks",

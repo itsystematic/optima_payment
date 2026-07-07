@@ -24,12 +24,6 @@ frappe.query_reports["Bank Guarantee-BG Report"] = {
 			options: "Project",
 		},
 		{
-			fieldname: "bank_guarantee_status",
-			label: __("Bank Guarantee Status"),
-			fieldtype: "Select",
-			options: "\nNew\nExists\nIssued\nReturned\nExpired\nExtended\nLost",
-		},
-		{
 			fieldname: "reference_doctype",
 			label: __("Reference DocType"),
 			fieldtype: "Select",
@@ -43,6 +37,12 @@ frappe.query_reports["Bank Guarantee-BG Report"] = {
 			depends_on: "eval: doc.reference_doctype",
 			get_options: () => frappe.query_report.get_filter_value("reference_doctype"),
 			get_query: () => ({ filters: { docstatus: 1 } }),
+		},
+		{
+			fieldname: "bank_guarantee_status",
+			label: __("Bank Guarantee Status"),
+			fieldtype: "Select",
+			options: "\nNew\nExists\nIssued\nReturned\nExpired\nExtended\nLost",
 		},
 		{
 			fieldname: "cost_center",
