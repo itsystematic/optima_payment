@@ -18,6 +18,12 @@ frappe.query_reports["Bank Guarantee-BG Report"] = {
 			reqd: 1
 		},
 		{
+			fieldname: "project",
+			label: __("Project"),
+			fieldtype: "Link",
+			options: "Project",
+		},
+		{
 			fieldname: "bank_guarantee_status",
 			label: __("Bank Guarantee Status"),
 			fieldtype: "Select",
@@ -39,12 +45,6 @@ frappe.query_reports["Bank Guarantee-BG Report"] = {
 			label: __("Cost Center"),
 			fieldtype: "Link",
 			options: "Cost Center",
-		},
-		{
-			fieldname: "project",
-			label: __("Project"),
-			fieldtype: "Link",
-			options: "Project",
 		},
 		{
 			fieldname: "customer",

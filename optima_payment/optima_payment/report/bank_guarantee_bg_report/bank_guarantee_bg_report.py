@@ -131,6 +131,13 @@ def get_coloums() -> list[dict]:
             "width": 200,
         },
         {
+            "fieldname": "project",
+            "label": _("Project"),
+            "fieldtype": "Link",
+            "options": "Project",
+            "width": 140,
+        },
+        {
             "fieldname": "customer",
             "label": _("Customer"),
             "fieldtype": "Link",
@@ -174,14 +181,7 @@ def get_coloums() -> list[dict]:
             "fieldname": "bank_guarantee_status",
             "label": _("Bank Guarantee Status"),
             "fieldtype": "Data",
-            "width": 100,
-        },
-        {
-            "fieldname": "project",
-            "label": _("Project"),
-            "fieldtype": "Link",
-            "options": "Project",
-            "width": 100,
+            "width": 80,
         },
         {
             "fieldname": "cost_center",
@@ -205,6 +205,7 @@ def get_coloums() -> list[dict]:
             "fieldname": "bank_guarantee_number",
             "label": _("Bank Guarantee Number"),
             "fieldtype": "Data",
+            "width": 100,
         },
         {
             "fieldname": "banking_facilities",
@@ -225,11 +226,13 @@ def get_coloums() -> list[dict]:
             "fieldname": "bank_guarantee_percent",
             "label": _("Bank Guarantee Percent"),
             "fieldtype": "Percent",
+            "width": 70
         },
         {
             "fieldname": "bank_guarantee_amount",
             "label": _("Bank Guarantee Amount"),
             "fieldtype": "Currency",
+            "width": 70
         },
         {
             "fieldname": "bank_rate_",
@@ -251,7 +254,8 @@ def get_coloums() -> list[dict]:
         {
             "fieldname": "facility_amount",
             "label": _("Facilities Amount"),
-            "fieldtype": "Currency"
+            "fieldtype": "Currency",
+            "width": 70
         },
         {
             "fieldname": "remarks",
