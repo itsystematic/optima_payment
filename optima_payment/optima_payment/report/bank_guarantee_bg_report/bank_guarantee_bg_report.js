@@ -41,6 +41,7 @@ frappe.query_reports["Bank Guarantee-BG Report"] = {
 			fieldtype: "Dynamic Link",
 			options: "reference_doctype",
 			depends_on: "eval: doc.reference_doctype",
+			get_options: () => frappe.query_report.get_filter_value("reference_doctype"),
 			get_query: () => ({ filters: { docstatus: 1 } }),
 		},
 		{
