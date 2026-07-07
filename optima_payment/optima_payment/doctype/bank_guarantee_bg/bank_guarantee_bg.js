@@ -77,6 +77,7 @@ frappe.ui.form.on('Bank Guarantee-BG', {
     refresh(frm) {
         frm.trigger("custom_button");
         frm.trigger("set_beneficiary_name");
+        frm.trigger("set_status_indicator");
     },
 
     // ============================================================================================
@@ -283,6 +284,12 @@ frappe.ui.form.on('Bank Guarantee-BG', {
     // ============================================================================================
     // DERIVED FIELD CALCULATIONS
     // ============================================================================================
+    set_status_indicator: function (frm) {
+        if (!frm.doc.bank_guarantee_status) return;
+
+        const color = optima_payment.utils.bank_guarantee_status_colors[frm.doc.bank_guarantee_status] || "gray";
+        frm.page.set_indicator(__(frm.doc.bank_guarantee_status), color);
+    },
     set_beneficiary_name: function (frm) {
         frm.set_value("name_of_beneficiary", frm.doc.company);
     },

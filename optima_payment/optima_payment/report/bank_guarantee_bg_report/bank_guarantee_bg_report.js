@@ -84,5 +84,16 @@ frappe.query_reports["Bank Guarantee-BG Report"] = {
 			label: __("Bank Guarantee Number"),
 			fieldtype: "Data",
 		},
-	]
+	],
+
+	formatter: function (value, row, column, data, default_formatter) {
+		value = default_formatter(value, row, column, data);
+
+		if (column.fieldname === "bank_guarantee_status" && data.bank_guarantee_status) {
+			const color = optima_payment.utils.bank_guarantee_status_colors[data.bank_guarantee_status] || "gray";
+			value = `<span class="indicator-pill ${color}">${data.bank_guarantee_status}</span>`;
+		}
+
+		return value;
+	},
 };
