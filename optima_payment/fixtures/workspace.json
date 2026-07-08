@@ -438,7 +438,8 @@
         "roles": [],
         "sequence_id": 5.0,
         "shortcuts": [],
-        "title": "Financial Reports"
+        "title": "Financial Reports",
+        "type": "Workspace"
     },
     {
         "charts": [],
@@ -1334,7 +1335,8 @@
                 "url": null
             }
         ],
-        "title": "ERPNext Settings"
+        "title": "ERPNext Settings",
+        "type": "Workspace"
     },
     {
         "charts": [
@@ -2583,6 +2585,7 @@
                 "url": null
             }
         ],
-        "title": "Accounting"
+        "title": "Accounting",
+        "type": "Workspace"
     }
 ]
