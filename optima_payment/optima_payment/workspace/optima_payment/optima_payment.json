@@ -109,6 +109,7 @@
    "link_to": "Bank Guarantee-BG Report",
    "link_type": "Report",
    "onboard": 0,
+   "report_ref_doctype": "Bank Guarantee-BG",
    "type": "Link"
   },
   {
@@ -120,6 +121,7 @@
    "link_to": "Letter of Credit Report",
    "link_type": "Report",
    "onboard": 0,
+   "report_ref_doctype": "Letter of Credit",
    "type": "Link"
   },
   {
@@ -131,10 +133,11 @@
    "link_to": "Cheque Report",
    "link_type": "Report",
    "onboard": 0,
+   "report_ref_doctype": "Payment Entry",
    "type": "Link"
   }
  ],
- "modified": "2026-07-08 00:00:00",
+ "modified": "2026-07-08 18:21:13.659924",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Optima Payment",
@@ -153,55 +156,62 @@
  "public": 1,
  "quick_lists": [],
  "restrict_to_domain": "",
- "roles": [],
+ "roles": [
+  {
+   "role": "Optima Payment User"
+  },
+  {
+   "role": "Optima Payment Manager"
+  }
+ ],
  "sequence_id": 23.0,
  "shortcuts": [
   {
-   "type": "DocType",
-   "link_to": "Bank Guarantee-BG",
-   "label": "Bank Guarantee-BG",
-   "doc_view": "List",
    "color": "Blue",
-   "format": ""
+   "doc_view": "List",
+   "format": "",
+   "label": "Bank Guarantee-BG",
+   "link_to": "Bank Guarantee-BG",
+   "type": "DocType"
   },
   {
-   "type": "DocType",
-   "link_to": "Letter of Credit",
-   "label": "Letter of Credit",
-   "doc_view": "List",
    "color": "Green",
-   "format": ""
+   "doc_view": "List",
+   "format": "",
+   "label": "Letter of Credit",
+   "link_to": "Letter of Credit",
+   "type": "DocType"
   },
   {
-   "type": "DocType",
-   "link_to": "Cheque Deposit Slip",
-   "label": "Cheque Deposit Slip",
-   "doc_view": "List",
    "color": "Yellow",
-   "format": ""
+   "doc_view": "List",
+   "format": "",
+   "label": "Cheque Deposit Slip",
+   "link_to": "Cheque Deposit Slip",
+   "type": "DocType"
   },
   {
-   "type": "DocType",
-   "link_to": "Cheque Action Log",
+   "color": "Grey",
+   "doc_view": "List",
+   "format": "",
    "label": "Cheque Action Log",
-   "doc_view": "List",
-   "color": "Grey",
-   "format": ""
+   "link_to": "Cheque Action Log",
+   "type": "DocType"
   },
   {
-   "type": "DocType",
-   "link_to": "Optima Payment Setting",
+   "color": "Grey",
+   "doc_view": "List",
+   "format": "",
    "label": "Optima Payment Setting",
-   "doc_view": "List",
-   "color": "Grey",
-   "format": ""
+   "link_to": "Optima Payment Setting",
+   "type": "DocType"
   },
   {
-   "type": "Dashboard",
-   "link_to": "Cheque",
-   "label": "Cheque Dashboard",
    "color": "Orange",
-   "format": ""
+   "format": "",
+   "label": "Cheque Dashboard",
+   "link_to": "Cheque",
+   "type": "Dashboard"
   }
  ],
  "title": "Optima Payment"
