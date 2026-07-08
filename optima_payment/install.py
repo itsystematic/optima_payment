@@ -6,6 +6,7 @@ import click
 import frappe
 
 from optima_payment.migration_artifact import import_cheque_legacy_artifact
+from optima_payment.setup.permissions import apply_access_control
 from optima_payment.setup.registry import ensure_customizations
 from optima_payment.setup.standard_data import add_standard_data, update_fields_in_database
 
@@ -16,6 +17,7 @@ def after_install() -> None:
     add_standard_data()
     update_fields_in_database()
     ensure_customizations()
+    apply_access_control()
     import_cheque_legacy_artifact()
 
     if "cheque" in frappe.get_installed_apps():
