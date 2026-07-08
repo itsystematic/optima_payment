@@ -16,9 +16,9 @@ The setup system manages the full lifecycle of these customizations: creating th
 
 | Hook | File | What it does |
 |------|------|--------------|
-| `after_install` | `install.py → after_install()` | Fresh install: imports standard data, patches field options, applies all feature customizations |
+| `after_install` | `install.py → after_install()` | Fresh install: seeds print formats, patches field options, applies all feature customizations, seeds access control (roles + Custom DocPerms) |
 | `after_migrate` | `migrate.py → after_migrate()` | After every `bench migrate`: re-applies stable field option patches |
-| `before_uninstall` | `uninstall.py → before_uninstall()` | Before uninstall: removes all feature-owned custom fields and property setters |
+| `before_uninstall` | `uninstall.py → before_uninstall()` | Before uninstall: removes feature-owned custom fields, property setters, and access control (Custom DocPerms + unassigned roles) |
 
 These hooks are registered in `hooks.py`.
 
@@ -30,9 +30,10 @@ These hooks are registered in `hooks.py`.
 bench install-app optima_payment
   └── hooks.py: after_install
         └── install.py: after_install()
-              ├── standard_data.add_standard_data()       # import files/*.json
+              ├── standard_data.add_standard_data()       # import files/print_format.json (seed)
               ├── standard_data.update_fields_in_database()  # patch Mode of Payment type options
               ├── registry.ensure_customizations()        # apply all feature custom fields + property setters
+              ├── permissions.apply_access_control()      # seed Optima roles + Custom DocPerms (install only)
               └── migration_artifact.import_cheque_legacy_artifact()
 ```
 
@@ -57,7 +58,8 @@ install.py / migrate.py / uninstall.py   ← entry points (wired in hooks.py)
 setup/registry.py                         ← feature registry + lifecycle orchestration
 setup/runner.py                           ← step execution with savepoints
 setup/metadata.py                         ← CRUD on Custom Field + Property Setter records
-setup/standard_data.py                    ← file imports + raw field option patches
+setup/standard_data.py                    ← print format seed import + raw field option patches
+setup/permissions.py                      ← Optima roles + Custom DocPerm grid (install only)
 setup/features/
   banking.py                              ← Bank, Bank Account, Letter Head, GL Entry fields
   payment_workflow.py                     ← Mode of Payment + Payment Entry fields/property setters
@@ -100,19 +102,32 @@ This means `ensure_customizations()` is safe to re-run at any time.
 
 ---
 
+## Three kinds of seeded state (know the difference)
+
+The setup system manages three distinct kinds of things, with different lifecycles:
+
+| Kind | Lives in | Applied | Reversed on uninstall? |
+|------|----------|---------|------------------------|
+| **Schema customizations** — custom fields, property setters | `setup/features/*` via `registry.py` | install + re-runnable | **Yes** (feature framework) |
+| **Access control** — Optima roles + Custom DocPerms | `setup/permissions.py` (code) | **install only** | **Yes** (docperms removed; unassigned roles deleted) |
+| **Data seed** — print formats | `files/print_format.json` via `import_doc` | **install only** | **No** (intentional — 75 KB of opaque HTML admins may edit per-site) |
+
+Access control is **install only** on purpose: like the print-format seed, admins may tune
+per-site permissions afterwards and a later `bench migrate` must not overwrite them. See
+[permissions.md](permissions.md) for the roles, why they exist, and how to edit the grid.
+
 ## Standard data files
 
 `files/` contains JSON fixtures imported once at install time via `standard_data.add_standard_data()`. The import order is defined explicitly in `STANDARD_DATA_FILES`:
 
 ```python
 STANDARD_DATA_FILES = [
-    "role.json",
     "print_format.json",
-    "custom_docperm.json",
 ]
 ```
 
-Missing files are skipped with a warning — they do not abort the install.
+Missing files are skipped with a warning — they do not abort the install. (Roles and Custom
+DocPerms used to live here too; they moved to `setup/permissions.py` — code, reversible.)
 
 ---
 
