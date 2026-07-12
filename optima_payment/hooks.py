@@ -275,26 +275,4 @@ export_python_type_annotations = True
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
 
-fixtures = [
-    # {
-    #     "dt" : "Role" ,
-    #     "filters" : [
-    #         ["name", "in", ["Optima Payment User", "Optima Payment Manger"]]
-    #     ]
-    # },
-    # {
-    #     "dt" : "Custom DocPerm" ,
-    #     "filters" : [
-    #         ["role", "in", ["Optima Payment User", "Optima Payment Manger"]]
-    #     ]
-    # }
-
-    # {
-    #     "dt": "Print Format",
-    #     "filters": {
-    #         "doc_type": "Payment Entry",
-    #         "name": "Payment Entry",
-    #         # "property": "links_order",
-    #     }
-    # },
-]
+# fixtures = []
