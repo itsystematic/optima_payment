@@ -1,22 +1,23 @@
-
-
 import frappe
-from erpnext.accounts.general_ledger import make_entry, make_gl_entries
-from erpnext import get_default_company 
-from erpnext.accounts.utils import get_fiscal_years
+import frappe.utils
+from frappe import _
 from frappe.types.DF import date
 from frappe.utils import formatdate
-from frappe import _
+from erpnext import get_default_company 
+from frappe.model.document import Document
+from erpnext.accounts.utils import get_fiscal_years
+
 from erpnext.utilities.regional import temporary_flag
+from erpnext.accounts.general_ledger import make_entry, make_gl_entries
 from erpnext.controllers.accounts_controller import update_gl_dict_with_regional_fields 
 from erpnext.accounts.doctype.accounting_dimension.accounting_dimension import get_accounting_dimensions 
-from frappe.model.document import Document
+from erpnext.accounts.doctype.bank_guarantee.bank_guarantee import BankGuarantee
+
 import copy
 
-import frappe.utils
 
 
-class CustomBankGuarantee(Document):
+class CustomBankGuarantee(BankGuarantee):
     
     def before_submit(self):
         self.add_remarks()
