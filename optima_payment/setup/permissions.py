@@ -66,18 +66,6 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         USER_ROLE: ["select", "read", "write", "create", "print", "email", "export", "share", "report"],
         MANAGER_ROLE: ["select", "read", "write", "create", "delete", "print", "email", "export", "share", "report"],
     },
-    "Expense Claim": {
-        USER_ROLE: ["select", "read", "write", "create", "print", "email", "export", "share", "report"],
-        MANAGER_ROLE: ["select", "read", "write", "create", "delete", "submit", "cancel", "amend", "print", "email", "export", "share", "report"],
-    },
-    "Expense Claim Type": {
-        USER_ROLE: ["select", "read", "write", "print", "email", "export", "report"],
-        MANAGER_ROLE: ["select", "read", "write", "create", "delete", "print", "email", "export", "report"],
-    },
-    "Employee Advance": {
-        USER_ROLE: ["select", "read", "write", "create", "print", "email", "export", "report"],
-        MANAGER_ROLE: ["select", "read", "write", "create", "delete", "submit", "cancel", "amend", "print", "email", "export", "report"],
-    },
     "Department": {
         USER_ROLE: ["select", "read", "write", "email", "export", "report"],
         MANAGER_ROLE: ["select", "read", "write", "print", "email", "export", "report"],
@@ -90,25 +78,9 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         USER_ROLE: ["select", "read", "write", "print", "email", "export", "report"],
         MANAGER_ROLE: ["select", "read", "write", "print", "email", "export", "report"],
     },
-    "Employee Grade": {
-        USER_ROLE: ["select", "read", "write", "create", "print", "email", "export", "report"],
-        MANAGER_ROLE: ["select", "read", "write", "create", "print", "email", "export", "report"],
-    },
-    "Employment Type": {
-        USER_ROLE: ["select", "read", "write", "print", "email", "export", "report"],
-        MANAGER_ROLE: ["select", "read", "write", "create", "delete", "print", "email", "export", "report"],
-    },
-    "Job Applicant": {
-        USER_ROLE: ["select", "read", "write", "create", "print", "email", "export", "report"],
-        MANAGER_ROLE: ["select", "read", "write", "create", "print", "email", "export", "report"],
-    },
     "Holiday List": {
         USER_ROLE: ["select", "read", "write", "print", "email", "export", "report"],
         MANAGER_ROLE: ["select", "read", "write", "email", "export", "report"],
-    },
-    "Salary Structure Assignment": {
-        USER_ROLE: ["select", "read", "write", "create", "submit", "print", "email", "export", "report"],
-        MANAGER_ROLE: ["select", "read", "write", "create", "delete", "submit", "cancel", "amend", "print", "email", "export", "report"],
     },
     "Bank": {
         USER_ROLE: ["select", "read", "write", "print", "email", "export", "report"],
