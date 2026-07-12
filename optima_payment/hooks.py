@@ -297,10 +297,4 @@ fixtures = [
     #         # "property": "links_order",
     #     }
     # },
-    # {
-    #     "dt": "Workspace",
-    #     "filters": [
-    #         ["name", "in", ["Accounting", "ERPNext Settings", "Financial Reports"]] 
-    #     ]
-    # }
 ]
