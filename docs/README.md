@@ -1,8 +1,25 @@
-# Optima Payment — Developer Docs
+# Optima Payment — Docs
 
-| Document | What it covers |
-|----------|----------------|
-| [setup-architecture.md](setup-architecture.md) | Full call graph, layer map, how install/migrate/uninstall work |
-| [how-to-add-a-feature.md](how-to-add-a-feature.md) | Adding a new group of custom fields and property setters |
-| [how-to-alter-a-feature.md](how-to-alter-a-feature.md) | Adding, changing, renaming, or removing fields/property setters |
-| [how-to-write-a-patch.md](how-to-write-a-patch.md) | Writing a migration patch for already-installed sites |
+Documentation is organized **by domain**. Each folder has its own index.
+
+## Domains
+
+| Area | For | Start here |
+|------|-----|-----------|
+| [Cheque lifecycle](cheque/) | Accountants, implementers & developers | [cheque/](cheque/README.md) |
+| [Bank Guarantee](bank-guarantee/) | Accountants, implementers & developers | [bank-guarantee/](bank-guarantee/README.md) |
+| [Letter of Credit](letter-of-credit/) | Accountants, implementers & developers | [letter-of-credit/](letter-of-credit/README.md) |
+| [Setup framework](setup/) | Developers | [setup/](setup/README.md) |
+
+## Cross-cutting
+
+| Area | For | Start here |
+|------|-----|-----------|
+| [Development](development/) | Developers | [Testing](development/testing.md) |
+
+---
+
+### Quick links by audience
+
+- **Accountants / implementers:** [Cheque](cheque/user-guide.md) · [Bank Guarantee](bank-guarantee/user-guide.md) · [Letter of Credit](letter-of-credit/user-guide.md)
+- **Developers:** [Cheque](cheque/reference.md) · [Bank Guarantee](bank-guarantee/reference.md) · [Letter of Credit](letter-of-credit/reference.md) · [Setup architecture](setup/architecture.md) · [Testing](development/testing.md)

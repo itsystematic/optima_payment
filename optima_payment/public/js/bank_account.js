@@ -8,7 +8,8 @@ frappe.ui.form.on('Bank Account', {
         frm.set_query('providing_letter_of_credit_account', function() {
             return {
                 filters: {
-                    'is_group': 0
+                    'is_group': 0,
+                    'root_type': 'Asset',
                 }
             }
         });
@@ -16,7 +17,8 @@ frappe.ui.form.on('Bank Account', {
         frm.set_query('receiving_letter_of_credit_account', function() {
             return {
                 filters: {
-                    'is_group': 0
+                    'is_group': 0,
+                    'root_type': 'Liability',
                 }
             }
         });

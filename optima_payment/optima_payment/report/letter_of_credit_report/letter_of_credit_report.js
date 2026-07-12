@@ -18,33 +18,37 @@ frappe.query_reports["Letter of Credit Report"] = {
 			reqd: 1
 		},
 		{
-			fieldname: "lc_status",
-			label: __("Letter of Credit Status"),
-			fieldtype: "Select",
-			options: "\nNew\nReturned\nLost\nExtend",
-		},
-		{
-			fieldname: "reference_docname",
-			label: __("Reference Docname"),
-			fieldtype: "Data",
+			fieldname: "project",
+			label: __("Project"),
+			fieldtype: "Link",
+			options: "Project",
 		},
 		{
 			fieldname: "reference_doctype",
 			label: __("Reference DocType"),
 			fieldtype: "Select",
-			options: "\nPurchase Invoice\nSales Order",
+			options: "\nSales Order\nPurchase Order",
+		},
+		{
+			fieldname: "reference_docname",
+			label: __("Reference Docname"),
+			fieldtype: "Dynamic Link",
+			options: "reference_doctype",
+			depends_on: "eval: doc.reference_doctype",
+			get_options: () => frappe.query_report.get_filter_value("reference_doctype"),
+			get_query: () => ({ filters: { docstatus: 1 } }),
+		},
+		{
+			fieldname: "lc_status",
+			label: __("Letter of Credit Status"),
+			fieldtype: "Select",
+			options: "\nNew\nExists\nIssued\nReturned\nExpired\nExtended\nClosed",
 		},
 		{
 			fieldname: "cost_center",
 			label: __("Cost Center"),
 			fieldtype: "Link",
 			options: "Cost Center",
-		},
-		{
-			fieldname: "project",
-			label: __("Project"),
-			fieldtype: "Link",
-			options: "Project",
 		},
 		{
 			fieldname: "customer",
@@ -58,7 +62,7 @@ frappe.query_reports["Letter of Credit Report"] = {
 			label: __("Supplier"),
 			fieldtype: "Link",
 			options: "Supplier",
-			depends_on: "eval: doc.reference_doctype == 'Purchase Invoice'",
+			depends_on: "eval: doc.reference_doctype == 'Purchase Order'",
 		},
 		{
 			fieldname: "lc_category",
@@ -84,5 +88,16 @@ frappe.query_reports["Letter of Credit Report"] = {
 			label: __("Letter of Credit Number"),
 			fieldtype: "Data",
 		},
-	]
+	],
+
+	formatter: function (value, row, column, data, default_formatter) {
+		value = default_formatter(value, row, column, data);
+
+		if (column.fieldname === "lc_status" && data.lc_status) {
+			const color = optima_payment.utils.lc_status_colors[data.lc_status] || "gray";
+			value = `<span class="indicator-pill ${color}">${data.lc_status}</span>`;
+		}
+
+		return value;
+	},
 };

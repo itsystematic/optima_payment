@@ -52,4 +52,37 @@ def get_custom_fields() -> dict[str, list[dict]]:
                 "depends_on": 'eval: doc.reference_doctype == "Purchase Invoice"',
             },
         ],
+        "Bank Account": [
+            {
+                "fieldname": "bank_guarantee_account",
+                "fieldtype": "Link",
+                "label": "Bank Guarantee Account",
+                "insert_after": "account_subtype",
+                "options": "Account",
+            },
+            {
+                "fieldname": "providing_letter_of_credit_account",
+                "fieldtype": "Link",
+                "label": "Providing Letter of Credit Account",
+                "insert_after": "bank_guarantee_account",
+                "options": "Account",
+            },
+            {
+                "fieldname": "receiving_letter_of_credit_account",
+                "fieldtype": "Link",
+                "label": "Receiving Letter of Credit Account",
+                "insert_after": "providing_letter_of_credit_account",
+                "options": "Account",
+            },
+        ],
+        "GL Entry": [
+            {
+                "fieldname": "is_bank_guarantee_comission_entry",
+                "fieldtype": "Check",
+                "label": "Bank Guarantee Comission Entry",
+                "insert_after": "transaction_exchange_rate",
+                "default": 0,
+                "hidden": 1,
+            }
+        ],
     }

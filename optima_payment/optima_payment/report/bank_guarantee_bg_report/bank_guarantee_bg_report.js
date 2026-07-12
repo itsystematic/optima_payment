@@ -18,33 +18,37 @@ frappe.query_reports["Bank Guarantee-BG Report"] = {
 			reqd: 1
 		},
 		{
-			fieldname: "bank_guarantee_status",
-			label: __("Bank Guarantee Status"),
-			fieldtype: "Select",
-			options: "\nNew\nReturned\nLost\nExtend",
-		},
-		{
-			fieldname: "reference_docname",
-			label: __("Reference Docname"),
-			fieldtype: "Data",
+			fieldname: "project",
+			label: __("Project"),
+			fieldtype: "Link",
+			options: "Project",
 		},
 		{
 			fieldname: "reference_doctype",
 			label: __("Reference DocType"),
 			fieldtype: "Select",
-			options: "\nPurchase Invoice\nSales Order",
+			options: "\nSales Order\nPurchase Order",
+		},
+		{
+			fieldname: "reference_docname",
+			label: __("Reference Docname"),
+			fieldtype: "Dynamic Link",
+			options: "reference_doctype",
+			depends_on: "eval: doc.reference_doctype",
+			get_options: () => frappe.query_report.get_filter_value("reference_doctype"),
+			get_query: () => ({ filters: { docstatus: 1 } }),
+		},
+		{
+			fieldname: "bank_guarantee_status",
+			label: __("Bank Guarantee Status"),
+			fieldtype: "Select",
+			options: "\nNew\nExists\nIssued\nReturned\nExpired\nExtended\nLost",
 		},
 		{
 			fieldname: "cost_center",
 			label: __("Cost Center"),
 			fieldtype: "Link",
 			options: "Cost Center",
-		},
-		{
-			fieldname: "project",
-			label: __("Project"),
-			fieldtype: "Link",
-			options: "Project",
 		},
 		{
 			fieldname: "customer",
@@ -58,7 +62,7 @@ frappe.query_reports["Bank Guarantee-BG Report"] = {
 			label: __("Supplier"),
 			fieldtype: "Link",
 			options: "Supplier",
-			depends_on: "eval: doc.reference_doctype == 'Purchase Invoice'",
+			depends_on: "eval: doc.reference_doctype == 'Purchase Order'",
 		},
 		{
 			fieldname: "guarantee_type",
@@ -84,5 +88,16 @@ frappe.query_reports["Bank Guarantee-BG Report"] = {
 			label: __("Bank Guarantee Number"),
 			fieldtype: "Data",
 		},
-	]
+	],
+
+	formatter: function (value, row, column, data, default_formatter) {
+		value = default_formatter(value, row, column, data);
+
+		if (column.fieldname === "bank_guarantee_status" && data.bank_guarantee_status) {
+			const color = optima_payment.utils.bank_guarantee_status_colors[data.bank_guarantee_status] || "gray";
+			value = `<span class="indicator-pill ${color}">${data.bank_guarantee_status}</span>`;
+		}
+
+		return value;
+	},
 };

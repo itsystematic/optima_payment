@@ -9,7 +9,7 @@ from pypika.functions import Concat
 
 
 def execute(filters=None):
-    columns = get_coloums()
+    columns = get_coloums(filters or {})
     data = get_data(filters)
 
     return columns, data
@@ -114,9 +114,13 @@ def get_conditions(filters: dict, query: list[dict]) -> MySQLQueryBuilder:
     return query
 
 
-def get_coloums() -> list[dict]:
+def get_coloums(filters: dict) -> list[dict]:
+    # reference_doctype is "Sales Order" (customer) or "Purchase Order" (supplier) -
+    # the two fields are mutually exclusive per row, so drop whichever doesn't apply
+    # to the chosen filter. Show both when no reference_doctype filter is set.
+    reference_doctype = filters.get("reference_doctype")
 
-    return [
+    columns = [
         {
             "fieldname": "posting_date",
             "label": _("Posting Date"),
@@ -129,6 +133,13 @@ def get_coloums() -> list[dict]:
             "fieldtype": "Link",
             "options": "Bank Guarantee-BG",
             "width": 200,
+        },
+        {
+            "fieldname": "project",
+            "label": _("Project"),
+            "fieldtype": "Link",
+            "options": "Project",
+            "width": 130,
         },
         {
             "fieldname": "customer",
@@ -147,7 +158,7 @@ def get_coloums() -> list[dict]:
         {
             "fieldname": "reference_doctype",
             "label": _("Reference DocType"),
-            "width": 150,
+            "width": 130,
         },
         {
             "fieldname": "reference_docname",
@@ -174,14 +185,7 @@ def get_coloums() -> list[dict]:
             "fieldname": "bank_guarantee_status",
             "label": _("Bank Guarantee Status"),
             "fieldtype": "Data",
-            "width": 100,
-        },
-        {
-            "fieldname": "project",
-            "label": _("Project"),
-            "fieldtype": "Link",
-            "options": "Project",
-            "width": 100,
+            "width": 80,
         },
         {
             "fieldname": "cost_center",
@@ -193,7 +197,7 @@ def get_coloums() -> list[dict]:
             "fieldname": "guarantee_type",
             "label": _("Guarantee Type"),
             "fieldtype": "Data",
-            "width": 80,
+            "width": 60,
         },
         {
             "fieldname": "bank",
@@ -205,6 +209,7 @@ def get_coloums() -> list[dict]:
             "fieldname": "bank_guarantee_number",
             "label": _("Bank Guarantee Number"),
             "fieldtype": "Data",
+            "width": 60
         },
         {
             "fieldname": "banking_facilities",
@@ -225,11 +230,13 @@ def get_coloums() -> list[dict]:
             "fieldname": "bank_guarantee_percent",
             "label": _("Bank Guarantee Percent"),
             "fieldtype": "Percent",
+            "width": 70
         },
         {
             "fieldname": "bank_guarantee_amount",
             "label": _("Bank Guarantee Amount"),
             "fieldtype": "Currency",
+            "width": 70
         },
         {
             "fieldname": "bank_rate_",
@@ -240,7 +247,8 @@ def get_coloums() -> list[dict]:
         {
             "fieldname": "bank_amount",
             "label": _("Bank Amount"),
-            "fieldtype": "Currency"
+            "fieldtype": "Currency",
+            "width": 70
         },
         {
             "fieldname": "facilities_rate_",
@@ -251,7 +259,8 @@ def get_coloums() -> list[dict]:
         {
             "fieldname": "facility_amount",
             "label": _("Facilities Amount"),
-            "fieldtype": "Currency"
+            "fieldtype": "Currency",
+            "width": 70
         },
         {
             "fieldname": "remarks",
@@ -259,3 +268,10 @@ def get_coloums() -> list[dict]:
             "fieldtype": "Data"
         },
     ]
+
+    if reference_doctype == "Sales Order":
+        columns = [c for c in columns if c["fieldname"] != "supplier"]
+    elif reference_doctype == "Purchase Order":
+        columns = [c for c in columns if c["fieldname"] != "customer"]
+
+    return columns

@@ -1,15 +1,16 @@
 {
  "add_total_row": 0,
+ "add_translate_data": 0,
  "columns": [],
- "creation": "2026-06-24 00:00:00.000000",
+ "creation": "2026-06-24 00:00:00",
  "disabled": 0,
  "docstatus": 0,
  "doctype": "Report",
  "filters": [],
  "idx": 0,
  "is_standard": "Yes",
- "letterhead": null,
- "modified": "2026-06-24 00:00:00.000000",
+ "letter_head": null,
+ "modified": "2026-07-08 18:19:25.459689",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Letter of Credit Report",
@@ -24,6 +25,12 @@
   },
   {
    "role": "Accounts Manager"
+  },
+  {
+   "role": "Optima Payment User"
+  },
+  {
+   "role": "Optima Payment Manager"
   }
  ],
  "timeout": 0

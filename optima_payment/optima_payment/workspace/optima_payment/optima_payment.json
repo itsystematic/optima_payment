@@ -1,0 +1,218 @@
+{
+ "charts": [
+  {
+   "chart_name": "Bank Guarantee-BG Status",
+   "label": "Bank Guarantee-BG Status"
+  },
+  {
+   "chart_name": "Letter of Credit Status",
+   "label": "Letter of Credit Status"
+  }
+ ],
+ "content": "[{\"id\": \"lkjnD15SpM\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Insights</b></span>\", \"col\": 12}}, {\"id\": \"LUuHmHdj0u\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Bank Guarantee-BG Expiring Soon\", \"col\": 6}}, {\"id\": \"1SbZcLI4eK\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Letter of Credit Expiring Soon\", \"col\": 6}}, {\"id\": \"An5PHVQ01M\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Bank Guarantee-BG Status\", \"col\": 6}}, {\"id\": \"4f1JcM5ltV\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Letter of Credit Status\", \"col\": 6}}, {\"id\": \"uETt2L1uct\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"Ucs3VtwGhH\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Quick Access</b></span>\", \"col\": 12}}, {\"id\": \"bwyF0uSTeB\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Bank Guarantee-BG\", \"col\": 3}}, {\"id\": \"ufaTzCLGKP\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Letter of Credit\", \"col\": 3}}, {\"id\": \"ioUQO3Iw9F\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Cheque Deposit Slip\", \"col\": 3}}, {\"id\": \"3fNfvDkIUK\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Cheque Action Log\", \"col\": 3}}, {\"id\": \"ONfjszm8Hx\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Optima Payment Setting\", \"col\": 3}}, {\"id\": \"Axz75vqdZm\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Cheque Dashboard\", \"col\": 3}}, {\"id\": \"BBxaylapAO\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"SfXyc7mNtW\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Masters &amp; Reports</b></span>\", \"col\": 12}}, {\"id\": \"AYyHhHWANT\", \"type\": \"card\", \"data\": {\"card_name\": \"Masters\", \"col\": 4}}, {\"id\": \"o9iOeLW3sv\", \"type\": \"card\", \"data\": {\"card_name\": \"Settings\", \"col\": 4}}, {\"id\": \"dihIhLGhCP\", \"type\": \"card\", \"data\": {\"card_name\": \"Reports\", \"col\": 4}}]",
+ "creation": "2026-07-08 00:00:00",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "file",
+ "idx": 0,
+ "is_hidden": 0,
+ "label": "Optima Payment",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Masters",
+   "link_count": 4,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Bank Guarantee-BG",
+   "link_count": 0,
+   "link_to": "Bank Guarantee-BG",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Letter of Credit",
+   "link_count": 0,
+   "link_to": "Letter of Credit",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Cheque Deposit Slip",
+   "link_count": 0,
+   "link_to": "Cheque Deposit Slip",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Cheque Action Log",
+   "link_count": 0,
+   "link_to": "Cheque Action Log",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Settings",
+   "link_count": 1,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Optima Payment Setting",
+   "link_count": 0,
+   "link_to": "Optima Payment Setting",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Reports",
+   "link_count": 3,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Bank Guarantee-BG Report",
+   "link_count": 0,
+   "link_to": "Bank Guarantee-BG Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "Bank Guarantee-BG",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Letter of Credit Report",
+   "link_count": 0,
+   "link_to": "Letter of Credit Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "Letter of Credit",
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Cheque Report",
+   "link_count": 0,
+   "link_to": "Cheque Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "report_ref_doctype": "Payment Entry",
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-07-08 18:21:13.659924",
+ "modified_by": "Administrator",
+ "module": "Optima Payment",
+ "name": "Optima Payment",
+ "number_cards": [
+  {
+   "label": "Bank Guarantee-BG Expiring Soon",
+   "number_card_name": "Bank Guarantee-BG Expiring Soon"
+  },
+  {
+   "label": "Letter of Credit Expiring Soon",
+   "number_card_name": "Letter of Credit Expiring Soon"
+  }
+ ],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [
+  {
+   "role": "Optima Payment User"
+  },
+  {
+   "role": "Optima Payment Manager"
+  }
+ ],
+ "sequence_id": 23.0,
+ "shortcuts": [
+  {
+   "color": "Blue",
+   "doc_view": "List",
+   "format": "",
+   "label": "Bank Guarantee-BG",
+   "link_to": "Bank Guarantee-BG",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "format": "",
+   "label": "Letter of Credit",
+   "link_to": "Letter of Credit",
+   "type": "DocType"
+  },
+  {
+   "color": "Yellow",
+   "doc_view": "List",
+   "format": "",
+   "label": "Cheque Deposit Slip",
+   "link_to": "Cheque Deposit Slip",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "format": "",
+   "label": "Cheque Action Log",
+   "link_to": "Cheque Action Log",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "format": "",
+   "label": "Optima Payment Setting",
+   "link_to": "Optima Payment Setting",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "format": "",
+   "label": "Cheque Dashboard",
+   "link_to": "Cheque",
+   "type": "Dashboard"
+  }
+ ],
+ "title": "Optima Payment"
+}

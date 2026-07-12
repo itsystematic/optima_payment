@@ -1,5 +1,6 @@
 {
  "add_total_row": 0,
+ "add_translate_data": 0,
  "columns": [],
  "creation": "2025-02-17 10:31:31.473310",
  "disabled": 0,
@@ -8,8 +9,8 @@
  "filters": [],
  "idx": 0,
  "is_standard": "Yes",
- "letterhead": null,
- "modified": "2025-02-19 14:32:36.257773",
+ "letter_head": null,
+ "modified": "2026-07-08 18:20:16.065883",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Bank Guarantee Report",
@@ -24,6 +25,12 @@
   },
   {
    "role": "Accounts Manager"
+  },
+  {
+   "role": "Optima Payment User"
+  },
+  {
+   "role": "Optima Payment Manager"
   }
  ],
  "timeout": 0

@@ -266,6 +266,7 @@ class LetterofCredit(Document):
                 "received_amount": amount,
                 "project": self.project,
                 "reference_no": self.lc_number,
+                "remarks": self.remarks,
                 "reference_date": posting_date or self.posting_date,
                 "letter_of_credit": self.name,
                 "is_lc_commission_entry": is_lc_commission_entry,

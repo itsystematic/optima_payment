@@ -9,7 +9,7 @@ from pypika.functions import Concat
 
 
 def execute(filters=None):
-    columns = get_coloums()
+    columns = get_coloums(filters or {})
     data = get_data(filters)
 
     return columns, data
@@ -114,9 +114,13 @@ def get_conditions(filters: dict, query: list[dict]) -> MySQLQueryBuilder:
     return query
 
 
-def get_coloums() -> list[dict]:
+def get_coloums(filters: dict) -> list[dict]:
+    # reference_doctype is "Sales Order" (customer) or "Purchase Order" (supplier) -
+    # the two fields are mutually exclusive per row, so drop whichever doesn't apply
+    # to the chosen filter. Show both when no reference_doctype filter is set.
+    reference_doctype = filters.get("reference_doctype")
 
-    return [
+    columns = [
         {
             "fieldname": "posting_date",
             "label": _("Posting Date"),
@@ -147,13 +151,13 @@ def get_coloums() -> list[dict]:
         {
             "fieldname": "reference_doctype",
             "label": _("Reference DocType"),
-            "width": 150,
+            "width": 110,
         },
         {
             "fieldname": "reference_docname",
-            "label": _("Reference Documnet"),
+            "label": _("Reference Document Name"),
             "fieldtype": "Data",
-            "width": 200,
+            "width": 150,
         },
         {
             "fieldname": "start_date",
@@ -181,7 +185,7 @@ def get_coloums() -> list[dict]:
             "label": _("Project"),
             "fieldtype": "Link",
             "options": "Project",
-            "width": 100,
+            "width": 120,
         },
         {
             "fieldname": "cost_center",
@@ -205,6 +209,7 @@ def get_coloums() -> list[dict]:
             "fieldname": "lc_number",
             "label": _("Letter of Credit Number"),
             "fieldtype": "Data",
+            "width": 120,
         },
         {
             "fieldname": "banking_facilities",
@@ -225,11 +230,13 @@ def get_coloums() -> list[dict]:
             "fieldname": "lc_percent",
             "label": _("Letter of Credit Percent"),
             "fieldtype": "Percent",
+            "width": 70
         },
         {
             "fieldname": "lc_amount",
             "label": _("Letter of Credit Amount"),
             "fieldtype": "Currency",
+            "width": 70
         },
         {
             "fieldname": "bank_rate_",
@@ -251,7 +258,8 @@ def get_coloums() -> list[dict]:
         {
             "fieldname": "facility_amount",
             "label": _("Facilities Amount"),
-            "fieldtype": "Currency"
+            "fieldtype": "Currency",
+            "width": 70
         },
         {
             "fieldname": "remarks",
@@ -259,3 +267,10 @@ def get_coloums() -> list[dict]:
             "fieldtype": "Data"
         },
     ]
+
+    if reference_doctype == "Sales Order":
+        columns = [c for c in columns if c["fieldname"] != "supplier"]
+    elif reference_doctype == "Purchase Order":
+        columns = [c for c in columns if c["fieldname"] != "customer"]
+
+    return columns
