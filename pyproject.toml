@@ -3,7 +3,7 @@ name = "optima_payment"
 authors = [
     { name = "IT Systematic", email = "sales@itsystematic.com"}
 ]
-description = "App For Cheque Status"
+description = "Payment extensions for ERPNext: cheque lifecycle, expenses, Bank Guarantee, and Letter of Credit"
 requires-python = ">=3.10"
 readme = "README.md"
 dynamic = ["version"]

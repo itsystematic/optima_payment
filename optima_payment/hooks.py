@@ -1,7 +1,7 @@
 app_name = "optima_payment"
 app_title = "Optima Payment"
 app_publisher = "IT Systematic"
-app_description = "App For Cheque Status"
+app_description = "Payment extensions for ERPNext: cheque lifecycle, expenses, Bank Guarantee, and Letter of Credit"
 required_apps = [
     "erpnext",
     "frappe"
