@@ -60,8 +60,6 @@ doctype_js = {
         "public/js/payment_entry.js" ,
         "public/js/controllink.js" ,
     ],
-    "Expense Claim": "public/js/expense_claim.js",
-    "Expense Claim Type" : "public/js/expense_claim_type.js",
     "Bank": "public/js/bank.js",
     "Bank Account": "public/js/bank_account.js",
     "Bank Guarantee" : "public/js/bank_guarantee.js",
@@ -178,11 +176,6 @@ doc_events = {
     "Journal Entry" :{
         "on_cancel" :  "optima_payment.doc_events.journal_entry.journal_entry_on_cancel",
     },
-    # "Expense Claim" : {
-        # "on_submit" : "optima_payment.doc_events.expense_claim.on_submit",
-        # "on_cancel" : "optima_payment.doc_events.expense_claim.on_cancel",
-        # "validate" : "optima_payment.doc_events.expense_claim.validate"
-    # }
 }
 
 # Scheduled Tasks
