@@ -17,6 +17,7 @@ The setup system manages the full lifecycle of these customizations: creating th
 | Hook | File | What it does |
 |------|------|--------------|
 | `after_install` | `install.py → after_install()` | Fresh install: seeds print formats, patches field options, applies all feature customizations, seeds access control (roles + Custom DocPerms) |
+| `after_app_install` | `install.py → after_app_install(app_name)` | Fired when **any** app is installed on the site (Frappe passes its name). No-ops unless the app is `hrms`, then applies the HRMS feature's custom fields and HRMS permission grid — covers HRMS being installed *after* Optima Payment |
 | `after_migrate` | `migrate.py → after_migrate()` | After every `bench migrate`: re-applies stable field option patches |
 | `before_uninstall` | `uninstall.py → before_uninstall()` | Before uninstall: removes feature-owned custom fields, property setters, and access control (Custom DocPerms + unassigned roles) |
 
@@ -32,9 +33,18 @@ bench install-app optima_payment
         └── install.py: after_install()
               ├── standard_data.add_standard_data()       # import files/print_format.json (seed)
               ├── standard_data.update_fields_in_database()  # patch Mode of Payment type options
-              ├── registry.ensure_customizations()        # apply all feature custom fields + property setters
-              ├── permissions.apply_access_control()      # seed Optima roles + Custom DocPerms (install only)
+              ├── registry.ensure_customizations()        # apply enabled feature custom fields + property setters
+              ├── permissions.apply_access_control()      # seed Optima roles + Custom DocPerms (install only;
+              │                                           #   HRMS grid included only if HRMS is installed)
               └── migration_artifact.import_cheque_legacy_artifact()
+```
+
+```
+bench install-app hrms          # on a site that already has optima_payment
+  └── hooks.py: after_app_install ("hrms")
+        └── install.py: after_app_install("hrms")
+              ├── registry.ensure_hrms_customizations()   # apply the hrms_integration feature only
+              └── permissions.apply_hrms_access_control() # apply HRMS_ROLE_PERMISSIONS
 ```
 
 ```

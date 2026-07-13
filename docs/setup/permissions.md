@@ -16,8 +16,16 @@ Source: [`setup/permissions.py`](../../optima_payment/setup/permissions.py).
 
 They come with a bundle of **Custom DocPerms** granting access to ~27 standard doctypes —
 `Employee`, `Expense Claim`, `Bank`, `Bank Account`, `Cost Center`, `Project`, `Sales Invoice`,
-`Purchase Invoice`, `Cheque Deposit Slip`, and more. The full grid is `ROLE_PERMISSIONS` in
-`setup/permissions.py`.
+`Purchase Invoice`, `Cheque Deposit Slip`, and more. The grid lives in `setup/permissions.py`,
+split in two because **HRMS is optional** on this app:
+
+- `ROLE_PERMISSIONS` — Frappe/ERPNext doctypes, applied on every install.
+- `HRMS_ROLE_PERMISSIONS` — HRMS-owned doctypes (`Expense Claim`, `Expense Claim Type`,
+  `Employee Advance`, `Employee Grade`, `Employment Type`, `Job Applicant`,
+  `Salary Structure Assignment`), applied only when HRMS is on the site. Seeding a permission
+  loads the DocType (`add_permission` / `validate_permissions_for_doctype` both
+  `frappe.get_doc("DocType", …)`), so an ungated row would crash the install on a
+  non-HRMS site with `DoesNotExistError`.
 
 ## Why they exist
 
@@ -46,13 +54,24 @@ bank HTML belongs in data, not Python. See [architecture.md](architecture.md#thr
 ## Lifecycle
 
 - **Install** (`install.after_install` → `apply_access_control`): upserts the roles
-  (`ensure_roles`) then applies the permission grid (`ensure_permissions`) via Frappe's
-  `add_permission` / `update_permission_property`. Idempotent — safe to re-run.
+  (`ensure_roles`) then applies the core permission grid (`ensure_permissions`) via Frappe's
+  `add_permission` / `update_permission_property`; the HRMS grid is added in the same run
+  **only if HRMS is already installed**. Idempotent — safe to re-run.
+- **HRMS installed later** (`hooks.after_app_install` → `install.after_app_install`): Frappe
+  fires this hook on every installed app whenever *any* app is installed on the site, passing
+  the new app's name. Our handler no-ops unless the name is `hrms`, then applies the HRMS
+  custom fields (`registry.ensure_hrms_customizations`) and the HRMS permission grid
+  (`apply_hrms_access_control`). Together with the install-time check, both install orderings
+  are covered.
 - **Migrate**: **not** re-applied. Like the print-format seed, admins may tune per-site
   permissions and a later `bench migrate` must not overwrite them.
 - **Uninstall** (`uninstall.before_uninstall` → `remove_access_control`): deletes the Custom
-  DocPerm rows for the two roles (restoring default perms), then deletes each role **only if no
-  user is still assigned it** — an assigned role is kept with a warning so nobody loses access.
+  DocPerm rows for the two roles across both grids (restoring default perms), then deletes each
+  role **only if no user is still assigned it** — an assigned role is kept with a warning so
+  nobody loses access.
+- **HRMS uninstalled** (while Optima Payment stays): nothing to do on our side — deleting a
+  DocType makes Frappe drop its `Custom DocPerm` and `Custom Field` rows (`DocType.on_trash`),
+  and both `ensure_permissions` and `remove_access_control` skip doctypes missing from the site.
 
 ## The `Manger → Manager` rename
 
@@ -63,8 +82,9 @@ which renames the Role so existing user assignments and Custom DocPerms follow t
 
 ## How to change what the roles can do
 
-Edit `ROLE_PERMISSIONS` in `setup/permissions.py` (add a doctype, or add/remove a ptype for a
-role), then re-run on a dev site:
+Edit `ROLE_PERMISSIONS` — or `HRMS_ROLE_PERMISSIONS` for an HRMS doctype — in
+`setup/permissions.py` (add a doctype, or add/remove a ptype for a role), then re-run on a
+dev site:
 
 ```bash
 bench --site <site> console
