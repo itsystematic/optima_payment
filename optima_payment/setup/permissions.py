@@ -33,11 +33,17 @@ bank HTML belongs in data, not Python.
 
 - Applied **on install only** (``install.after_install``). Like the print-format seed, admins
   may tune per-site permissions afterwards without a later ``bench migrate`` overwriting them.
+- The grid is split in two: :data:`ROLE_PERMISSIONS` (Frappe/ERPNext doctypes, always applied)
+  and :data:`HRMS_ROLE_PERMISSIONS` (HRMS-owned doctypes). HRMS is **optional** — its grid is
+  applied at install only when HRMS is already on the site, and via
+  ``hooks.after_app_install`` → :func:`apply_hrms_access_control` when HRMS is installed later.
 - Removed on uninstall (``uninstall.before_uninstall``): the Custom DocPerm rows are dropped,
-  and each role is deleted **only if no user is still assigned it**.
+  and each role is deleted **only if no user is still assigned it**. (If HRMS is uninstalled
+  first, Frappe deletes its doctypes' Custom DocPerm rows itself — DocType.on_trash.)
 
-To change what the roles can do, edit :data:`ROLE_PERMISSIONS` below. To rename a role on
-already-installed sites, ship a patch (see ``patches/rename_optima_payment_manger_role.py``).
+To change what the roles can do, edit :data:`ROLE_PERMISSIONS` (or :data:`HRMS_ROLE_PERMISSIONS`
+for HRMS doctypes) below. To rename a role on already-installed sites, ship a patch (see
+``patches/rename_optima_payment_manger_role.py``).
 """
 
 from __future__ import annotations
@@ -61,6 +67,7 @@ OPTIMA_ROLES: list[dict] = [
 # Faithful permission grid, transcribed from the retired files/custom_docperm.json.
 # Shape: {doctype: {role: [enabled ptypes]}}. All rows are permlevel 0, if_owner 0.
 # `User` is read/data-entry; `Manager` adds create/delete/submit/cancel/amend where relevant.
+# HRMS-owned doctypes live in HRMS_ROLE_PERMISSIONS below — HRMS is optional.
 ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
     "Employee": {
         USER_ROLE: ["select", "read", "write", "create", "print", "email", "export", "share", "report"],
@@ -144,15 +151,66 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
     },
 }
 
+# HRMS-owned doctypes (same shape as ROLE_PERMISSIONS). Seeding a permission loads the
+# DocType doc, so these rows crash on a site without HRMS — they are applied only when
+# HRMS is installed: at install time if already present, else via hooks.after_app_install.
+HRMS_ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
+    "Expense Claim": {
+        USER_ROLE: ["select", "read", "write", "create", "print", "email", "export", "share", "report"],
+        MANAGER_ROLE: ["select", "read", "write", "create", "delete", "submit", "cancel", "amend", "print", "email", "export", "share", "report"],
+    },
+    "Expense Claim Type": {
+        USER_ROLE: ["select", "read", "write", "print", "email", "export", "report"],
+        MANAGER_ROLE: ["select", "read", "write", "create", "delete", "print", "email", "export", "report"],
+    },
+    "Employee Advance": {
+        USER_ROLE: ["select", "read", "write", "create", "print", "email", "export", "report"],
+        MANAGER_ROLE: ["select", "read", "write", "create", "delete", "submit", "cancel", "amend", "print", "email", "export", "report"],
+    },
+    "Employee Grade": {
+        USER_ROLE: ["select", "read", "write", "create", "print", "email", "export", "report"],
+        MANAGER_ROLE: ["select", "read", "write", "create", "print", "email", "export", "report"],
+    },
+    "Employment Type": {
+        USER_ROLE: ["select", "read", "write", "print", "email", "export", "report"],
+        MANAGER_ROLE: ["select", "read", "write", "create", "delete", "print", "email", "export", "report"],
+    },
+    "Job Applicant": {
+        USER_ROLE: ["select", "read", "write", "create", "print", "email", "export", "report"],
+        MANAGER_ROLE: ["select", "read", "write", "create", "print", "email", "export", "report"],
+    },
+    "Salary Structure Assignment": {
+        USER_ROLE: ["select", "read", "write", "create", "submit", "print", "email", "export", "report"],
+        MANAGER_ROLE: ["select", "read", "write", "create", "delete", "submit", "cancel", "amend", "print", "email", "export", "report"],
+    },
+}
+
 
 def apply_access_control() -> None:
     """Create the Optima roles and their Custom DocPerms (install-time seed)."""
+    steps = [
+        ("Create Optima Payment roles", ensure_roles),
+        ("Apply Optima Payment permissions", lambda: ensure_permissions(ROLE_PERMISSIONS)),
+    ]
+    if "hrms" in frappe.get_installed_apps():
+        steps.append(
+            ("Apply Optima Payment HRMS permissions", lambda: ensure_permissions(HRMS_ROLE_PERMISSIONS))
+        )
+    run_setup_steps(steps, section_label="Optima Payment access control")
+
+
+def apply_hrms_access_control() -> None:
+    """Grant the Optima roles their HRMS permissions.
+
+    Entry point for ``hooks.after_app_install`` when HRMS is installed on a site that
+    already has Optima Payment. Idempotent, like the install-time seed.
+    """
     run_setup_steps(
         [
             ("Create Optima Payment roles", ensure_roles),
-            ("Apply Optima Payment permissions", ensure_permissions),
+            ("Apply Optima Payment HRMS permissions", lambda: ensure_permissions(HRMS_ROLE_PERMISSIONS)),
         ],
-        section_label="Optima Payment access control",
+        section_label="Optima Payment HRMS access control",
     )
 
 
@@ -168,9 +226,15 @@ def ensure_roles() -> None:
         click.secho(f"Created role: {role_name}", fg="green")
 
 
-def ensure_permissions() -> None:
+def ensure_permissions(grid: dict[str, dict[str, list[str]]]) -> None:
     """Grant each Optima role its permissions on every doctype in the grid."""
-    for doctype, roles in ROLE_PERMISSIONS.items():
+    for doctype, roles in grid.items():
+        # add_permission / validate_permissions_for_doctype load the DocType and raise
+        # DoesNotExistError on a missing one (e.g. an HRMS doctype without HRMS).
+        if not frappe.db.exists("DocType", doctype):
+            click.secho(f"Skipping permissions for missing DocType: {doctype}", fg="yellow")
+            continue
+
         for role, ptypes in roles.items():
             # add_permission creates the base (read) rule and is a no-op if it already exists.
             add_permission(doctype, role, 0)
@@ -190,7 +254,7 @@ def remove_access_control() -> None:
 def _remove_permissions() -> int:
     """Delete Custom DocPerm rows for the Optima roles and revalidate touched doctypes."""
     removed = 0
-    for doctype in ROLE_PERMISSIONS:
+    for doctype in (*ROLE_PERMISSIONS, *HRMS_ROLE_PERMISSIONS):
         names = frappe.get_all(
             "Custom DocPerm",
             filters={"parent": doctype, "role": ["in", [USER_ROLE, MANAGER_ROLE]]},
@@ -200,7 +264,9 @@ def _remove_permissions() -> int:
             frappe.delete_doc("Custom DocPerm", name, force=True)
             removed += 1
 
-        if names:
+        # Revalidation loads the DocType; skip it for doctypes no longer on the site
+        # (an uninstalled HRMS already dropped its rows via DocType.on_trash anyway).
+        if names and frappe.db.exists("DocType", doctype):
             validate_permissions_for_doctype(doctype)
             frappe.clear_cache(doctype=doctype)
 

@@ -119,6 +119,17 @@ def ensure_customizations() -> None:
         _apply_feature(feature)
 
 
+def ensure_hrms_customizations() -> None:
+    """Apply only the HRMS integration feature.
+
+    Entry point for ``hooks.after_app_install`` when HRMS is installed on a site that
+    already has Optima Payment — install-time setup skipped the feature back then.
+    """
+    for feature in get_feature_specs():
+        if feature.key == "hrms_integration" and feature.enabled():
+            _apply_feature(feature)
+
+
 def before_uninstall() -> None:
     """Remove feature-owned metadata before uninstalling the app."""
     click.secho("Removing Optima Payment customizations...", fg="blue")
