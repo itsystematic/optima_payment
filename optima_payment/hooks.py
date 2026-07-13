@@ -2,17 +2,17 @@ app_name = "optima_payment"
 app_title = "Optima Payment"
 app_publisher = "IT Systematic"
 app_description = "App For Cheque Status"
-required_apps = [
-    "erpnext",
-    "frappe"
-]
 app_email = "sales@itsystematic.com"
 app_license = "mit"
 
 # Apps
 # ------------------
 
-# required_apps = []
+required_apps = [
+    "frappe",
+    "erpnext",
+    "optima_zatca",
+]
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
