@@ -1,6 +1,9 @@
 
+from typing import Optional
+
 import frappe
-from frappe.utils import flt, getdate
+from frappe.utils import cint, flt, getdate
+from frappe.utils.data import get_number_format_info
 
 from erpnext import get_company_currency
 from erpnext.setup.utils import get_exchange_rate
@@ -174,19 +177,23 @@ def reverse_gl_manually(gl_entries_for_action: list[dict], posting_date, remarks
 # NUMBER FORMATTING UTILITIES
 # ================================================================================================
 
+@frappe.whitelist()
 def money_to_words(
-    number: str | float | int,
-    main_currency: str | None = None,
-    fraction_currency: str | None = None,
-):
-    """Convert number to words with currency labels. Improved Frappe implementation."""
-    from frappe.utils import get_defaults , flt , get_number_format_info , cint
+    number,
+    main_currency: Optional[str] = None,
+    fraction_currency: Optional[str] = None,
+) -> str:
+    """Spell out an amount as words (e.g. 12.50 -> "Twelve  SAR and  Fifty  Halala.").
+
+    Mirrors Frappe's ``money_in_words`` but keeps this app's cheque-specific
+    spacing/formatting. Currency and fraction default to the site's configured
+    currency; negative or non-numeric input returns an empty string.
+    """
+    from frappe.utils import get_defaults
 
     _ = frappe._
 
-
     try:
-        # note: `flt` returns 0 for invalid input and we don't want that
         number = float(number)
     except ValueError:
         return ""
@@ -197,10 +204,11 @@ def money_to_words(
 
     d = get_defaults()
     if not main_currency:
-        main_currency = d.get("currency", "INR")
+        main_currency = _(d.get("currency", "INR"))
     if not fraction_currency:
-        fraction_currency = frappe.db.get_value("Currency", main_currency, "fraction", cache=True) or _(
-            "Cent"
+        fraction_currency = (
+            frappe.db.get_value("Currency", main_currency, "fraction", cache=True)
+            or _("Halala")
         )
 
     number_format = (
@@ -211,39 +219,36 @@ def money_to_words(
 
     fraction_length = get_number_format_info(number_format)[2]
 
-    n = f"%.{fraction_length}f" % number
+    n = "%.{0}f".format(fraction_length) % number
 
     numbers = n.split(".")
     main, fraction = numbers if len(numbers) > 1 else [n, "00"]
 
+    # Right-pad the fraction so it matches the currency's expected precision.
     if len(fraction) < fraction_length:
-        zeros = "0" * (fraction_length - len(fraction))
-        fraction += zeros
+        fraction += "0" * (fraction_length - len(fraction))
 
-    in_million = True
-    if number_format == "#,##,###.##":
-        in_million = False
+    # Indian formatting groups by lakh/crore rather than millions.
+    in_million = number_format != "#,##,###.##"
 
-    # 0.00
     if main == "0" and fraction in ["00", "000"]:
-        out = _(main_currency, context="Currency") + " " + _("Zero")
-    # 0.XX
+        out = "{0} {1}".format(main_currency, _("Zero"))
     elif main == "0":
-        out = _(in_words(fraction, in_million).title()) + "  " + _(fraction_currency)
+        out = _(in_words(fraction, in_million).title()) + "  " + fraction_currency
     else:
-        out =  _(in_words(main, in_million).title())  + "  "  + _(main_currency)
+        out = _(in_words(main, in_million).title()) + "  " + main_currency
         if cint(fraction):
             out = (
                 out
                 + " "
                 + _("and")
                 + "  "
-                + _(in_words(_(fraction), in_million).title())
+                + _(in_words(fraction, in_million).title())
                 + "  "
-                + _(fraction_currency)
+                + fraction_currency
             )
 
-    return  "  " + out + "  "  + _("only") + " " + "."
+    return "  " + out + "."
 
 
 
