@@ -13,9 +13,8 @@ from erpnext.accounts.general_ledger import make_gl_entries
 from optima_payment.optima_payment.doctype.cheque_action_log.cheque_action_log import add_cheque_action_log
 
 
-# ================================================================================================
+# ====================================================================================================
 # GENERAL LEDGER ENTRY CREATION
-# ================================================================================================
 # NOTE: This section could be further improved by extracting all GL-related utilities
 # into a dedicated module (e.g., cheque/gl_utils.py) for better cohesion and reusability.
 
@@ -125,9 +124,8 @@ def _get_payment_side(doc, account, exchange_side):
     return None
 
 
-# ================================================================================================
+# ====================================================================================================
 # GL ENTRY FINALIZATION AND REVERSAL
-# ================================================================================================
 
 def finalize_gl_entries(doc, gl_entries, cheque_status=None, mode_of_payment=None, bank_fess_amount=0.00, reverse=False, posting_date=None, cost_center=None):
     """Submit GL entries and log cheque action. Cancels entries if doc is cancelled, unless reverse=True."""
@@ -173,9 +171,8 @@ def reverse_gl_manually(gl_entries_for_action: list[dict], posting_date, remarks
         gl_entries.append(gl_entry)
 
 
-# ================================================================================================
+# ====================================================================================================
 # NUMBER FORMATTING UTILITIES
-# ================================================================================================
 
 @frappe.whitelist()
 def money_to_words(

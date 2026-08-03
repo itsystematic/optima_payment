@@ -20,7 +20,6 @@ from optima_payment.optima_payment.doctype.letter_of_credit.letter_of_credit imp
 
 # ====================================================================================================
 # PAYMENT ENTRY FACTORIES
-# ====================================================================================================
 
 
 def get_payment_entry_naming_series() -> str:
@@ -79,7 +78,6 @@ def make_payment_entry(
 
 # ====================================================================================================
 # ACCOUNT TREE / COMPANY FIXTURES
-# ====================================================================================================
 # Shared financial fixtures (account, bank, cost center, project) reused across
 # Bank Guarantee-BG and Payment Entry factories below.
 
@@ -142,7 +140,6 @@ def get_or_create_project(company: str, project_name: str = "Optima Test Project
 
 # ====================================================================================================
 # PARTY FIXTURES
-# ====================================================================================================
 
 
 def get_or_create_customer(customer_name: str = "Optima Test Customer") -> str:
@@ -189,7 +186,6 @@ def get_or_create_supplier(supplier_name: str = "Optima Test Supplier") -> str:
 
 # ====================================================================================================
 # MODE OF PAYMENT FIXTURE
-# ====================================================================================================
 
 
 def get_or_create_mode_of_payment(
@@ -221,7 +217,6 @@ def get_or_create_mode_of_payment(
 
 # ====================================================================================================
 # ITEM / TAX FIXTURES
-# ====================================================================================================
 # Item.taxes and the order-level taxes table are pre-populated here to dodge this
 # site's KSA/ZATCA mandatory-field customizations (see get_item_tax_charge).
 
@@ -263,7 +258,6 @@ def get_item_tax_charge() -> tuple[str, float]:
 
 # ====================================================================================================
 # REFERENCE SALES / PURCHASE ORDERS
-# ====================================================================================================
 
 
 def make_reference_sales_order(company: str, customer: str) -> str:
@@ -326,7 +320,6 @@ def make_reference_purchase_order(company: str, supplier: str) -> str:
 
 # ====================================================================================================
 # BANK GUARANTEE-BG FACTORIES
-# ====================================================================================================
 
 
 def make_optima_payment_setting(company: str | None = None, **overrides) -> frappe.model.document.Document:
@@ -475,7 +468,6 @@ def make_bank_guarantee_bg(
 
 # ====================================================================================================
 # LETTER OF CREDIT FACTORIES
-# ====================================================================================================
 
 
 def make_letter_of_credit(

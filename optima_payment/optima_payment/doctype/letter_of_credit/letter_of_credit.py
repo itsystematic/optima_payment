@@ -473,9 +473,9 @@ class LetterofCredit(Document):
             return flt(extend_amount)
 
 
-# ================================================================================================
+# ====================================================================================================
 # WHITELISTED SEARCH HELPERS
-# ================================================================================================
+
 @frappe.whitelist()
 @frappe.validate_and_sanitize_search_inputs
 def get_mode_of_payment_by_account(doctype, txt, searchfield, start, page_len, filters):

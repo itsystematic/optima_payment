@@ -388,7 +388,6 @@ class CustomPaymentEntry(BasePaymentEntry):
 
 # ====================================================================================================
 # OPTIMA HR INTEGRATION - Helper Functions
-# ====================================================================================================
 # These functions provide support for Optima HR custom doctypes in Payment Entry references
 # - Leave Dues: Employee leave encashment/settlement
 # - End of Service Benefits: Employee gratuity and end of service calculations
@@ -456,7 +455,6 @@ def get_total_amount_and_exchange_rate(ref_doc, party_account_currency, company_
 
 # ====================================================================================================
 # REGIONAL CUSTOMIZATIONS
-# ====================================================================================================
 
 @erpnext.allow_regional
 def add_regional_gl_entries(gl_entries, doc):
