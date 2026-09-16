@@ -419,14 +419,6 @@ def get_property_setters() -> list[dict]:
         },
         {
             "doctype": "Bank Guarantee",
-            "property": "default",
-            "property_type": "Data",
-            "fieldname": "reference_doctype",
-            "value": "",
-            "doctype_or_field": "DocField",
-        },
-        {
-            "doctype": "Bank Guarantee",
             "property": "fieldtype",
             "property_type": "Data",
             "fieldname": "reference_doctype",
