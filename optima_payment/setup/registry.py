@@ -56,7 +56,6 @@ def get_feature_specs() -> list[FeatureSpec]:
             label="Payment workflow customizations",
             get_custom_fields=payment_workflow.get_custom_fields,
             get_property_setters=payment_workflow.get_property_setters,
-            obsolete_property_setters=payment_workflow.OBSOLETE_PROPERTY_SETTERS,
         ),
         FeatureSpec(
             key="banking",

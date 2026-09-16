@@ -3,14 +3,6 @@
 from __future__ import annotations
 
 
-OBSOLETE_PROPERTY_SETTERS = [
-    {
-        "doctype": "Payment Entry",
-        "property": "field_order",
-    }
-]
-
-
 def get_custom_fields() -> dict[str, list[dict]]:
     """Return Payment workflow custom fields owned by Optima Payment."""
     return {
