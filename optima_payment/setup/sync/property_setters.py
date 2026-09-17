@@ -1,4 +1,4 @@
-"""Create declared property setters, update the app-owned ones, and write missing ``field_order``s."""
+"""Create, update and remove declared property setters, and write missing ``field_order``s."""
 
 from __future__ import annotations
 
@@ -63,6 +63,33 @@ def create_missing_field_orders(declared: list[dict], dry_run: bool) -> list[Cha
             changes.append(Change("create", name))
             if not dry_run:
                 frappe.make_property_setter(setter, validate_fields_for_doctype=False, is_system_generated=True)
+
+    return changes
+
+
+def remove(declared: list[dict], declared_fields: dict[str, list[dict]], dry_run: bool) -> list[Change]:
+    """Delete declared property setters at flag 1, and at flag 0 when they still hold the declared value.
+
+    Older imports wrote app setters with flag 0, so a flag-0 row with the declared value carries no
+    client edit. Setters on the app's own custom fields are skipped because deleting the field
+    removes them.
+    """
+    field_keys = {(doctype, field["fieldname"]) for doctype, fields in declared_fields.items() for field in fields}
+    changes: list[Change] = []
+
+    for setter in declared:
+        if (setter["doctype"], setter["fieldname"]) in field_keys:
+            continue
+
+        for row in _get_rows(setter):
+            if not row.is_system_generated and cstr(row.value) != cstr(setter["value"]):
+                changes.append(Change("keep", row.name, "is_system_generated=0 with the client's own value"))
+                continue
+
+            detail = "" if row.is_system_generated else "is_system_generated=0 but holds the code value"
+            changes.append(Change("remove", row.name, detail))
+            if not dry_run:
+                frappe.delete_doc("Property Setter", row.name, force=True)
 
     return changes
 

@@ -5,12 +5,12 @@ from __future__ import annotations
 from click import secho
 
 from optima_payment.setup.permissions import remove_access_control
-from optima_payment.setup.registry import before_uninstall as run_before_uninstall
+from optima_payment.setup.sync import remove_customizations
 
 
 def before_uninstall_entrypoint() -> None:
     """Remove Optima-owned customizations before the app is uninstalled."""
-    run_before_uninstall()
+    remove_customizations()
     remove_access_control()
     secho("Uninstall Optima Payment Complete Successfully", fg="green")
 

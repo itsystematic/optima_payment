@@ -10,6 +10,7 @@ ACTION_COLORS = {
     "create": "green",
     "update": "cyan",
     "adopt": "magenta",
+    "remove": "bright_red",
     "keep": "white",
     "conflict": "red",
     "missing": "yellow",

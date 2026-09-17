@@ -35,6 +35,27 @@ def sync(declared: dict[str, list[dict]], dry_run: bool) -> list[Change]:
     return changes
 
 
+def remove(declared: dict[str, list[dict]], dry_run: bool) -> list[Change]:
+    changes: list[Change] = []
+    rows = get_rows(declared)
+
+    for doctype, fields in declared.items():
+        for field in fields:
+            row = rows.get((doctype, field["fieldname"]))
+            if not row:
+                continue
+
+            setter_count = frappe.db.count(
+                "Property Setter", {"doc_type": doctype, "field_name": field["fieldname"]}
+            )
+            detail = f"with {setter_count} property setter(s) on it" if setter_count else ""
+            changes.append(Change("remove", f"{doctype}.{field['fieldname']}", detail))
+            if not dry_run:
+                frappe.delete_doc("Custom Field", row.name, force=True)
+
+    return changes
+
+
 def get_rows(declared: dict[str, list[dict]]) -> dict[tuple[str, str], dict]:
     """Return the site's Custom Field rows for the declared doctypes, keyed by (doctype, fieldname)."""
     if not declared:
