@@ -7,8 +7,8 @@ Adds to Letter of Credit:
 - pre_close_status (Data, hidden)
 - reopen_date (Date, read-only)
 """
-from optima_payment.setup.registry import ensure_customizations
+from optima_payment.setup.sync import sync
 
 
 def execute():
-    ensure_customizations()
+    sync()

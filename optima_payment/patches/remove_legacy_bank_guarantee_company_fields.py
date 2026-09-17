@@ -3,8 +3,6 @@
 import click
 import frappe
 
-from optima_payment.setup.metadata import cleanup_custom_fields
-
 
 FIELD_MAPPINGS = (
     ("default_insurance_account", "bank_guarantee_insurance_account"),
@@ -104,9 +102,11 @@ def execute() -> None:
         click.secho("No legacy Bank Guarantee Company fields to remove", fg="yellow")
         return
 
-    removed = cleanup_custom_fields(
-        {
-            "Company": [{"fieldname": fieldname} for fieldname in removable_fields],
-        }
+    names = frappe.get_all(
+        "Custom Field",
+        filters={"dt": "Company", "fieldname": ["in", removable_fields]},
+        pluck="name",
     )
-    click.secho(f"Removed {removed} legacy Bank Guarantee Company custom fields", fg="green")
+    for name in names:
+        frappe.delete_doc("Custom Field", name, force=True)
+    click.secho(f"Removed {len(names)} legacy Bank Guarantee Company custom fields", fg="green")

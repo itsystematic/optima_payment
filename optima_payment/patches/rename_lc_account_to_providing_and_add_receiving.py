@@ -11,8 +11,7 @@ providing_letter_of_credit_account before the old field is removed.
 import click
 import frappe
 
-from optima_payment.setup.features import banking
-from optima_payment.setup.metadata import create_custom_fields_safely, sync_custom_field_schema
+from optima_payment.setup.sync import sync
 
 OLD_FIELDNAME = "letter_of_credit_account"
 NEW_FIELDNAME = "providing_letter_of_credit_account"
@@ -22,9 +21,7 @@ def execute() -> None:
     _migrate_existing_data()
     _remove_old_custom_field()
 
-    custom_fields = {"Bank Account": banking.get_custom_fields()["Bank Account"]}
-    create_custom_fields_safely(custom_fields)
-    sync_custom_field_schema(custom_fields)
+    sync()
 
     click.secho(
         "Renamed letter_of_credit_account → providing_letter_of_credit_account "
