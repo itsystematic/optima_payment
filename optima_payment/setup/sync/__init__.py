@@ -8,7 +8,8 @@ Ownership follows Frappe v15's ``is_system_generated`` flag:
   flag 0 holds client edits in place, so it is left alone until it has been adopted.
 - A declared Property Setter belongs to the app only while its row keeps flag 1. When the client
   edits the same key in Customize Form, Frappe replaces the row with a flag-0 one.
-- ``field_order`` stores a doctype's whole form order, so it is never synced.
+- ``field_order`` stores a doctype's whole form order, so it is never synced; it is only written
+  at install where the site has none.
 - A fieldtype change is never applied in place; it is reported as a conflict.
 
 The entry points below are what install hooks and patches call. ``declarations`` reads the
@@ -42,3 +43,13 @@ def adopt_custom_fields(dry_run: bool = False) -> list[Change]:
     report("Optima Payment custom field adoption", changes, dry_run)
     return changes
 
+
+def apply_starting_field_orders(dry_run: bool = False) -> list[Change]:
+    """Write each declared ``field_order`` only where the doctype has no ``field_order`` property setter.
+
+    Install only. An existing one may be the client's, and Customize Form rewrites the whole value
+    on every move, so it is never compared or replaced.
+    """
+    changes = property_setters.create_missing_field_orders(get_declared_property_setters(), dry_run)
+    report("Optima Payment starting field orders", changes, dry_run)
+    return changes

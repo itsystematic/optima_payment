@@ -7,8 +7,8 @@ import frappe
 
 from optima_payment.migration_artifact import import_cheque_legacy_artifact
 from optima_payment.setup.permissions import apply_access_control, apply_hrms_access_control
-from optima_payment.setup.registry import ensure_customizations, ensure_hrms_customizations
 from optima_payment.setup.standard_data import add_standard_data, update_fields_in_database
+from optima_payment.setup.sync import apply_starting_field_orders, sync
 
 
 def after_install() -> None:
@@ -16,7 +16,8 @@ def after_install() -> None:
     click.secho("Starting Optima Payment installation...", fg="blue")
     add_standard_data()
     update_fields_in_database()
-    ensure_customizations()
+    sync()
+    apply_starting_field_orders()
     apply_access_control()
     import_cheque_legacy_artifact()
 
@@ -40,5 +41,5 @@ def after_app_install(app_name: str) -> None:
         return
 
     click.secho("HRMS installed — applying Optima Payment HRMS integration...", fg="blue")
-    ensure_hrms_customizations()
+    sync()
     apply_hrms_access_control()

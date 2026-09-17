@@ -1,4 +1,4 @@
-"""Create declared property setters and update the app-owned ones that drifted from code."""
+"""Create declared property setters, update the app-owned ones, and write missing ``field_order``s."""
 
 from __future__ import annotations
 
@@ -44,6 +44,25 @@ def sync(declared: list[dict], dry_run: bool) -> list[Change]:
 
     for doctype in updated_doctypes:
         frappe.clear_cache(doctype=doctype)
+
+    return changes
+
+
+def create_missing_field_orders(declared: list[dict], dry_run: bool) -> list[Change]:
+    changes: list[Change] = []
+    for setter in declared:
+        if setter["property"] != FIELD_ORDER_PROPERTY:
+            continue
+
+        name = property_setter_name(setter)
+        if not frappe.db.exists("DocType", setter["doctype"]):
+            changes.append(Change("missing", name, "doctype is not on this site"))
+        elif _get_rows(setter):
+            changes.append(Change("keep", name, "a field_order property setter already exists"))
+        else:
+            changes.append(Change("create", name))
+            if not dry_run:
+                frappe.make_property_setter(setter, validate_fields_for_doctype=False, is_system_generated=True)
 
     return changes
 
