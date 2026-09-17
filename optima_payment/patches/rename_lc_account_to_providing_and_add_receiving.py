@@ -4,8 +4,8 @@ The single LC account field has been split into two directional fields:
   - providing_letter_of_credit_account  (was: letter_of_credit_account)
   - receiving_letter_of_credit_account  (new)
 
-Existing data in letter_of_credit_account is migrated to
-providing_letter_of_credit_account before the old field is removed.
+The new fields are created first. letter_of_credit_account values are then copied into
+providing_letter_of_credit_account wherever it is still empty, and only then is the old field removed.
 """
 
 import click
@@ -18,10 +18,9 @@ NEW_FIELDNAME = "providing_letter_of_credit_account"
 
 
 def execute() -> None:
+    sync()
     _migrate_existing_data()
     _remove_old_custom_field()
-
-    sync()
 
     click.secho(
         "Renamed letter_of_credit_account → providing_letter_of_credit_account "
@@ -31,7 +30,7 @@ def execute() -> None:
 
 
 def _migrate_existing_data() -> None:
-    """Copy letter_of_credit_account values into providing_letter_of_credit_account."""
+    """Copy letter_of_credit_account values into providing_letter_of_credit_account where it is empty."""
     if not frappe.db.has_column("Bank Account", OLD_FIELDNAME):
         return
 
@@ -39,7 +38,8 @@ def _migrate_existing_data() -> None:
         f"""
         UPDATE `tabBank Account`
         SET `{NEW_FIELDNAME}` = `{OLD_FIELDNAME}`
-        WHERE `{OLD_FIELDNAME}` IS NOT NULL AND `{OLD_FIELDNAME}` != ''
+        WHERE IFNULL(`{OLD_FIELDNAME}`, '') != ''
+            AND IFNULL(`{NEW_FIELDNAME}`, '') = ''
         """
     )
     click.secho(f"Migrated {OLD_FIELDNAME} → {NEW_FIELDNAME} for existing Bank Account records", fg="cyan")
