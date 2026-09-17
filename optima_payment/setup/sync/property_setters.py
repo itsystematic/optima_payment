@@ -24,7 +24,7 @@ def sync(declared: list[dict], dry_run: bool) -> list[Change]:
             changes.append(Change("missing", name, "doctype is not on this site"))
             continue
 
-        rows = _get_rows(setter)
+        rows = get_rows(setter)
         change = _plan(name, setter, rows)
         if not change:
             continue
@@ -57,7 +57,7 @@ def create_missing_field_orders(declared: list[dict], dry_run: bool) -> list[Cha
         name = property_setter_name(setter)
         if not frappe.db.exists("DocType", setter["doctype"]):
             changes.append(Change("missing", name, "doctype is not on this site"))
-        elif _get_rows(setter):
+        elif get_rows(setter):
             changes.append(Change("keep", name, "a field_order property setter already exists"))
         else:
             changes.append(Change("create", name))
@@ -81,7 +81,7 @@ def remove(declared: list[dict], declared_fields: dict[str, list[dict]], dry_run
         if (setter["doctype"], setter["fieldname"]) in field_keys:
             continue
 
-        for row in _get_rows(setter):
+        for row in get_rows(setter):
             if not row.is_system_generated and cstr(row.value) != cstr(setter["value"]):
                 changes.append(Change("keep", row.name, "is_system_generated=0 with the client's own value"))
                 continue
@@ -108,7 +108,8 @@ def _plan(name: str, setter: dict, rows: list[dict]) -> Change | None:
     return Change("update", name, f"{row.value!r} -> {setter['value']!r}")
 
 
-def _get_rows(setter: dict) -> list[dict]:
+def get_rows(setter: dict) -> list[dict]:
+    """Return the site's Property Setter rows with the declared key: doctype, field or row, and property."""
     return frappe.get_all(
         "Property Setter",
         filters={

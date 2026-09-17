@@ -79,7 +79,7 @@ def _plan(doctype: str, field: dict, row: dict | None) -> Change | None:
         return Change("create", target)
 
     if not row.is_system_generated:
-        return Change("keep", target, "is_system_generated=0, holds client edits until adopted")
+        return Change("keep", target, "is_system_generated=0, not managed by the app")
 
     differences = get_differences(row, field)
     if "fieldtype" in differences:
