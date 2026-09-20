@@ -1,14 +1,68 @@
 # Setup Architecture
 
-This document covers how `optima_payment` installs, migrates, and uninstalls its customizations — and how to work with the setup system as a developer.
+Developer reference for how Optima Payment installs, updates and removes the custom fields and
+property setters it adds to other apps' doctypes. For the short answers to common questions, see
+[questions-and-answers.md](questions-and-answers.md).
 
 ---
 
 ## What "setup" means here
 
-Optima Payment extends standard ERPNext/Frappe doctypes (Payment Entry, Bank Guarantee, Mode of Payment, etc.) with custom fields and property setters. These cannot live in the app's own DocType JSON files because they belong to doctypes owned by other apps.
+Optima Payment extends doctypes owned by other apps — Payment Entry, Bank Account, Bank Guarantee,
+Mode of Payment. Those changes cannot live in this app's own DocType JSON, so they are declared in
+code under `setup/features/` and written to the site as **Custom Field** and **Property Setter**
+records.
 
-The setup system manages the full lifecycle of these customizations: creating them on install, migrating them when they change, and removing them on uninstall.
+Every site also has customizations the app did not make: what the client changed in **Customize
+Form**. The setup system exists to keep the app's declarations up to date *without ever overwriting
+those*.
+
+---
+
+## The ownership model
+
+Frappe v15 marks each Custom Field and Property Setter row with `is_system_generated`:
+
+| Flag | Written by | Means |
+|------|-----------|-------|
+| **1** | code (`create_custom_fields`, `frappe.make_property_setter`) | the app owns this row |
+| **0** | Customize Form | the site owns this row |
+
+Two rules follow, and everything in `setup/sync/` is an expression of them:
+
+- **A declared Custom Field row at flag 1 belongs to the app.** When the client edits such a field
+  in Customize Form, Frappe does not touch the Custom Field row; it writes the change as a separate
+  Property Setter at flag 0. So the app can update its own row without losing the client's edit.
+- **A declared Property Setter belongs to the app only while its row is still flag 1.** When the
+  client edits that same key, Frappe replaces the row with a flag-0 one, and the app never touches
+  it again.
+
+A **key** identifies a row. It is not the value:
+
+| Record | Key | Row name |
+|--------|-----|----------|
+| Custom Field | doctype + fieldname | `Payment Entry-payee_name` |
+| Property Setter | doctype + field (or row) + property | `Payment Entry-payee_name-hidden` |
+
+Inserting a Property Setter deletes any existing row with the same key, which is why "who owns this
+key" is the only question that matters.
+
+### One key, traced end to end
+
+```
+app declares Payment Entry.payee_name insert_after "reference_no"
+   ↓  install → sync() creates the Custom Field row (flag 1)
+client drags the field under "is_lc_close_entry" in Customize Form
+   ↓  Frappe writes Property Setter "Payment Entry-payee_name-insert_after" (flag 0)
+next migrate → sync() updates the Custom Field row, leaves the flag-0 setter alone
+   ↓
+the field stays where the client put it
+```
+
+> **Flag 0 does not always mean the client.** Older versions of this app, and old fixture imports,
+> wrote app rows at flag 0 too. A flag-0 Property Setter that still holds exactly the declared value
+> therefore carries no client edit: the one-time patch `adopt_existing_customizations` moved those to
+> flag 1, and uninstall removes them. A flag-0 row with a *different* value is always left alone.
 
 ---
 
@@ -16,149 +70,149 @@ The setup system manages the full lifecycle of these customizations: creating th
 
 | Hook | File | What it does |
 |------|------|--------------|
-| `after_install` | `install.py → after_install()` | Fresh install: seeds print formats, patches field options, applies all feature customizations, seeds access control (roles + Custom DocPerms) |
-| `after_app_install` | `install.py → after_app_install(app_name)` | Fired when **any** app is installed on the site (Frappe passes its name). No-ops unless the app is `hrms`, then applies the HRMS feature's custom fields and HRMS permission grid — covers HRMS being installed *after* Optima Payment |
-| `after_migrate` | `migrate.py → after_migrate()` | After every `bench migrate`: re-applies stable field option patches |
-| `before_uninstall` | `uninstall.py → before_uninstall()` | Before uninstall: removes feature-owned custom fields, property setters, and access control (Custom DocPerms + unassigned roles) |
+| `after_install` | `install.py → after_install()` | seeds print formats, patches Mode of Payment options, **`sync()`**, **`apply_starting_field_orders()`**, seeds roles and Custom DocPerms, imports any cheque artifact |
+| `after_app_install` | `install.py → after_app_install(app_name)` | fires for every app installed later; does nothing unless it is `hrms`, then **`sync()`** and the HRMS permission grid |
+| `after_migrate` | `migrate.py → after_migrate()` | re-applies the Mode of Payment option patch |
+| `before_uninstall` | `uninstall.py → before_uninstall()` | **`remove_customizations()`**, then removes access control |
 
-These hooks are registered in `hooks.py`.
+Nothing runs the sync on every migrate. Customizations reach installed sites through **patches**, one
+per change — see [how-to-write-a-patch.md](how-to-write-a-patch.md).
 
----
-
-## Call graph — fresh install
+### Fresh install
 
 ```
 bench install-app optima_payment
-  └── hooks.py: after_install
-        └── install.py: after_install()
-              ├── standard_data.add_standard_data()       # import files/print_format.json (seed)
-              ├── standard_data.update_fields_in_database()  # patch Mode of Payment type options
-              ├── registry.ensure_customizations()        # apply enabled feature custom fields + property setters
-              ├── permissions.apply_access_control()      # seed Optima roles + Custom DocPerms (install only;
-              │                                           #   HRMS grid included only if HRMS is installed)
-              └── migration_artifact.import_cheque_legacy_artifact()
+  └── install.py: after_install()
+        ├── standard_data.add_standard_data()          # print formats (install only)
+        ├── standard_data.update_fields_in_database()  # Mode of Payment type options
+        ├── sync.sync()                                # create every declared field and setter
+        ├── sync.apply_starting_field_orders()         # field_order, only where the site has none
+        ├── permissions.apply_access_control()         # roles + Custom DocPerms (install only)
+        └── migration_artifact.import_cheque_legacy_artifact()
 ```
 
-```
-bench install-app hrms          # on a site that already has optima_payment
-  └── hooks.py: after_app_install ("hrms")
-        └── install.py: after_app_install("hrms")
-              ├── registry.ensure_hrms_customizations()   # apply the hrms_integration feature only
-              └── permissions.apply_hrms_access_control() # apply HRMS_ROLE_PERMISSIONS
-```
+### Migrate
 
 ```
-registry.ensure_customizations()
-  └── for each FeatureSpec in get_feature_specs():
-        _apply_feature(feature)
-          ├── metadata.create_custom_fields_safely(custom_fields)
-          ├── metadata.sync_custom_field_schema(custom_fields)
-          ├── metadata.add_property_setters(property_setters)
-          └── metadata.cleanup_obsolete_property_setters(obsolete)
+bench migrate
+  ├── frappe: sync doctype schemas
+  ├── frappe: run pending patches           # each one calls sync() after its own work
+  ├── frappe: fixtures + customizations sync
+  └── migrate.py: after_migrate()           # Mode of Payment options
 ```
 
-Each step inside `_apply_feature()` runs inside a DB savepoint. A failure rolls back that step without corrupting the rest of the install.
+### Uninstall
+
+```
+bench uninstall-app optima_payment
+  └── uninstall.py: before_uninstall()
+        ├── sync.remove_customizations()
+        │     ├── every declared Custom Field   → deleted (Frappe deletes the setters on it too)
+        │     └── every declared Property Setter → deleted only if flag 1, or flag 0 holding the
+        │                                          declared value; a client value is kept
+        └── permissions.remove_access_control()
+```
 
 ---
 
-## Layer map
+## What `sync()` decides, per declared record
+
+```mermaid
+flowchart TD
+    A[declared field or setter] --> B{doctype on this site?}
+    B -- no --> M[missing: skip]
+    B -- yes --> C{row exists?}
+    C -- no --> N[create at flag 1]
+    C -- yes --> D{is_system_generated}
+    D -- "0" --> K[keep: the site owns it]
+    D -- "1" --> E{same as code?}
+    E -- yes --> Z[nothing to do]
+    E -- "no, fieldtype differs" --> X[conflict: never changed in place]
+    E -- no --> U[update to the declared value]
+```
+
+`field_order` never enters this flow at all; see the Q&A.
+
+Every step returns a list of `Change(action, target, detail)` records and prints them:
+
+| Action | Meaning |
+|--------|---------|
+| `create` | the row was missing and was created as app-owned |
+| `update` | an app-owned row drifted from code and was set back |
+| `keep` | the site owns this row; nothing was written |
+| `conflict` | the site and the code disagree in a way the sync will not resolve (a fieldtype change, or two rows sharing one key) |
+| `missing` | the doctype is not installed on this site |
+| `remove` | uninstall deleted an app-owned row |
+| `adopt` | the one-time adoption patch moved a row to flag 1 |
+
+---
+
+## Module map
 
 ```
-install.py / migrate.py / uninstall.py   ← entry points (wired in hooks.py)
-setup/registry.py                         ← feature registry + lifecycle orchestration
-setup/runner.py                           ← step execution with savepoints
-setup/metadata.py                         ← CRUD on Custom Field + Property Setter records
-setup/standard_data.py                    ← print format seed import + raw field option patches
-setup/permissions.py                      ← Optima roles + Custom DocPerm grid (install only)
+install.py / migrate.py / uninstall.py     ← entry points, wired in hooks.py
+setup/registry.py                          ← the feature list and which features this site enables
+setup/sync/
+    __init__.py                            ← sync, preview, apply_starting_field_orders,
+    │                                        remove_customizations + the ownership rules
+    declarations.py                        ← merge what the features declare, one entry per key
+    custom_fields.py                       ← plan and apply Custom Field changes
+    property_setters.py                    ← plan and apply Property Setter changes
+    report.py                              ← the Change record and the printed report
+setup/form_snapshot.py                     ← record every form before a migrate, compare after
 setup/features/
-  banking.py                              ← Bank, Bank Account, Letter Head, GL Entry fields
-  payment_workflow.py                     ← Mode of Payment + Payment Entry fields/property setters
-  bank_guarantee.py                       ← Bank Guarantee custom fields + property setters
-  letter_of_credit.py                     ← Payment Entry LC fields + property setters
-  hrms_integration.py                     ← Expense Claim Detail fields (optional)
+    banking.py                             ← Bank, Bank Account, Letter Head, GL Entry
+    payment_workflow.py                    ← Mode of Payment + Payment Entry
+    bank_guarantee.py                      ← Bank Guarantee fields + property setters
+    letter_of_credit.py                    ← Payment Entry LC fields + property setters
+    hrms_integration.py                    ← Expense Claim Detail (only when hrms is installed)
+setup/permissions.py                       ← Optima roles + Custom DocPerm grid (install only)
+setup/standard_data.py                     ← print format seed + raw field option patches
+setup/runner.py                            ← step execution with savepoints (used by permissions)
+patches/adopt_existing_customizations.py   ← the one-time flag 0 → 1 move; adoption lives only here
 ```
 
----
-
-## Features and the registry
-
-Each feature is declared as a `FeatureSpec` in `registry.py:get_feature_specs()`:
+A feature is a plain module: `get_custom_fields()` returns `dict[doctype, list[field]]`,
+`get_property_setters()` returns `list[setter]`. The registry lists them:
 
 ```python
 FeatureSpec(
     key="banking",
-    label="Banking customizations",
-    get_custom_fields=banking.get_custom_fields,   # returns dict[doctype, list[field_dict]]
-    get_property_setters=banking.get_property_setters,  # returns list[property_setter_dict]
-    obsolete_property_setters=[...],               # cleaned up on every run
-    enabled=lambda: True,                          # or a predicate e.g. _is_installed("hrms")
-    is_optional=False,                             # True = skip+log on failure instead of abort
+    get_custom_fields=banking.get_custom_fields,
+    get_property_setters=banking.get_property_setters,   # omit if the feature has none
+    enabled=lambda: _is_installed("hrms"),               # omit for always-on features
 )
 ```
 
-Features run **in order** — put dependencies before dependents.
+Declarations from all enabled features are merged by key. The same key declared twice with
+different values raises `DeclarationConflict` and stops the sync — that is a bug in the
+declarations, not a site problem.
 
 ---
 
-## How upserts work
+## Three kinds of seeded state
 
-`metadata.upsert_custom_field()` is idempotent:
-- If the field does not exist → creates it.
-- If it exists with the same values → skips (no write).
-- If it exists with different values → updates only the changed keys.
-- If the `fieldtype` changed → deletes and recreates (fieldtype changes require a schema drop).
+| Kind | Declared in | Applied | Removed on uninstall? |
+|------|-------------|---------|----------------------|
+| **Customizations** — custom fields, property setters | `setup/features/*` | install + one patch per change | **Yes**, app-owned rows only |
+| **Access control** — roles, Custom DocPerms | `setup/permissions.py` | install only | **Yes** |
+| **Data seed** — print formats | `files/print_format.json` | install only | No — admins edit these per site |
 
-This means `ensure_customizations()` is safe to re-run at any time.
-
----
-
-## Three kinds of seeded state (know the difference)
-
-The setup system manages three distinct kinds of things, with different lifecycles:
-
-| Kind | Lives in | Applied | Reversed on uninstall? |
-|------|----------|---------|------------------------|
-| **Schema customizations** — custom fields, property setters | `setup/features/*` via `registry.py` | install + re-runnable | **Yes** (feature framework) |
-| **Access control** — Optima roles + Custom DocPerms | `setup/permissions.py` (code) | **install only** | **Yes** (docperms removed; unassigned roles deleted) |
-| **Data seed** — print formats | `files/print_format.json` via `import_doc` | **install only** | **No** (intentional — 75 KB of opaque HTML admins may edit per-site) |
-
-Access control is **install only** on purpose: like the print-format seed, admins may tune
-per-site permissions afterwards and a later `bench migrate` must not overwrite them. See
-[permissions.md](permissions.md) for the roles, why they exist, and how to edit the grid.
-
-## Standard data files
-
-`files/` contains JSON fixtures imported once at install time via `standard_data.add_standard_data()`. The import order is defined explicitly in `STANDARD_DATA_FILES`:
-
-```python
-STANDARD_DATA_FILES = [
-    "print_format.json",
-]
-```
-
-Missing files are skipped with a warning — they do not abort the install. (Roles and Custom
-DocPerms used to live here too; they moved to `setup/permissions.py` — code, reversible.)
+Access control and the print formats are install-only on purpose: a later migrate must not
+overwrite what an admin tuned on the site. The customization sync follows the same principle, but
+it can still update the app's own rows because ownership is tracked per row.
 
 ---
 
-## Re-running all customizations on an installed site
+## Running the sync by hand
 
 ```bash
-bench --site <site> execute optima_payment.setup.registry.ensure_customizations
+# show what would change; writes nothing
+bench --site <site> execute optima_payment.setup.sync.preview
+
+# apply it
+bench --site <site> execute optima_payment.setup.sync.sync
 ```
 
-This is safe to run at any time. It upserts all custom fields and property setters across all enabled features.
-
----
-
-## Patches
-
-When a field definition changes on an **already-installed** site, `ensure_customizations()` alone is not enough for renames or deletions (it only upserts by fieldname). A **patch** is needed.
-
-Patches live in `patches/` and are registered in `patches.txt` under `[post_model_sync]`.
-
-```
-bench --site <site> migrate   ← runs all pending patches automatically
-```
-
-Each patch runs exactly once per site. See [how-to-write-a-patch.md](how-to-write-a-patch.md) for guidance.
+Use `preview` freely. Prefer a patch over running `sync` by hand, so every site gets the change the
+same way — [how-to-write-a-patch.md](how-to-write-a-patch.md).

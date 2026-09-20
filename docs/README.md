@@ -22,4 +22,4 @@ Documentation is organized **by domain**. Each folder has its own index.
 ### Quick links by audience
 
 - **Accountants / implementers:** [Cheque](cheque/user-guide.md) · [Bank Guarantee](bank-guarantee/user-guide.md) · [Letter of Credit](letter-of-credit/user-guide.md)
-- **Developers:** [Cheque](cheque/reference.md) · [Bank Guarantee](bank-guarantee/reference.md) · [Letter of Credit](letter-of-credit/reference.md) · [Setup architecture](setup/architecture.md) · [Testing](development/testing.md)
+- **Developers:** [Cheque](cheque/reference.md) · [Bank Guarantee](bank-guarantee/reference.md) · [Letter of Credit](letter-of-credit/reference.md) · [Setup architecture](setup/architecture.md) · [Setup Q&A](setup/questions-and-answers.md) · [Testing](development/testing.md)

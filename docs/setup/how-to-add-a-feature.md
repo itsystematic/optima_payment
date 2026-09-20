@@ -1,28 +1,30 @@
 # How to Add a Setup Feature
 
-A "feature" is a named group of custom fields and/or property setters that belong together. Examples: `banking`, `letter_of_credit`, `hrms_integration`.
+A feature is a named group of custom fields and property setters that belong together:
+`banking`, `letter_of_credit`, `hrms_integration`.
 
 ---
 
 ## Step 1 — Create the feature module
 
-Add a file under `setup/features/`. Keep it pure data — no Frappe imports, no side effects.
+Add a file under `setup/features/`. Keep it pure data: no Frappe imports, no side effects, no
+queries. It is read on install, in patches and in tests.
 
 ```python
-# setup/features/my_feature.py
-"""My feature setup — custom fields and property setters."""
+# setup/features/supplier_banking.py
+"""Supplier banking customizations."""
 
 from __future__ import annotations
 
 
 def get_custom_fields() -> dict[str, list[dict]]:
     return {
-        "Some DocType": [
+        "Bank Account": [
             {
-                "fieldname": "my_custom_field",
+                "fieldname": "supplier_bank_reference",
                 "fieldtype": "Data",
-                "label": "My Custom Field",
-                "insert_after": "some_existing_field",
+                "label": "Supplier Bank Reference",
+                "insert_after": "account_subtype",
             },
         ]
     }
@@ -31,61 +33,64 @@ def get_custom_fields() -> dict[str, list[dict]]:
 def get_property_setters() -> list[dict]:
     return [
         {
-            "doctype": "Some DocType",
-            "fieldname": "some_field",
+            "doctype": "Bank Account",
+            "fieldname": "iban",
             "property": "read_only",
             "property_type": "Check",
             "value": 1,
-            "doctype_or_field": "DocField",
         },
     ]
 ```
 
-If the feature has no property setters, omit `get_property_setters` entirely.
+Omit `get_property_setters` entirely if the feature has none.
 
 ---
 
-## Step 2 — Register it in the registry
+## Step 2 — Register it
 
-Open `setup/registry.py` and add a `FeatureSpec` to `get_feature_specs()`:
+In `setup/registry.py`, import the module and add it to `get_feature_specs()`:
 
 ```python
-from .features import my_feature   # add this import at the top
+from .features import supplier_banking
 
-# inside get_feature_specs():
 FeatureSpec(
-    key="my_feature",
-    label="My feature customizations",
-    get_custom_fields=my_feature.get_custom_fields,
-    get_property_setters=my_feature.get_property_setters,   # omit if none
+    key="supplier_banking",
+    get_custom_fields=supplier_banking.get_custom_fields,
+    get_property_setters=supplier_banking.get_property_setters,   # omit if none
 ),
 ```
 
-**Order matters** — place it after any features it depends on.
-
-For optional features (only apply if another app is installed):
+For a feature that only applies when another app is installed:
 
 ```python
 FeatureSpec(
-    key="my_feature",
-    label="My feature customizations",
-    get_custom_fields=my_feature.get_custom_fields,
-    enabled=lambda: _is_installed("some_other_app"),
-    is_optional=True,
-)
+    key="hrms_integration",
+    get_custom_fields=hrms_integration.get_custom_fields,
+    enabled=lambda: _is_installed("hrms"),
+),
 ```
+
+Declarations from all enabled features are merged by key. Declaring the same field in two features
+is fine as long as the two declarations agree; if they differ, the sync stops with
+`DeclarationConflict`.
 
 ---
 
-## Step 3 — Apply on installed sites
+## Step 3 — Ship it to installed sites
 
-New features are applied automatically on `after_install` for fresh installs. For already-installed sites, re-run all customizations:
+Fresh installs pick the feature up from `after_install`. Existing sites need a patch:
 
-```bash
-bench --site <site> execute optima_payment.setup.registry.ensure_customizations
+```python
+"""Add the supplier banking fields to Bank Account."""
+
+from optima_payment.setup.sync import sync
+
+
+def execute() -> None:
+    sync()
 ```
 
-Or write a targeted patch if you need surgical control — see [how-to-write-a-patch.md](how-to-write-a-patch.md).
+See [how-to-write-a-patch.md](how-to-write-a-patch.md) for registering and testing it.
 
 ---
 
@@ -93,14 +98,23 @@ Or write a targeted patch if you need surgical control — see [how-to-write-a-p
 
 | Key | Required | Notes |
 |-----|----------|-------|
-| `fieldname` | Yes | Snake case, unique per doctype |
-| `fieldtype` | Yes | `Data`, `Link`, `Currency`, `Check`, `Select`, `Date`, etc. |
-| `label` | Recommended | Display label |
-| `insert_after` | Recommended | Fieldname to place this field after |
+| `fieldname` | Yes | snake case, unique per doctype, no `custom_` prefix (that is what Frappe gives client-made fields) |
+| `fieldtype` | Yes | `Data`, `Link`, `Currency`, `Check`, `Select`, `Date`, … — never changed in place later |
+| `label` | Recommended | display label |
+| `insert_after` | Recommended | the fieldname this one follows |
 | `options` | For Link/Select | Link: target doctype. Select: newline-separated options |
-| `default` | No | Default value |
-| `read_only` | No | `1` or `0` |
-| `hidden` | No | `1` or `0` |
-| `no_copy` | No | `1` to exclude from document copy |
-| `depends_on` | No | JS eval expression for conditional visibility |
-| `mandatory_depends_on` | No | JS eval expression for conditional mandatory |
+| `default`, `read_only`, `hidden`, `no_copy` | No | `1` / `0` for the flags |
+| `depends_on`, `mandatory_depends_on` | No | eval expressions |
+
+## Property setter dict reference
+
+| Key | Required | Notes |
+|-----|----------|-------|
+| `doctype` | Yes | the doctype being customized |
+| `property` | Yes | the property name, e.g. `read_only`, `depends_on`, `label` |
+| `value` | Yes | the value to store |
+| `fieldname` | For field-level | omit for a doctype-level property |
+| `property_type` | Recommended | `Check`, `Data`, `Text`, … — defaults to `Data` |
+| `row_name` | Rarely | for a grid row property |
+
+Never declare `field_order`; see [questions-and-answers.md](questions-and-answers.md).

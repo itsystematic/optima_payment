@@ -49,7 +49,7 @@ Historically the roles and their docperms were seeded from `files/role.json` and
 - **Co-located** — access control now lives beside the rest of the `setup/` framework.
 
 Print formats (`files/print_format.json`) deliberately **stayed** a JSON import: 75 KB of opaque
-bank HTML belongs in data, not Python. See [architecture.md](architecture.md#three-kinds-of-seeded-state-know-the-difference).
+bank HTML belongs in data, not Python. See [architecture.md](architecture.md#three-kinds-of-seeded-state).
 
 ## Lifecycle
 
@@ -60,7 +60,7 @@ bank HTML belongs in data, not Python. See [architecture.md](architecture.md#thr
 - **HRMS installed later** (`hooks.after_app_install` → `install.after_app_install`): Frappe
   fires this hook on every installed app whenever *any* app is installed on the site, passing
   the new app's name. Our handler no-ops unless the name is `hrms`, then applies the HRMS
-  custom fields (`registry.ensure_hrms_customizations`) and the HRMS permission grid
+  custom fields (`setup.sync.sync`) and the HRMS permission grid
   (`apply_hrms_access_control`). Together with the install-time check, both install orderings
   are covered.
 - **Migrate**: **not** re-applied. Like the print-format seed, admins may tune per-site
