@@ -11,6 +11,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 import optima_payment.setup.sync as customization_sync
+from optima_payment.setup import form_snapshot
 from optima_payment.patches import adopt_existing_customizations as adoption_patch
 from optima_payment.setup.sync import custom_fields, property_setters, remove_customizations
 from optima_payment.setup.sync.declarations import (
@@ -343,3 +344,37 @@ class TestClientCustomizationsAreNeverTouched(FrappeTestCase):
 
     def test_the_sync_package_offers_no_adoption(self):
         self.assertEqual([name for name in dir(customization_sync) if "adopt" in name], [])
+
+
+class TestFormSnapshot(CustomizationTestCase):
+    def test_reports_nothing_when_the_forms_are_unchanged(self):
+        before = form_snapshot.snapshot([TEST_DOCTYPE])
+
+        self.assertEqual(form_snapshot.compare(before, form_snapshot.snapshot([TEST_DOCTYPE])), [])
+
+    def test_reports_a_changed_property(self):
+        before = form_snapshot.snapshot([TEST_DOCTYPE])
+        insert_setter(make_setter("title", "bold", "1", "Check"))
+
+        [difference] = form_snapshot.compare(before, form_snapshot.snapshot([TEST_DOCTYPE]))
+
+        self.assertIn(f"{TEST_DOCTYPE}.title.bold", difference)
+
+    def test_reports_a_changed_field_order(self):
+        before = form_snapshot.snapshot([TEST_DOCTYPE])
+        order = before["doctypes"][TEST_DOCTYPE]["order"]
+        insert_setter(make_setter(None, "field_order", json.dumps(list(reversed(order)))))
+
+        differences = form_snapshot.compare(before, form_snapshot.snapshot([TEST_DOCTYPE]))
+
+        self.assertIn(f"{TEST_DOCTYPE}: field order changed", differences)
+
+    def test_reports_a_field_that_disappeared(self):
+        insert_custom_field_row(TEST_DOCTYPE, 1, **TEST_FIELD)
+        frappe.clear_cache(doctype=TEST_DOCTYPE)
+        before = form_snapshot.snapshot([TEST_DOCTYPE])
+        custom_fields.remove({TEST_DOCTYPE: [TEST_FIELD]}, dry_run=False)
+
+        differences = form_snapshot.compare(before, form_snapshot.snapshot([TEST_DOCTYPE]))
+
+        self.assertIn(f"{TEST_DOCTYPE}.{TEST_FIELD['fieldname']}: field gone", differences)
