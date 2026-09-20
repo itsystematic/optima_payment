@@ -18,13 +18,31 @@ in this app's own DocType JSON.
 optima_payment/
   hooks.py                     # doc_events, fixtures, wiring
   install.py / migrate.py / uninstall.py   # setup lifecycle entry points
-  setup/                       # feature framework: registry, runner, metadata, features/*
+  setup/                       # customization framework: features/*, sync/, registry, permissions
   optima_payment/doctype/      # this app's doctypes (bank_guarantee_bg, letter_of_credit, cheque_*)
   cheque/                      # cheque GL + payment entry override logic
   override/                    # Python class / whitelist overrides
   tests/utils.py               # SHARED test factories (import these, don't build docs inline)
 docs/                          # developer + user documentation (start at docs/README.md)
 ```
+
+## Customizations (important)
+
+Client sites customize these same forms in Customize Form, and the app must never overwrite that.
+Frappe's `is_system_generated` flag decides ownership: **1 = the app's row, 0 = the site's**.
+
+- Declare fields and property setters in `setup/features/*`; `setup/sync/` applies them. It creates
+  what is missing, updates only rows still at flag 1, and leaves every flag-0 row alone.
+- **Never write `field_order`** outside `apply_starting_field_orders()` (install, only when the site
+  has none) — it holds the client's whole layout. Never delete property setters by doctype +
+  property alone; that matches the client's rows too.
+- **Never change a fieldtype in place**: new fieldname + data patch + removal.
+- Nothing re-applies the declarations on migrate. Every change ships as **one patch whose body calls
+  `sync()`** — see the `customization-patch` skill and `docs/setup/how-to-write-a-patch.md`.
+- Adoption (flag 0 → 1) lives only in `patches/adopt_existing_customizations.py` and must stay there.
+- Before migrating a client site: `setup/form_snapshot.py` `save` → migrate → `diff`.
+
+Start at `docs/setup/architecture.md`, then `docs/setup/questions-and-answers.md`.
 
 ## Accounting patterns (important)
 
