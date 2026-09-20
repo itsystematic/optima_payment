@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from typing import NamedTuple
 
 import click
 
@@ -17,9 +17,11 @@ ACTION_COLORS = {
 }
 
 
-@dataclass(frozen=True)
-class Change:
-    """One planned or applied change, as shown in the sync report."""
+class Change(NamedTuple):
+    """One planned or applied change, as shown in the sync report.
+
+    A tuple, so ``bench execute`` can print what an entry point returns.
+    """
 
     action: str
     target: str
