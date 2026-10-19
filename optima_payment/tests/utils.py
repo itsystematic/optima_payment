@@ -5,8 +5,9 @@ the fixtures Optima Payment's integration tests need: Payment Entry overrides,
 and the full chain required to submit a Bank Guarantee-BG (Optima Payment
 Setting, Bank, Account, Cost Center, Project, Customer/Supplier, and a
 reference Sales/Purchase Order with its own taxes table pre-populated to dodge
-this site's KSA/ZATCA mandatory-field customizations). Tests import these
-factories instead of constructing documents inline.
+this site's KSA/ZATCA mandatory-field customizations), plus Purchases Bulk Tool
+documents with their purchase taxes template. Tests import these factories
+instead of constructing documents inline.
 """
 
 import frappe
@@ -16,6 +17,7 @@ from frappe.utils import add_days, nowdate
 from optima_payment.override.doctype_class.payment_entry import CustomPaymentEntry
 from optima_payment.optima_payment.doctype.bank_guarantee_bg.bank_guarantee_bg import BankGuaranteeBG
 from optima_payment.optima_payment.doctype.letter_of_credit.letter_of_credit import LetterofCredit
+from optima_payment.optima_payment.doctype.purchases_bulk_tool.purchases_bulk_tool import PurchasesBulkTool
 
 
 # ====================================================================================================
@@ -221,8 +223,8 @@ def get_or_create_mode_of_payment(
 # site's KSA/ZATCA mandatory-field customizations (see get_item_tax_charge).
 
 
-def get_or_create_item(item_code: str = "Optima Test Item") -> str:
-    """Find or create a non-stock Item usable on both Sales and Purchase Orders."""
+def get_or_create_item(item_code: str = "Optima Test Item", is_stock_item: int = 0) -> str:
+    """Find or create an Item usable on both Sales and Purchase Orders (non-stock by default)."""
     if not frappe.db.exists("Item", item_code):
         item_group = frappe.db.get_value("Item Group", {"is_group": 0}, "name")
         # KSA/ZATCA customizations on this site make the Item Tax Template table mandatory.
@@ -234,7 +236,7 @@ def get_or_create_item(item_code: str = "Optima Test Item") -> str:
                 "item_name": item_code,
                 "item_group": item_group,
                 "stock_uom": "Nos",
-                "is_stock_item": 0,
+                "is_stock_item": is_stock_item,
                 "taxes": [{"item_tax_template": item_tax_template}],
             }
         ).insert(ignore_permissions=True)
@@ -254,6 +256,40 @@ def get_item_tax_charge() -> tuple[str, float]:
         "Item Tax Template Detail", {"parent": item_tax_template}, ["tax_type", "tax_rate"]
     )
     return detail
+
+
+def get_or_create_purchase_taxes_template(company: str, title: str = "Optima Test Purchase VAT") -> str:
+    """Find or create a Purchase Taxes and Charges Template with one On Net Total row.
+
+    The row reuses the item tax template's account and rate (see get_item_tax_charge), so the
+    item-wise rate ERPNext applies agrees with the template, and it carries a cost center,
+    which this site's customizations make mandatory on tax rows.
+    """
+    existing = frappe.db.get_value(
+        "Purchase Taxes and Charges Template", {"title": title, "company": company}, "name"
+    )
+    if existing:
+        return existing
+
+    account_head, tax_rate = get_item_tax_charge()
+    template = frappe.get_doc(
+        {
+            "doctype": "Purchase Taxes and Charges Template",
+            "title": title,
+            "company": company,
+            "taxes": [
+                {
+                    "charge_type": "On Net Total",
+                    "account_head": account_head,
+                    "rate": tax_rate,
+                    "cost_center": get_or_create_cost_center(company),
+                    "description": account_head,
+                }
+            ],
+        }
+    )
+    template.insert(ignore_permissions=True)
+    return template.name
 
 
 # ====================================================================================================
@@ -541,6 +577,52 @@ def make_letter_of_credit(
         "issue_commission_amount": 50 if issue_commission else 0,
     }
     fields.update(party_fields)
+    fields.update(overrides)
+
+    doc = frappe.get_doc(fields)
+    doc.insert(ignore_permissions=True)
+
+    if not do_not_submit:
+        doc.submit()
+
+    return doc
+
+
+# ====================================================================================================
+# PURCHASES BULK TOOL FACTORIES
+
+
+def make_purchases_bulk_tool(
+    *,
+    voucher_type: str = "Purchase Invoice",
+    rows: list[dict] | None = None,
+    company: str | None = None,
+    auto_submit: int = 0,
+    do_not_submit: bool = False,
+    **overrides,
+) -> PurchasesBulkTool:
+    """Build a Purchases Bulk Tool for integration tests.
+
+    Each dict in ``rows`` becomes one item row and only needs the keys it changes: supplier,
+    item, rate, vat and voucher_posting_date default to the shared test fixtures and today.
+    """
+    company = company or erpnext.get_default_company()
+    row_defaults = {
+        "voucher_posting_date": nowdate(),
+        "supplier": get_or_create_supplier(),
+        "item": get_or_create_item(),
+        "rate": 100,
+        "vat": get_or_create_purchase_taxes_template(company),
+    }
+
+    fields = {
+        "doctype": "Purchases Bulk Tool",
+        "company": company,
+        "voucher_type": voucher_type,
+        "posting_date": nowdate(),
+        "auto_submit": auto_submit,
+        "items": [{**row_defaults, **row} for row in rows or [{}]],
+    }
     fields.update(overrides)
 
     doc = frappe.get_doc(fields)
