@@ -16,6 +16,9 @@ creates survives the test.
 - **Letter of Credit** posts **Payment Entry (Internal Transfer)** documents, so its tests
   assert on those Payment Entries (`get_lc_payment_entries`, filtered by the `is_lc_*`
   flags). See [letter-of-credit/reference.md](../letter-of-credit/reference.md).
+- **Purchases Bulk Tool** creates purchase vouchers, so its tests assert on those vouchers
+  (lines, header dates, docstatus) and on the row status / reference stamps. See
+  [purchases-bulk-tool/reference.md](../purchases-bulk-tool/reference.md).
 
 ---
 
@@ -29,6 +32,9 @@ factories instead of building documents inline:
 | `make_optima_payment_setting(company)` | The per-company Optima Payment Setting with all BG + LC accounts populated (back-fills a pre-existing setting) |
 | `make_bank_guarantee_bg(bg_type=…, issue_commission=…, do_not_submit=…)` | A submitted Bank Guarantee with its full dependency chain |
 | `make_letter_of_credit(lc_type=…, issue_commission=…, do_not_submit=…, **overrides)` | A submitted Letter of Credit; pass `lc_account=None` to exercise the insurance-account fallback |
+| `make_purchases_bulk_tool(voucher_type=…, rows=…, auto_submit=…, do_not_submit=…, **overrides)` | A submitted Purchases Bulk Tool; each `rows` dict overrides only the keys it names (supplier, item, rate, vat, voucher_posting_date) |
+| `get_or_create_purchase_taxes_template(company)` | A Purchase Taxes and Charges Template with one On Net Total row, on the item tax template's account and rate, with a cost center |
+| `get_or_create_item(item_code, is_stock_item=…)` | A purchasable Item (non-stock by default); pass `is_stock_item=1` for Purchase Receipt tests |
 
 The factories are defensive (`get_or_create_*`) and work around this bench's KSA/ZATCA
 customizations (mandatory Arabic name fields, tax category, item tax templates, order-level
@@ -44,6 +50,7 @@ Always pass the site you are working on (this bench hosts several):
 # One module (recommended — this is what CI runs)
 bench --site <site> run-tests --module optima_payment.optima_payment.doctype.letter_of_credit.test_letter_of_credit
 bench --site <site> run-tests --module optima_payment.optima_payment.doctype.bank_guarantee_bg.test_bank_guarantee_bg
+bench --site <site> run-tests --module optima_payment.optima_payment.doctype.purchases_bulk_tool.test_purchases_bulk_tool
 ```
 
 The site needs `optima_payment` installed and `allow_tests` enabled

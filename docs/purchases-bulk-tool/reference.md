@@ -1,0 +1,180 @@
+# Purchases Bulk Tool
+
+Developer + power-user reference for the **Purchases Bulk Tool** doctype: how its rows are
+grouped into purchase vouchers, how those vouchers are built, and how submit and cancel stay all
+or nothing. For a click-by-click guide aimed at accountants, see [user-guide.md](user-guide.md).
+
+---
+
+## What it is
+
+A submittable tool whose child grid holds one purchase per row. Submitting the tool creates a
+**Purchase Order**, **Purchase Invoice** or **Purchase Receipt** per group of rows. Cancelling
+it cancels or deletes every voucher it created. There is no partial success and no retry: a
+failure anywhere leaves nothing behind.
+
+Controller: `optima_payment/optima_payment/doctype/purchases_bulk_tool/purchases_bulk_tool.py`
+Form script: `optima_payment/optima_payment/doctype/purchases_bulk_tool/purchases_bulk_tool.js`
+
+---
+
+## Data model
+
+**Purchases Bulk Tool** (parent, submittable, named `PBT-.#####`):
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `company` | Link Company | Required. Remembers the last value. Filters the VAT and warehouse pickers |
+| `voucher_type` | Select | Purchase Order / Purchase Invoice / Purchase Receipt |
+| `set_warehouse` | Link Warehouse | Shown for PO / PR only; copied to each voucher's `set_warehouse` |
+| `posting_date` | Date | Defaults to today. Default date for each new row (client) and for any row left blank (server) |
+| `auto_submit` | Check | Submit the vouchers too, not only insert them |
+| `items` | Table → Purchases Bulk Tool Item | Required |
+
+**Purchases Bulk Tool Item** (child):
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `voucher_posting_date` | Date | Required. Part of the grouping key |
+| `supplier` | Link Supplier | Required. Part of the grouping key |
+| `item` | Link Item | Required. Picker limited to `is_purchase_item = 1` |
+| `rate` | Currency | Required. Sent as the voucher line's rate, qty 1 |
+| `vat` | Link Purchase Taxes and Charges Template | Required. Part of the grouping key; becomes the voucher's `taxes_and_charges` |
+| `amount` | Currency | Read-only. `rate × (1 + get_vat_rate(vat) / 100)`, set in `validate` |
+| `status` | Select | Pending / Draft / Submitted / Cancelled / Deleted. Read-only, no-copy |
+| `reference_doctype` | Link DocType | Hidden. The voucher's doctype |
+| `reference_name` | Dynamic Link → `reference_doctype` | The voucher the row went into |
+
+`vat` is required on purpose. Without a template, ERPNext could pull taxes onto the voucher from
+the supplier's tax rule, and the row's `amount` would no longer describe the voucher.
+
+---
+
+## Lifecycle
+
+| Hook | Method | Why there |
+|------|--------|-----------|
+| `validate` | `set_row_values()` | Fills a blank row date from `posting_date` and computes `amount` |
+| `before_submit` | `create_vouchers()` | The row stamps (`reference_*`, `status`) are then saved with the parent in the same `_save`, with no `db_set` |
+| `on_cancel` | `rollback_vouchers()` | By `on_cancel`, Frappe has already written the children with docstatus 2 (`update_children` runs before `run_post_save_methods`). Each voucher's back-link check (`check_if_doc_is_dynamically_linked`) then no longer sees a submitted row pointing at it. In `before_cancel` the rows are still docstatus 1 and the voucher's cancel or delete is refused |
+
+---
+
+## Grouping
+
+`group_rows()` keys the rows by **(supplier, voucher_posting_date, vat)** and keeps first-seen
+order. Each key becomes one voucher, with its rows as the voucher's lines in grid order. The date
+and the tax template are both voucher-header fields, so rows that differ in either can't share a
+voucher.
+
+---
+
+## Voucher construction
+
+`make_voucher()` builds each voucher with `frappe.new_doc(voucher_type)`:
+
+| Set | Purchase Order | Purchase Invoice | Purchase Receipt |
+|-----|----------------|------------------|------------------|
+| `company`, `supplier`, `taxes_and_charges = vat` | ✓ | ✓ | ✓ |
+| `ignore_pricing_rule = 1` (keeps the typed rate) | ✓ | ✓ | ✓ |
+| Date | `transaction_date` and `schedule_date` = group date | `set_posting_time = 1`, `posting_date` = group date | `set_posting_time = 1`, `posting_date` = group date |
+| `set_warehouse` (when given) | ✓ | — | ✓ |
+| One line per row: `item_code`, `qty = 1`, `rate` | ✓ | ✓ | ✓ |
+
+- **`set_posting_time = 1`** is needed because without it `TransactionBase.validate_posting_time`
+  resets `posting_date` to today.
+- **`append_taxes_from_master()`** is called before `insert()`. ERPNext copies a template's tax
+  rows on the server only when the Accounts Settings flag *Add taxes from Taxes and Charges
+  Template* is on. `set_taxes_and_charges` skips when `taxes` is already filled, so the rows are
+  never added twice.
+- **Permissions:** vouchers are inserted, submitted, cancelled and deleted as the **current
+  user**, with no `ignore_permissions`. They are the user's own purchase documents, so the user
+  needs those rights on the voucher doctype.
+
+---
+
+## All or nothing
+
+```mermaid
+flowchart TD
+    A[before_submit] --> B["savepoint purchases_bulk_tool"]
+    B --> C{next group?}
+    C -->|yes| D["make_voucher(): insert, then submit if auto_submit"]
+    D -->|ok| E["stamp rows: reference_*, status Draft / Submitted"]
+    E --> C
+    D -->|ValidationError / PermissionError| F["rollback to savepoint"]
+    F --> G["frappe.throw: voucher type, supplier, date, row numbers"]
+    C -->|no| H[tool saved with docstatus 1]
+```
+
+The savepoint is set before the first voucher. On a failure, rolling back to it removes every
+voucher already made in this submit, including their GL and stock rows. This holds for any caller:
+a web request, `bench execute`, or a test that keeps its transaction open. It doesn't rely on the
+request's own rollback. ERPNext's original message stays in the message log above the tool's
+summary.
+
+Other exception types are not caught. They propagate unchanged and the request's rollback handles
+them.
+
+---
+
+## Cancel rollback
+
+`rollback_vouchers()` collects the unique `(reference_doctype, reference_name)` pairs and handles
+them in **reverse** creation order:
+
+| Voucher docstatus | Action | Row status |
+|-------------------|--------|------------|
+| 1 (submitted) | `cancel()` | **Cancelled** |
+| 0 (draft) | `frappe.delete_doc()` | **Deleted** |
+| 2 (already cancelled) | none | **Cancelled** |
+
+Row statuses are written with `db_set(..., update_modified=False)` because the tool is already
+cancelled.
+
+If a voucher has submitted downstream documents, ERPNext refuses its cancel and the whole tool
+cancel aborts. An example is a Payment Entry against the invoice when *Unlink Payment on
+Cancellation of Invoice* is off. This is intended.
+
+> **Side effect while submitted.** The tool's submitted row is a live dynamic link to its
+> voucher, so Frappe refuses to cancel or delete that voucher on its own. Rollback always goes
+> through the tool.
+
+### Row status
+
+```mermaid
+stateDiagram-v2
+    [*] --> Pending
+    Pending --> Draft: tool submitted, auto_submit off
+    Pending --> Submitted: tool submitted, auto_submit on
+    Draft --> Deleted: tool cancelled
+    Submitted --> Cancelled: tool cancelled
+```
+
+`status`, `reference_doctype` and `reference_name` are `no_copy`. An amended tool therefore
+starts at **Pending** and creates fresh vouchers.
+
+---
+
+## `get_vat_rate(template)`
+
+Module-level and `@frappe.whitelist()`. It checks read permission on the template, then returns
+the sum of `rate` over the template's **On Net Total** rows. `validate` uses it for `amount`,
+and so does the form script on a `rate` or `vat` change (the server recomputes on save).
+
+`amount` is a preview of the voucher's grand total, assuming qty 1 and percentage VAT on the
+net. The voucher's own totals can differ when the template has rows this sum ignores or
+misreads, such as `Actual` or `On Previous Row …` charges, *Deduct* rows, *Valuation*-only rows
+or tax-inclusive rows. They can also differ when an item's Item Tax Template overrides the rate
+for the same account.
+
+---
+
+## Tests
+
+See [testing.md](../development/testing.md). The suite lives at
+`optima_payment/optima_payment/doctype/purchases_bulk_tool/test_purchases_bulk_tool.py`. It
+asserts on the created vouchers: grouping, header dates, auto-submit, the row amount against the
+voucher's grand total, the savepoint abort, and cancel/delete on rollback, plus PO and PR smoke
+tests. Fixtures come from `optima_payment/tests/utils.py` (`make_purchases_bulk_tool`,
+`get_or_create_purchase_taxes_template`).
