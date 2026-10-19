@@ -623,7 +623,9 @@ def get_or_create_purchase_item(
 def get_or_create_purchase_taxes_template(company: str, title: str = "Optima Test Purchase VAT") -> str:
     """A Purchase Taxes and Charges Template matching the item tax template: one On Net Total row on
     the same account at the same rate, so the item-wise rate ERPNext applies agrees with it. The row
-    carries a cost center, which this site's customizations make mandatory on tax rows.
+    carries a cost center, which this site's customizations make mandatory on tax rows, and is
+    explicitly exclusive: a site can default included_in_print_rate to 1, and the voucher would then
+    read the typed rate as VAT-inclusive.
     """
     existing = frappe.db.get_value(
         "Purchase Taxes and Charges Template", {"title": title, "company": company}, "name"
@@ -643,6 +645,7 @@ def get_or_create_purchase_taxes_template(company: str, title: str = "Optima Tes
                         PURCHASE_VAT_ACCOUNT, company, "Asset", account_type="Tax"
                     ),
                     "rate": PURCHASE_VAT_RATE,
+                    "included_in_print_rate": 0,
                     "cost_center": get_or_create_cost_center(company),
                     "description": PURCHASE_VAT_ACCOUNT,
                 }
@@ -651,6 +654,19 @@ def get_or_create_purchase_taxes_template(company: str, title: str = "Optima Tes
     )
     template.insert(ignore_permissions=True)
     return template.name
+
+
+def set_test_cost_center_default(company: str) -> str:
+    """Make a leaf cost center of company the session user's ``cost_center`` default.
+
+    Some sites make cost_center mandatory on Purchase Invoice and its items, and no server code
+    fills the header one: ERPNext sets it only in the form. frappe.new_doc and insert fill an empty
+    Link field from the user's defaults, so every voucher the tool builds picks this one up. The
+    default is cached outside the transaction, so clear the user's cache after the rollback.
+    """
+    cost_center = get_or_create_cost_center(company)
+    frappe.defaults.set_user_default("cost_center", cost_center)
+    return cost_center
 
 
 def make_purchases_bulk_tool(

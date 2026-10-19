@@ -18,17 +18,20 @@ from optima_payment.tests.utils import (
     get_or_create_purchase_item,
     get_or_create_supplier,
     make_purchases_bulk_tool,
+    set_test_cost_center_default,
 )
 
 
 class TestPurchasesBulkToolIntegration(FrappeTestCase):
     def setUp(self):
+        set_test_cost_center_default(erpnext.get_default_company())
         self.supplier_a = get_or_create_supplier("Optima Bulk Supplier A")
         self.supplier_b = get_or_create_supplier("Optima Bulk Supplier B")
         self.past_date = add_days(nowdate(), -3)
 
     def tearDown(self):
         frappe.db.rollback()
+        frappe.clear_cache(user=frappe.session.user)
 
     def get_vouchers(self, tool) -> list:
         names = dict.fromkeys(row.reference_name for row in tool.items)
