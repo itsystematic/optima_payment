@@ -163,6 +163,14 @@ def get_or_create_customer(customer_name: str = "Optima Test Customer") -> str:
     return customer_name
 
 
+def get_test_tax_category() -> str | None:
+    """The Tax Category test suppliers carry, and so the category of every voucher made for them.
+
+    KSA/ZATCA customizations on this site make tax_category mandatory on Supplier.
+    """
+    return frappe.db.get_value("Tax Category", {}, "name")
+
+
 def get_or_create_supplier(supplier_name: str = "Optima Test Supplier") -> str:
     """Find or create the Supplier used as the default Purchase Order party in tests."""
     if not frappe.db.exists("Supplier", supplier_name):
@@ -171,8 +179,7 @@ def get_or_create_supplier(supplier_name: str = "Optima Test Supplier") -> str:
         supplier_group = frappe.db.get_value(
             "Supplier Group", {"supplier_group_name": "موردين خارجيين"}, "name"
         ) or frappe.db.get_value("Supplier Group", {"is_group": 0}, "name")
-        # KSA/ZATCA customizations on this site make tax_category mandatory on Supplier.
-        tax_category = frappe.db.get_value("Tax Category", {}, "name")
+        tax_category = get_test_tax_category()
         frappe.get_doc(
             {
                 "doctype": "Supplier",
@@ -223,8 +230,8 @@ def get_or_create_mode_of_payment(
 # site's KSA/ZATCA mandatory-field customizations (see get_item_tax_charge).
 
 
-def get_or_create_item(item_code: str = "Optima Test Item", is_stock_item: int = 0) -> str:
-    """Find or create an Item usable on both Sales and Purchase Orders (non-stock by default)."""
+def get_or_create_item(item_code: str = "Optima Test Item") -> str:
+    """Find or create a non-stock Item usable on both Sales and Purchase Orders."""
     if not frappe.db.exists("Item", item_code):
         item_group = frappe.db.get_value("Item Group", {"is_group": 0}, "name")
         # KSA/ZATCA customizations on this site make the Item Tax Template table mandatory.
@@ -236,7 +243,7 @@ def get_or_create_item(item_code: str = "Optima Test Item", is_stock_item: int =
                 "item_name": item_code,
                 "item_group": item_group,
                 "stock_uom": "Nos",
-                "is_stock_item": is_stock_item,
+                "is_stock_item": 0,
                 "taxes": [{"item_tax_template": item_tax_template}],
             }
         ).insert(ignore_permissions=True)
@@ -256,40 +263,6 @@ def get_item_tax_charge() -> tuple[str, float]:
         "Item Tax Template Detail", {"parent": item_tax_template}, ["tax_type", "tax_rate"]
     )
     return detail
-
-
-def get_or_create_purchase_taxes_template(company: str, title: str = "Optima Test Purchase VAT") -> str:
-    """Find or create a Purchase Taxes and Charges Template with one On Net Total row.
-
-    The row reuses the item tax template's account and rate (see get_item_tax_charge), so the
-    item-wise rate ERPNext applies agrees with the template, and it carries a cost center,
-    which this site's customizations make mandatory on tax rows.
-    """
-    existing = frappe.db.get_value(
-        "Purchase Taxes and Charges Template", {"title": title, "company": company}, "name"
-    )
-    if existing:
-        return existing
-
-    account_head, tax_rate = get_item_tax_charge()
-    template = frappe.get_doc(
-        {
-            "doctype": "Purchase Taxes and Charges Template",
-            "title": title,
-            "company": company,
-            "taxes": [
-                {
-                    "charge_type": "On Net Total",
-                    "account_head": account_head,
-                    "rate": tax_rate,
-                    "cost_center": get_or_create_cost_center(company),
-                    "description": account_head,
-                }
-            ],
-        }
-    )
-    template.insert(ignore_permissions=True)
-    return template.name
 
 
 # ====================================================================================================
@@ -590,6 +563,94 @@ def make_letter_of_credit(
 
 # ====================================================================================================
 # PURCHASES BULK TOOL FACTORIES
+# The suite owns its whole VAT chain: account, item tax template, purchase template and items. A
+# voucher's tax then comes from these records alone, never from the site's own templates.
+
+PURCHASE_VAT_ACCOUNT = "Optima Test Purchase VAT"
+PURCHASE_VAT_RATE = 15.0
+
+
+def get_or_create_purchase_item_tax_template(company: str, title: str = "Optima Test Purchase VAT 15%") -> str:
+    """An Item Tax Template charging PURCHASE_VAT_RATE on the suite's own VAT account."""
+    existing = frappe.db.get_value("Item Tax Template", {"title": title, "company": company}, "name")
+    if existing:
+        return existing
+
+    account = get_or_create_account(PURCHASE_VAT_ACCOUNT, company, "Asset", account_type="Tax")
+    template = frappe.get_doc(
+        {
+            "doctype": "Item Tax Template",
+            "title": title,
+            "company": company,
+            "taxes": [{"tax_type": account, "tax_rate": PURCHASE_VAT_RATE}],
+        }
+    )
+    template.insert(ignore_permissions=True)
+    return template.name
+
+
+def get_or_create_purchase_item(
+    company: str, item_code: str = "Optima Test Purchase Item", is_stock_item: int = 0
+) -> str:
+    """A purchase Item taxed by the suite's own Item Tax Template.
+
+    ERPNext uses an item's own tax row only when the row's tax category equals the voucher's, which
+    comes from the supplier, and otherwise falls back to the item group's templates, which are site
+    data. The row carries the test suppliers' tax category so the item's own template applies.
+    """
+    if not frappe.db.exists("Item", item_code):
+        frappe.get_doc(
+            {
+                "doctype": "Item",
+                "item_code": item_code,
+                "item_name": item_code,
+                "item_group": frappe.db.get_value("Item Group", {"is_group": 0}, "name"),
+                "stock_uom": "Nos",
+                "is_stock_item": is_stock_item,
+                "is_fixed_asset": 0,
+                "is_purchase_item": 1,
+                "taxes": [
+                    {
+                        "item_tax_template": get_or_create_purchase_item_tax_template(company),
+                        "tax_category": get_test_tax_category(),
+                    }
+                ],
+            }
+        ).insert(ignore_permissions=True)
+    return item_code
+
+
+def get_or_create_purchase_taxes_template(company: str, title: str = "Optima Test Purchase VAT") -> str:
+    """A Purchase Taxes and Charges Template matching the item tax template: one On Net Total row on
+    the same account at the same rate, so the item-wise rate ERPNext applies agrees with it. The row
+    carries a cost center, which this site's customizations make mandatory on tax rows.
+    """
+    existing = frappe.db.get_value(
+        "Purchase Taxes and Charges Template", {"title": title, "company": company}, "name"
+    )
+    if existing:
+        return existing
+
+    template = frappe.get_doc(
+        {
+            "doctype": "Purchase Taxes and Charges Template",
+            "title": title,
+            "company": company,
+            "taxes": [
+                {
+                    "charge_type": "On Net Total",
+                    "account_head": get_or_create_account(
+                        PURCHASE_VAT_ACCOUNT, company, "Asset", account_type="Tax"
+                    ),
+                    "rate": PURCHASE_VAT_RATE,
+                    "cost_center": get_or_create_cost_center(company),
+                    "description": PURCHASE_VAT_ACCOUNT,
+                }
+            ],
+        }
+    )
+    template.insert(ignore_permissions=True)
+    return template.name
 
 
 def make_purchases_bulk_tool(
@@ -604,13 +665,13 @@ def make_purchases_bulk_tool(
     """Build a Purchases Bulk Tool for integration tests.
 
     Each dict in ``rows`` becomes one item row and only needs the keys it changes: supplier,
-    item, rate, vat and voucher_posting_date default to the shared test fixtures and today.
+    item, rate, vat and voucher_posting_date default to the fixtures above and today.
     """
     company = company or erpnext.get_default_company()
     row_defaults = {
         "voucher_posting_date": nowdate(),
         "supplier": get_or_create_supplier(),
-        "item": get_or_create_item(),
+        "item": get_or_create_purchase_item(company),
         "rate": 100,
         "vat": get_or_create_purchase_taxes_template(company),
     }

@@ -42,7 +42,7 @@ frappe.ui.form.on("Purchases Bulk Tool Item", {
 function set_amount(frm, cdt, cdn) {
     const row = locals[cdt][cdn];
     frappe.call({
-        method: "optima_payment.optima_payment.doctype.purchases_bulk_tool.purchases_bulk_tool.get_vat_rate",
+        method: "optima_payment.purchases_bulk.api.get_vat_rate",
         args: { template: row.vat },
         callback(r) {
             const amount = flt(row.rate) * (1 + flt(r.message) / 100);
