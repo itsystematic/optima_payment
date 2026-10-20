@@ -8,9 +8,10 @@ or nothing. For a click-by-click guide aimed at accountants, see [user-guide.md]
 
 ## What it is
 
-A submittable tool whose child grid holds one purchase per row. Submitting the tool creates a
-**Purchase Order**, **Purchase Invoice** or **Purchase Receipt** per group of rows. Cancelling
-it cancels or deletes every voucher it created. There is no partial success and no retry: a
+A submittable tool whose child grid holds one purchase line per row, with its own qty and, for
+orders and receipts, an optional warehouse. Submitting the tool creates a **Purchase Order**,
+**Purchase Invoice** or **Purchase Receipt** per group of rows. Cancelling it cancels or deletes
+every voucher it created. There is no partial success and no retry: a
 failure anywhere leaves nothing behind.
 
 ---
@@ -24,7 +25,7 @@ return values, with no database access. Everything that reads or writes calls th
 optima_payment/purchases_bulk/
 ├── api.py          # whitelisted door for the form: permission check, then one call
 └── vouchers.py
-    ├── DECISIONS          # pure: grouping, voucher fields, row statuses, failure message
+    ├── DECISIONS          # pure: grouping, voucher fields and lines, row statuses, failure message
     ├── ROW VALUES         # reads template VAT rates, fills each row's date and amount
     ├── VOUCHER CREATION   # savepoint, insert / submit through each voucher's controller
     └── VOUCHER ROLLBACK   # cancel or delete, the last created first
@@ -48,7 +49,7 @@ changes one of them, and its branch is tested with plain rows, no site data need
 |-------|------|-------|
 | `company` | Link Company | Required. Remembers the last value. Filters the VAT and warehouse pickers |
 | `voucher_type` | Select | Purchase Order / Purchase Invoice / Purchase Receipt |
-| `set_warehouse` | Link Warehouse | Shown for PO / PR only; copied to each voucher's `set_warehouse` |
+| `set_warehouse` | Link Warehouse | Shown for PO / PR only; copied to each voucher's `set_warehouse`, so it fills every line without its own warehouse |
 | `posting_date` | Date | Defaults to today. Default date for each new row (client) and for any row left blank (server) |
 | `auto_submit` | Check | Submit the vouchers too, not only insert them |
 | `items` | Table → Purchases Bulk Tool Item | Required |
@@ -60,15 +61,25 @@ changes one of them, and its branch is tested with plain rows, no site data need
 | `voucher_posting_date` | Date | Required. Part of the grouping key |
 | `supplier` | Link Supplier | Required. Part of the grouping key |
 | `item` | Link Item | Required. Picker limited to `is_purchase_item = 1` |
-| `rate` | Currency | Required. Sent as the voucher line's rate, qty 1 |
+| `qty` | Float | Required, default 1, not negative. Sent as the voucher line's qty |
+| `rate` | Currency | Required. Sent as the voucher line's rate |
 | `vat` | Link Purchase Taxes and Charges Template | Required. Part of the grouping key; becomes the voucher's `taxes_and_charges` |
-| `amount` | Currency | Read-only. `rate × (1 + VAT % / 100)`, the VAT % being the template's On Net Total rates; set in `validate` |
+| `warehouse` | Link Warehouse | Optional, row form only (not a grid column). Shown when the tool's voucher type is PO / PR. Sent as the line's `warehouse`; blank falls back to `set_warehouse` |
+| `amount` | Currency | Read-only. `qty × rate × (1 + VAT % / 100)`, the VAT % being the template's On Net Total rates; set in `validate` |
 | `status` | Select | Pending / Draft / Submitted / Cancelled / Deleted. Read-only, no-copy |
 | `reference_doctype` | Link DocType | Hidden. The voucher's doctype |
 | `reference_name` | Dynamic Link → `reference_doctype` | The voucher the row went into |
 
 `vat` is required on purpose. Without a template, ERPNext could pull taxes onto the voucher from
 the supplier's tax rule, and the row's `amount` would no longer describe the voucher.
+
+`warehouse` is optional on purpose. ERPNext requires a warehouse per **stock** line of a PO or PR,
+not per voucher type, so a mandatory field would block service lines. When a stock line has none
+from any source, ERPNext's own *Warehouse is mandatory* error names the row, above the tool's
+failure message.
+
+The grid has 10 column units: Date 1, Supplier 2, Item 1, Qty 1, Rate 1, VAT 1, Amount 1,
+Status 1, Voucher 1. That budget is full, so `warehouse` lives in the row form only.
 
 ---
 
@@ -93,9 +104,9 @@ voucher.
 
 ## Voucher construction
 
-`_voucher_fields()` decides each voucher as a plain dict. `make_voucher()` then creates it with
-`frappe.new_doc(voucher_type)` and `update(fields)`, appends the template's taxes, inserts it and
-submits it when **Auto Submit** is on:
+`_voucher_fields()` decides each voucher as a plain dict, with one line per row from `_line()`.
+`make_voucher()` then creates it with `frappe.new_doc(voucher_type)` and `update(fields)`,
+appends the template's taxes, inserts it and submits it when **Auto Submit** is on:
 
 | Set | Purchase Order | Purchase Invoice | Purchase Receipt |
 |-----|----------------|------------------|------------------|
@@ -103,10 +114,17 @@ submits it when **Auto Submit** is on:
 | `ignore_pricing_rule = 1` (keeps the typed rate) | ✓ | ✓ | ✓ |
 | Date | `transaction_date` and `schedule_date` = group date | `set_posting_time = 1`, `posting_date` = group date | `set_posting_time = 1`, `posting_date` = group date |
 | `set_warehouse` (when given) | ✓ | — | ✓ |
-| One line per row: `item_code`, `qty = 1`, `rate` | ✓ | ✓ | ✓ |
+| One line per row: `item_code`, the row's `qty`, `rate` | ✓ | ✓ | ✓ |
+| Line `warehouse` (when the row has one) | ✓ | — | ✓ |
 
 - **`set_posting_time = 1`** is needed because without it `TransactionBase.validate_posting_time`
   resets `posting_date` to today.
+- **Warehouse precedence:** the line's own warehouse, then `set_warehouse`, then the item, item
+  group or brand default. A line's warehouse wins because `set_missing_item_details` calls
+  `get_item_details` with `overwrite_warehouse=False` (`stock/get_item_details.py`
+  `get_item_warehouse`), so `set_warehouse` only fills a blank line. When the lines end up with
+  different warehouses, the PO and PR controllers clear the header `set_warehouse`
+  (`reset_default_field_value`); each line keeps its own.
 - **`append_taxes_from_master()`** is called before `insert()`. ERPNext copies a template's tax
   rows on the server only when the Accounts Settings flag *Add taxes from Taxes and Charges
   Template* is on. `set_taxes_and_charges` skips when `taxes` is already filled, so the rows are
@@ -187,13 +205,12 @@ starts at **Pending** and creates fresh vouchers.
 `vouchers.vat_rates(templates)` reads, for each template, the sum of `rate` over its **On Net
 Total** rows, in one query for the whole grid. `validate` uses it for `amount`.
 
-The form script calls `optima_payment.purchases_bulk.api.get_vat_rate(template)` on a `rate` or
-`vat` change, and the server recomputes on save. That whitelisted door checks read permission on
+The form script calls `optima_payment.purchases_bulk.api.get_vat_rate(template)` on a `qty`,
+`rate` or `vat` change, and the server recomputes on save. That whitelisted door checks read permission on
 the template before reading. `validate` doesn't check it, just as ERPNext doesn't when it copies
 the template's taxes onto the voucher.
 
-`amount` is a preview of the voucher's grand total, assuming qty 1 and percentage VAT on the
-net. The voucher's own totals can differ when the template has rows this sum ignores or
+`amount` is a preview of the voucher's grand total, assuming percentage VAT on the net. The voucher's own totals can differ when the template has rows this sum ignores or
 misreads, such as `Actual` or `On Previous Row …` charges, *Deduct* rows, *Valuation*-only rows
 or tax-inclusive rows. They can also differ when an item's Item Tax Template overrides the rate
 for the same account.
@@ -207,8 +224,8 @@ See [testing.md](../development/testing.md). The tests come as a pair in
 
 | File | Layer | What it proves |
 |------|-------|----------------|
-| `test_vouchers.py` | Matrix: plain rows, nothing written | Every branch of the decisions: amount and rounding, grouping by each header value, date fields per voucher type, warehouse, row statuses, rollback order and actions, the failure message |
-| `test_vouchers_integration.py` | Integration: real saves | What only a real voucher shows: rows stamped, typed rate and row date kept, template taxes copied, the row amount equal to the voucher's grand total, the savepoint abort, cancel and delete getting past the back-link check, PO and PR |
+| `test_vouchers.py` | Matrix: plain rows, nothing written | Every branch of the decisions: amount with qty and rounding, grouping by each header value, date fields per voucher type, header and line warehouse, qty per line, row statuses, rollback order and actions, the failure message |
+| `test_vouchers_integration.py` | Integration: real saves | What only a real voucher shows: rows stamped, typed qty, rate and row date kept, a row warehouse beating `set_warehouse`, template taxes copied, the row amount equal to the voucher's grand total, the savepoint abort, cancel and delete getting past the back-link check, PO and PR |
 
 The integration fixtures come from `optima_payment/tests/utils.py`. The suite owns its whole VAT
 chain (account, Item Tax Template, purchase template, items), so no template the site holds

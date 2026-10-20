@@ -7,9 +7,9 @@ create the purchase vouchers in one go. For the technical model, see [reference.
 
 ## What the tool does
 
-You type one line per purchase: date, supplier, item, rate and VAT template. When you **Submit**
-the tool, it creates the vouchers for you, one per supplier, as Purchase Orders, Purchase
-Invoices or Purchase Receipts.
+You type one line per purchase: date, supplier, item, qty, rate and VAT template. When you
+**Submit** the tool, it creates the vouchers for you, one per supplier, as Purchase Orders,
+Purchase Invoices or Purchase Receipts.
 
 - Lines for the **same supplier, same date and same VAT template** go into **one voucher**.
 - A different date or VAT template for that supplier starts a **separate voucher**, because a
@@ -20,16 +20,16 @@ Invoices or Purchase Receipts.
 
 Tool **PBT-00001**, voucher type Purchase Invoice, VAT template *KSA VAT 15%*:
 
-| Row | Date | Supplier | Item | Rate | Amount |
-|-----|------|----------|------|------|--------|
-| 1 | 12-10-2026 | Al Noor Trading | Cement | 100 | 115 |
-| 2 | 12-10-2026 | Gulf Supplies | Steel | 200 | 230 |
-| 3 | 12-10-2026 | Al Noor Trading | Sand | 300 | 345 |
+| Row | Date | Supplier | Item | Qty | Rate | Amount |
+|-----|------|----------|------|-----|------|--------|
+| 1 | 12-10-2026 | Al Noor Trading | Cement | 1 | 100 | 115 |
+| 2 | 12-10-2026 | Gulf Supplies | Steel | 1 | 200 | 230 |
+| 3 | 12-10-2026 | Al Noor Trading | Sand | 2 | 150 | 345 |
 
 Submitting it creates two invoices:
 
 ```
-PBT-00001 ┬→ ACC-PINV-2026-00041  Al Noor Trading  rows 1, 3  (Cement 100 + Sand 300, total 460)
+PBT-00001 ┬→ ACC-PINV-2026-00041  Al Noor Trading  rows 1, 3  (Cement 100 + Sand 2 × 150, total 460)
           └→ ACC-PINV-2026-00042  Gulf Supplies    row 2      (Steel 200, total 230)
 ```
 
@@ -42,7 +42,8 @@ PBT-00001 ┬→ ACC-PINV-2026-00041  Al Noor Trading  rows 1, 3  (Cement 100 + 
    templates.
 2. **Items** — only items marked *Is Purchase Item* can be picked.
 3. **Warehouse** — for Purchase Orders and Purchase Receipts of stock items, ERPNext needs a
-   warehouse. Fill **Set Target Warehouse** on the tool; it is copied to every voucher.
+   warehouse on every line. Fill **Set Target Warehouse** on the tool for all lines, or give a
+   row its own **Warehouse**. Service lines need none.
 
 ---
 
@@ -54,9 +55,12 @@ PBT-00001 ┬→ ACC-PINV-2026-00041  Al Noor Trading  rows 1, 3  (Cement 100 + 
 3. *(Purchase Order / Receipt only)* choose the **Set Target Warehouse**.
 4. *(Optional)* tick **Auto Submit Vouchers** to submit the vouchers as well. Leave it unticked to
    get drafts you can review first.
-5. Fill the **Items** grid: date, supplier, item, rate and VAT. The **Amount** column shows the
-   rate plus VAT. The quantity on each voucher line is always **1**.
-6. **Save**, then **Submit**.
+5. Fill the **Items** grid: date, supplier, item, **Qty**, rate and VAT. Qty starts at 1. The
+   **Amount** column shows qty × rate, plus VAT.
+6. *(Purchase Order / Receipt only, optional)* to put one line in another warehouse, open the
+   row (the edit icon at the end of it) and pick its **Warehouse**. A row's own warehouse wins
+   over **Set Target Warehouse**; leave it blank to use the tool's.
+7. **Save**, then **Submit**.
 
 After submit, every row shows its **Status** and a **Voucher** link that opens the voucher it
 went into.
@@ -101,7 +105,7 @@ summary:
 |---------|-------|-----|
 | *Could not create the Purchase Invoice for supplier … dated … (rows …). No voucher was created.* | That voucher failed; the message above it says why (disabled supplier, missing account, closed period…) | Fix the named rows or the master data, then submit again |
 | *Disabled Warehouse … cannot be used for this transaction.* | **Set Target Warehouse** is disabled | Pick an active warehouse |
-| *Row #…: Warehouse is mandatory for stock Item …* | A stock item on a Purchase Order / Receipt with no warehouse | Fill **Set Target Warehouse** |
+| *Row #…: Warehouse is mandatory for stock Item …* | A stock item on a Purchase Order / Receipt with no warehouse | Fill **Set Target Warehouse**, or that row's **Warehouse** |
 | *Cannot delete or cancel because Purchase Invoice … is linked with Purchases Bulk Tool …* | You tried to cancel a voucher directly | Cancel the tool instead |
 | *Cannot delete or cancel because Purchase Invoice … is linked with Payment Entry …* | A voucher already has later documents | Cancel those documents first, then cancel the tool |
 

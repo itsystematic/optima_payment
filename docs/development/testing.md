@@ -34,7 +34,8 @@ factories instead of building documents inline:
 | `make_optima_payment_setting(company)` | The per-company Optima Payment Setting with all BG + LC accounts populated (back-fills a pre-existing setting) |
 | `make_bank_guarantee_bg(bg_type=…, issue_commission=…, do_not_submit=…)` | A submitted Bank Guarantee with its full dependency chain |
 | `make_letter_of_credit(lc_type=…, issue_commission=…, do_not_submit=…, **overrides)` | A submitted Letter of Credit; pass `lc_account=None` to exercise the insurance-account fallback |
-| `make_purchases_bulk_tool(voucher_type=…, rows=…, auto_submit=…, do_not_submit=…, **overrides)` | A submitted Purchases Bulk Tool; each `rows` dict overrides only the keys it names (supplier, item, rate, vat, voucher_posting_date) |
+| `make_purchases_bulk_tool(voucher_type=…, rows=…, auto_submit=…, do_not_submit=…, **overrides)` | A submitted Purchases Bulk Tool; each `rows` dict overrides only the keys it names (supplier, item, rate, vat, voucher_posting_date, and qty or warehouse, which default to 1 and blank) |
+| `get_or_create_warehouse(company, warehouse_name)` | A leaf Warehouse of the company under one of its warehouse groups, for tests that need more than one |
 | `get_or_create_purchase_taxes_template(company)` | A Purchase Taxes and Charges Template with one On Net Total row on the suite's own VAT account at `PURCHASE_VAT_RATE`, exclusive of the rate (`included_in_print_rate: 0`, whatever the site's default), with a cost center |
 | `get_or_create_purchase_item(company, item_code, is_stock_item=…)` | A purchase Item taxed by the suite's own Item Tax Template, its tax row carrying the test suppliers' tax category so that template applies; pass `is_stock_item=1` for Purchase Receipt tests |
 | `get_or_create_purchase_item_tax_template(company)` | The Item Tax Template behind those items, on the same account and rate |
