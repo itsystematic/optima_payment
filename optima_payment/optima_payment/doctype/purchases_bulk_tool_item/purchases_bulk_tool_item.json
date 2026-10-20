@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2026-10-15 17:00:00.000000",
+ "creation": "2026-10-15 17:00:00",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -9,8 +9,10 @@
   "voucher_posting_date",
   "supplier",
   "item",
+  "qty",
   "rate",
   "vat",
+  "warehouse",
   "amount",
   "status",
   "reference_doctype",
@@ -35,13 +37,24 @@
    "reqd": 1
   },
   {
-   "columns": 2,
+   "columns": 1,
    "fieldname": "item",
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Item",
    "options": "Item",
    "reqd": 1
+  },
+  {
+   "columns": 1,
+   "default": "1",
+   "fieldname": "qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Qty",
+   "non_negative": 1,
+   "reqd": 1,
+   "width": "20px"
   },
   {
    "columns": 1,
@@ -59,6 +72,14 @@
    "label": "VAT",
    "options": "Purchase Taxes and Charges Template",
    "reqd": 1
+  },
+  {
+   "depends_on": "eval:in_list([\"Purchase Order\", \"Purchase Receipt\"], parent.voucher_type)",
+   "description": "Leave blank to use Set Target Warehouse.",
+   "fieldname": "warehouse",
+   "fieldtype": "Link",
+   "label": "Warehouse",
+   "options": "Warehouse"
   },
   {
    "columns": 1,
@@ -103,7 +124,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-10-15 17:00:00.000000",
+ "modified": "2026-10-20 16:26:52.569728",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Purchases Bulk Tool Item",

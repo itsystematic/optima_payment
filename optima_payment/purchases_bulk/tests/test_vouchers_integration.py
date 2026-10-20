@@ -4,8 +4,9 @@
 """The Purchases Bulk Tool through real saves, submits and cancels.
 
 The branch matrix is in test_vouchers.py. These prove what only a real voucher shows: the rows are
-stamped, ERPNext keeps the typed rate and the row date, the template's taxes reach the voucher, a
-failure leaves nothing behind, and cancelling the tool gets past each voucher's back-link check.
+stamped, ERPNext keeps the typed qty, rate, row date and row warehouse, the template's taxes reach
+the voucher, a failure leaves nothing behind, and cancelling the tool gets past each voucher's
+back-link check.
 """
 
 import erpnext
@@ -17,6 +18,7 @@ from optima_payment.purchases_bulk import api
 from optima_payment.tests.utils import (
     get_or_create_purchase_item,
     get_or_create_supplier,
+    get_or_create_warehouse,
     make_purchases_bulk_tool,
     set_test_cost_center_default,
 )
@@ -94,6 +96,14 @@ class TestPurchasesBulkToolIntegration(FrappeTestCase):
         (voucher,) = self.get_vouchers(tool)
         self.assertEqual(voucher.grand_total, row.amount)
 
+    def test_row_qty_reaches_the_line_and_the_amount(self):
+        tool = make_purchases_bulk_tool(rows=[{"supplier": self.supplier_a, "qty": 3, "rate": 100}])
+
+        row = tool.items[0]
+        (voucher,) = self.get_vouchers(tool)
+        self.assertEqual(voucher.items[0].qty, 3)
+        self.assertEqual(voucher.grand_total, row.amount)
+
     def test_failed_voucher_creates_nothing(self):
         frappe.db.set_value("Supplier", self.supplier_b, "disabled", 1)
         invoices_before = frappe.db.count("Purchase Invoice", {"supplier": self.supplier_a})
@@ -140,6 +150,23 @@ class TestPurchasesBulkToolIntegration(FrappeTestCase):
         (receipt,) = self.get_vouchers(tool)
         self.assertEqual(getdate(receipt.posting_date), getdate(self.past_date))
         self.assertEqual(receipt.items[0].warehouse, warehouse)
+
+    def test_a_row_warehouse_wins_over_the_tool_warehouse(self):
+        company = erpnext.get_default_company()
+        tool_warehouse = get_or_create_warehouse(company, "Optima Bulk Tool Warehouse")
+        row_warehouse = get_or_create_warehouse(company, "Optima Bulk Row Warehouse")
+        stock_item = get_or_create_purchase_item(company, "Optima Test Purchase Stock Item", is_stock_item=1)
+        tool = make_purchases_bulk_tool(
+            voucher_type="Purchase Receipt",
+            set_warehouse=tool_warehouse,
+            rows=[
+                {"supplier": self.supplier_a, "item": stock_item, "warehouse": row_warehouse},
+                {"supplier": self.supplier_a, "item": stock_item},
+            ],
+        )
+
+        (receipt,) = self.get_vouchers(tool)
+        self.assertEqual([line.warehouse for line in receipt.items], [row_warehouse, tool_warehouse])
 
     # ============================================================================================
     # CANCEL

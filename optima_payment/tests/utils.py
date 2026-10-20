@@ -656,6 +656,24 @@ def get_or_create_purchase_taxes_template(company: str, title: str = "Optima Tes
     return template.name
 
 
+def get_or_create_warehouse(company: str, warehouse_name: str = "Optima Test Warehouse") -> str:
+    """A leaf Warehouse of company, under one of its warehouse groups."""
+    existing = frappe.db.get_value("Warehouse", {"warehouse_name": warehouse_name, "company": company}, "name")
+    if existing:
+        return existing
+
+    warehouse = frappe.get_doc(
+        {
+            "doctype": "Warehouse",
+            "warehouse_name": warehouse_name,
+            "company": company,
+            "parent_warehouse": frappe.db.get_value("Warehouse", {"company": company, "is_group": 1}, "name"),
+        }
+    )
+    warehouse.insert(ignore_permissions=True)
+    return warehouse.name
+
+
 def set_test_cost_center_default(company: str) -> str:
     """Make a leaf cost center of company the session user's ``cost_center`` default.
 

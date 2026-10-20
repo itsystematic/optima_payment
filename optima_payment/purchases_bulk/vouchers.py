@@ -45,8 +45,8 @@ GroupKey = namedtuple("GroupKey", ["supplier", "posting_date", "vat"])
 # Pure: no database.
 
 
-def _row_amount(rate, vat_rate, precision: int) -> float:
-    return flt(flt(rate) * (1 + flt(vat_rate) / 100), precision)
+def _row_amount(qty, rate, vat_rate, precision: int) -> float:
+    return flt(flt(qty) * flt(rate) * (1 + flt(vat_rate) / 100), precision)
 
 
 def _group_rows(rows: list) -> dict[GroupKey, list]:
@@ -73,11 +73,19 @@ def _voucher_fields(voucher_type: str, company: str, set_warehouse: str | None, 
         "taxes_and_charges": key.vat,
         "ignore_pricing_rule": 1,
         **_date_fields(voucher_type, key.posting_date),
-        "items": [{"item_code": row.item, "qty": 1, "rate": row.rate} for row in rows],
+        "items": [_line(voucher_type, row) for row in rows],
     }
     if set_warehouse and voucher_type != PURCHASE_INVOICE:
         fields["set_warehouse"] = set_warehouse
     return fields
+
+
+def _line(voucher_type: str, row) -> dict:
+    """A row's voucher line. Its own warehouse beats the header's, which ERPNext only fills in a blank."""
+    line = {"item_code": row.item, "qty": row.qty, "rate": row.rate}
+    if row.warehouse and voucher_type != PURCHASE_INVOICE:
+        line["warehouse"] = row.warehouse
+    return line
 
 
 def _created_status(docstatus: int) -> str:
@@ -139,7 +147,7 @@ def set_row_values(tool: Document) -> None:
     rates = vat_rates(row.vat for row in tool.items)
     for row in tool.items:
         row.voucher_posting_date = row.voucher_posting_date or tool.posting_date
-        row.amount = _row_amount(row.rate, rates.get(row.vat, 0), row.precision("amount"))
+        row.amount = _row_amount(row.qty, row.rate, rates.get(row.vat, 0), row.precision("amount"))
 
 
 # ====================================================================================================

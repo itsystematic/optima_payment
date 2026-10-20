@@ -27,6 +27,15 @@ frappe.ui.form.on("Purchases Bulk Tool", {
                 },
             };
         });
+
+        frm.set_query("warehouse", "items", function () {
+            return {
+                filters: {
+                    company: frm.doc.company,
+                    is_group: 0,
+                },
+            };
+        });
     },
 });
 
@@ -35,6 +44,7 @@ frappe.ui.form.on("Purchases Bulk Tool Item", {
         frappe.model.set_value(cdt, cdn, "voucher_posting_date", frm.doc.posting_date);
     },
 
+    qty: set_amount,
     rate: set_amount,
     vat: set_amount,
 });
@@ -45,7 +55,7 @@ function set_amount(frm, cdt, cdn) {
         method: "optima_payment.purchases_bulk.api.get_vat_rate",
         args: { template: row.vat },
         callback(r) {
-            const amount = flt(row.rate) * (1 + flt(r.message) / 100);
+            const amount = flt(row.qty) * flt(row.rate) * (1 + flt(r.message) / 100);
             frappe.model.set_value(cdt, cdn, "amount", flt(amount, precision("amount", row)));
         },
     });

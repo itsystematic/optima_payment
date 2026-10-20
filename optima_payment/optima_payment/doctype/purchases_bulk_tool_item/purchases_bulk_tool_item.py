@@ -19,6 +19,7 @@ class PurchasesBulkToolItem(Document):
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
+		qty: DF.Float
 		rate: DF.Currency
 		reference_doctype: DF.Link | None
 		reference_name: DF.DynamicLink | None
@@ -26,5 +27,6 @@ class PurchasesBulkToolItem(Document):
 		supplier: DF.Link
 		vat: DF.Link
 		voucher_posting_date: DF.Date
+		warehouse: DF.Link | None
 	# end: auto-generated types
 	pass
