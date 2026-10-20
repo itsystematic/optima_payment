@@ -1,8 +1,9 @@
 # Purchases Bulk Tool
 
 Developer + power-user reference for the **Purchases Bulk Tool** doctype: how its rows are
-grouped into purchase vouchers, how those vouchers are built, and how submit and cancel stay all
-or nothing. For a click-by-click guide aimed at accountants, see [user-guide.md](user-guide.md).
+grouped into purchase vouchers, how those vouchers are built, how submit, cancel and the bulk
+voucher actions stay all or nothing, and how row statuses follow the vouchers. For a
+click-by-click guide aimed at accountants, see [user-guide.md](user-guide.md).
 
 ---
 
@@ -10,9 +11,12 @@ or nothing. For a click-by-click guide aimed at accountants, see [user-guide.md]
 
 A submittable tool whose child grid holds one purchase line per row, with its own qty and, for
 orders and receipts, an optional warehouse. Submitting the tool creates a **Purchase Order**,
-**Purchase Invoice** or **Purchase Receipt** per group of rows. Cancelling it cancels or deletes
-every voucher it created. There is no partial success and no retry: a
-failure anywhere leaves nothing behind.
+**Purchase Invoice** or **Purchase Receipt** per group of rows. While it stays submitted, a
+**Vouchers** button group submits, cancels or deletes those vouchers in bulk and reads their
+state back onto the rows. A single voucher can also be cancelled or deleted from its own form.
+Cancelling the tool cancels or deletes every voucher it created that is still open. Each of these
+runs is all or nothing: there is no partial success and no retry, and a failure anywhere changes
+no voucher.
 
 ---
 
@@ -23,16 +27,20 @@ return values, with no database access. Everything that reads or writes calls th
 
 ```
 optima_payment/purchases_bulk/
-├── api.py          # whitelisted door for the form: permission check, then one call
+├── api.py          # whitelisted doors for the form: access and input checks, then one call
 └── vouchers.py
-    ├── DECISIONS          # pure: grouping, voucher fields and lines, row statuses, failure message
-    ├── ROW VALUES         # reads template VAT rates, fills each row's date and amount
-    ├── VOUCHER CREATION   # savepoint, insert / submit through each voucher's controller
-    └── VOUCHER ROLLBACK   # cancel or delete, the last created first
+    ├── DECISIONS                        # pure: grouping, voucher fields and lines, row statuses,
+    │                                    #       bulk steps, voucher order, messages
+    ├── ROW VALUES                       # reads template VAT rates, fills each row's date and amount
+    ├── VOUCHER CREATION                 # savepoint, insert / submit through each voucher's controller
+    ├── VOUCHER ROLLBACK                 # cancel or delete, the last created first
+    └── VOUCHER STATUS AND BULK ACTIONS  # docstatus read, status sync, Submit / Cancel / Delete All
 
 optima_payment/optima_payment/doctype/purchases_bulk_tool/
 ├── purchases_bulk_tool.py   # controller: three hooks that hand off to vouchers.py
-└── purchases_bulk_tool.js   # form script: pickers, new-row date, live amount
+└── purchases_bulk_tool.js   # form script: pickers, new-row date, live amount, Vouchers buttons
+
+optima_payment/hooks.py      # ignore_links_on_delete releases the rows' voucher link
 ```
 
 Functions with a leading underscore are the decisions. Adding a grouping rule or a voucher field
@@ -89,7 +97,7 @@ Status 1, Voucher 1. That budget is full, so `warehouse` lives in the row form o
 |------|--------|-----------|
 | `validate` | `vouchers.set_row_values()` | Fills a blank row date from `posting_date` and computes `amount` |
 | `before_submit` | `vouchers.create_vouchers()` | The row stamps (`reference_*`, `status`) are then saved with the parent in the same `_save`, with no `db_set` |
-| `on_cancel` | `vouchers.rollback_vouchers()` | By `on_cancel`, Frappe has already written the children with docstatus 2 (`update_children` runs before `run_post_save_methods`). Each voucher's back-link check (`check_if_doc_is_dynamically_linked`) then no longer sees a submitted row pointing at it. In `before_cancel` the rows are still docstatus 1 and the voucher's cancel or delete is refused |
+| `on_cancel` | `vouchers.rollback_vouchers()` | Runs once the tool's own cancel has passed its checks and its rows are saved at docstatus 2. The rows never block their vouchers' cancel or delete, in this hook or any other, because the link is [released](#released-link) |
 
 ---
 
@@ -176,13 +184,98 @@ do with each:
 Row statuses are written with `db_set(..., update_modified=False)` because the tool is already
 cancelled.
 
+`voucher_docstatuses()` reads every voucher's docstatus in one query before the loop.
+`apply_action()` does the cancel or delete, the same function the bulk actions use.
+
 If a voucher has submitted downstream documents, ERPNext refuses its cancel and the whole tool
 cancel aborts. An example is a Payment Entry against the invoice when *Unlink Payment on
 Cancellation of Invoice* is off. This is intended.
 
-> **Side effect while submitted.** The tool's submitted row is a live dynamic link to its
-> voucher, so Frappe refuses to cancel or delete that voucher on its own. Rollback always goes
-> through the tool.
+---
+
+## Bulk actions
+
+A submitted tool shows a **Vouchers** button group. Each button calls a POST-only whitelisted
+door in `api.py`. The door checks access, refuses a tool that isn't submitted (and an unknown
+action), then makes one call into `vouchers.py`:
+
+| Button | Door | Needs on the tool | Calls |
+|--------|------|-------------------|-------|
+| **Update Status** | `update_statuses(tool)` | read | `sync_statuses()` |
+| **Submit All** | `run_bulk_action(tool, "submit")` | submit | `run_bulk_action()` |
+| **Cancel All** | `run_bulk_action(tool, "cancel")` | submit | `run_bulk_action()` |
+| **Delete All** | `run_bulk_action(tool, "delete")` | submit | `run_bulk_action()` |
+
+The three actions ask for confirmation first, then the form reloads. The tool stays at
+docstatus 1 throughout.
+
+`voucher_docstatuses()` reads each voucher's docstatus in one query; a voucher missing from the
+result was deleted. `_bulk_step(action, docstatus)` then decides, per voucher, whether the action
+takes it and the status its rows end at:
+
+| Voucher docstatus | Submit All | Cancel All | Delete All |
+|-------------------|------------|------------|------------|
+| 0 (draft) | **submit** → Submitted | skip → Draft | **delete** → Deleted |
+| 1 (submitted) | skip → Submitted | **cancel** → Cancelled | skip → Submitted |
+| 2 (cancelled) | skip → Cancelled | skip → Cancelled | **delete** → Deleted |
+| missing | skip → Deleted | skip → Deleted | skip → Deleted |
+
+Submit All takes drafts and Cancel All takes submitted vouchers. Delete All takes drafts **and
+cancelled vouchers**, so a click can clear a tool's vouchers completely. Tool cancel
+(`_rollback_action()`) differs here: it keeps cancelled vouchers.
+
+> **Cancelled invoices and receipts keep their ledger rows.** Cancelling a Purchase Invoice or
+> Receipt doesn't remove its GL, Stock and Payment Ledger Entries; ERPNext marks them
+> `is_cancelled = 1` and leaves them at docstatus 1. Frappe's delete check then refuses the
+> voucher (*Cannot delete or cancel because Purchase Invoice … is linked with GL Entry …*), unless
+> **Accounts Settings → Delete Accounting and Stock Ledger Entries on deletion of Transaction**
+> (`delete_linked_ledger_entries`) is on, in which case ERPNext's `on_trash` deletes those rows
+> first. With the setting off, one cancelled invoice or receipt stops the whole Delete All, drafts
+> included. Cancelled Purchase Orders post no ledger rows and always delete.
+
+- **All or nothing.** `run_bulk_action()` sets the `purchases_bulk_tool` savepoint before the
+  first voucher, as creation does. When a voucher fails with a `ValidationError` or
+  `PermissionError`, it rolls back to the savepoint, which undoes every voucher already handled
+  in this click and every row status written, and throws `_bulk_failure_message()`: *Could not
+  submit Purchase Invoice ACC-PINV-… (rows 1, 3). No voucher was changed.* ERPNext's own message
+  stays above it. Other exceptions propagate unchanged.
+- **Order.** `_bulk_order()` sends Submit in creation order (`_rows_by_voucher()`), and Cancel
+  and Delete newest first (`_vouchers_newest_first()`), the order tool cancel uses.
+- **Statuses.** Every row ends at its voucher's status, including the rows of skipped vouchers,
+  so any click also corrects stale statuses. `set_status()` writes a status only when it
+  changed, with `db_set(..., update_modified=False)`. When the action took no voucher, the user
+  sees `_nothing_to_do_message()`, such as *No draft voucher to submit.* or *No draft or
+  cancelled voucher to delete.*
+- **Update Status** runs `sync_statuses()`: it reads the docstatuses and writes
+  `_voucher_status()` onto each voucher's rows, and changes no voucher.
+- **Permissions.** `apply_action()` submits, cancels or deletes each voucher as the current
+  user, with no `ignore_permissions`. Submit permission on the tool lets the user start an
+  action; each voucher still needs the user's own right on its doctype, and a refusal aborts
+  the click like any other failure.
+
+---
+
+## Released link
+
+`hooks.py` lists **Purchases Bulk Tool Item** in `ignore_links_on_delete`. Without it, a
+submitted tool's row is a live Dynamic Link to its voucher, and Frappe
+(`check_if_doc_is_dynamically_linked` in `frappe/model/delete_doc.py`) refuses to cancel or
+delete the voucher. With it:
+
+- The bulk actions can cancel and delete vouchers while the tool stays submitted.
+- A single voucher can be cancelled, amended or deleted from its own form, without cancelling
+  the whole tool. **Update Status** then reads its state back onto the rows. The row keeps
+  pointing at the original voucher, not its amendment, and tool cancel never touches the
+  amendment.
+
+There is no narrower bypass. ERPNext's Purchase Order, Invoice and Receipt `on_cancel` assign
+`ignore_linked_doctypes` themselves, overwriting anything the tool sets, and `flags.ignore_links`
+would also skip real downstream checks such as a Payment Entry against the invoice.
+
+> **Side effect.** On delete, Frappe also ignores the rows' static Link fields
+> (`check_if_doc_is_linked` adds the hook's doctypes to its ignore list). A supplier, item, VAT
+> template or warehouse that only a tool row uses can then be deleted. On a **Pending** tool this
+> surfaces later: its submit fails with Frappe's normal link error for the missing record.
 
 ### Row status
 
@@ -191,9 +284,14 @@ stateDiagram-v2
     [*] --> Pending
     Pending --> Draft: tool submitted, auto_submit off
     Pending --> Submitted: tool submitted, auto_submit on
-    Draft --> Deleted: tool cancelled
-    Submitted --> Cancelled: tool cancelled
+    Draft --> Submitted: Submit All, or submitted by hand
+    Submitted --> Cancelled: Cancel All, cancelled by hand, or tool cancelled
+    Draft --> Deleted: Delete All, deleted by hand, or tool cancelled
+    Cancelled --> Deleted: Delete All, or deleted by hand
 ```
+
+The tool's own submit, its cancel and the bulk actions write the new status at once. A change
+made from the voucher's form shows after **Update Status**, or the next bulk action.
 
 `status`, `reference_doctype` and `reference_name` are `no_copy`. An amended tool therefore
 starts at **Pending** and creates fresh vouchers.
@@ -224,8 +322,8 @@ See [testing.md](../development/testing.md). The tests come as a pair in
 
 | File | Layer | What it proves |
 |------|-------|----------------|
-| `test_vouchers.py` | Matrix: plain rows, nothing written | Every branch of the decisions: amount with qty and rounding, grouping by each header value, date fields per voucher type, header and line warehouse, qty per line, row statuses, rollback order and actions, the failure message |
-| `test_vouchers_integration.py` | Integration: real saves | What only a real voucher shows: rows stamped, typed qty, rate and row date kept, a row warehouse beating `set_warehouse`, template taxes copied, the row amount equal to the voucher's grand total, the savepoint abort, cancel and delete getting past the back-link check, PO and PR |
+| `test_vouchers.py` | Matrix: plain rows, nothing written | Every branch of the decisions: amount with qty and rounding, grouping by each header value, date fields per voucher type, header and line warehouse, qty per line, row status per docstatus, each bulk action × docstatus, voucher order both ways, rollback actions, the failure and nothing-to-do messages |
+| `test_vouchers_integration.py` | Integration: real saves | What only a real voucher shows: rows stamped, typed qty, rate and row date kept, a row warehouse beating `set_warehouse`, template taxes copied, the row amount equal to the voucher's grand total, the savepoint abort on create and on Submit All, a voucher cancelled or deleted by hand and Update Status reading it back, each bulk action taking only its own state, tool cancel after Cancel All, the API refusing a draft tool or an unknown action, PO and PR |
 
 The integration fixtures come from `optima_payment/tests/utils.py`. The suite owns its whole VAT
 chain (account, Item Tax Template, purchase template, items), so no template the site holds
