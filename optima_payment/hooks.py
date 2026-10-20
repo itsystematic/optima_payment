@@ -225,7 +225,10 @@ override_doctype_dashboards = {
 # Ignore links to specified DocTypes when deleting documents
 # -----------------------------------------------------------
 
-ignore_links_on_delete = ["Cheque Action Log"]
+# Purchases Bulk Tool Item: a submitted tool's rows would otherwise block cancelling or deleting
+# the vouchers they point at. Frappe also skips the rows' static links on delete, so a supplier,
+# item, template or warehouse used only by a Pending row can be deleted.
+ignore_links_on_delete = ["Cheque Action Log", "Purchases Bulk Tool Item"]
 
 # Request Events
 # ----------------

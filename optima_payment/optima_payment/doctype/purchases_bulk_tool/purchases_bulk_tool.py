@@ -33,6 +33,4 @@ class PurchasesBulkTool(Document):
         vouchers.create_vouchers(self)
 
     def on_cancel(self):
-        # Must stay in on_cancel: by now the rows are saved with docstatus 2, so each voucher's
-        # back-link check no longer sees a submitted row pointing at it and lets it go.
         vouchers.rollback_vouchers(self)

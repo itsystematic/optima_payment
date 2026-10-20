@@ -37,6 +37,25 @@ frappe.ui.form.on("Purchases Bulk Tool", {
             };
         });
     },
+
+    refresh(frm) {
+        if (frm.doc.docstatus !== 1) return;
+
+        const group = __("Vouchers");
+        frm.add_custom_button(__("Update Status"), () => call_vouchers_api(frm, "update_statuses"), group);
+
+        for (const [action, label, question] of [
+            ["submit", __("Submit All"), __("Submit every draft voucher? If one fails, none is submitted.")],
+            ["cancel", __("Cancel All"), __("Cancel every submitted voucher? If one fails, none is cancelled.")],
+            ["delete", __("Delete All"), __("Delete every draft and cancelled voucher? If one fails, none is deleted.")],
+        ]) {
+            frm.add_custom_button(
+                label,
+                () => frappe.confirm(question, () => call_vouchers_api(frm, "run_bulk_action", { action })),
+                group
+            );
+        }
+    },
 });
 
 frappe.ui.form.on("Purchases Bulk Tool Item", {
@@ -57,6 +76,17 @@ function set_amount(frm, cdt, cdn) {
         callback(r) {
             const amount = flt(row.qty) * flt(row.rate) * (1 + flt(r.message) / 100);
             frappe.model.set_value(cdt, cdn, "amount", flt(amount, precision("amount", row)));
+        },
+    });
+}
+
+function call_vouchers_api(frm, method, args = {}) {
+    frappe.call({
+        method: `optima_payment.purchases_bulk.api.${method}`,
+        args: { tool: frm.doc.name, ...args },
+        freeze: true,
+        callback() {
+            frm.reload_doc();
         },
     });
 }

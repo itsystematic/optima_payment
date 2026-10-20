@@ -12,19 +12,26 @@ from frappe.tests.utils import FrappeTestCase
 from frappe.utils import formatdate, getdate
 
 from optima_payment.purchases_bulk.vouchers import (
+    BULK_ACTIONS,
     CANCEL,
     CANCELLED,
     DELETE,
     DELETED,
     DRAFT,
+    SUBMIT,
     SUBMITTED,
     GroupKey,
-    _created_status,
+    _bulk_failure_message,
+    _bulk_order,
+    _bulk_step,
     _failure_message,
     _group_rows,
+    _nothing_to_do_message,
     _rollback_action,
     _row_amount,
+    _rows_by_voucher,
     _voucher_fields,
+    _voucher_status,
     _vouchers_newest_first,
 )
 
@@ -169,9 +176,11 @@ class TestVoucherFields(FrappeTestCase):
 
 
 class TestRowStatus(FrappeTestCase):
-    def test_a_created_voucher_marks_its_rows_by_its_docstatus(self):
-        self.assertEqual(_created_status(0), DRAFT)
-        self.assertEqual(_created_status(1), SUBMITTED)
+    def test_a_voucher_marks_its_rows_by_its_docstatus(self):
+        cases = [(0, DRAFT), (1, SUBMITTED), (2, CANCELLED), (None, DELETED)]
+        for docstatus, status in cases:
+            with self.subTest(docstatus=docstatus):
+                self.assertEqual(_voucher_status(docstatus), status)
 
     def test_cancelling_the_tool_cancels_submitted_vouchers_and_deletes_drafts(self):
         cases = [
@@ -185,7 +194,36 @@ class TestRowStatus(FrappeTestCase):
                 self.assertEqual(_rollback_action(docstatus), expected)
 
 
-class TestVouchersNewestFirst(FrappeTestCase):
+class TestBulkStep(FrappeTestCase):
+    def test_which_vouchers_each_action_takes_and_where_their_rows_end(self):
+        cases = [
+            (SUBMIT, 0, (True, SUBMITTED)),
+            (SUBMIT, 1, (False, SUBMITTED)),
+            (SUBMIT, 2, (False, CANCELLED)),
+            (SUBMIT, None, (False, DELETED)),
+            (CANCEL, 0, (False, DRAFT)),
+            (CANCEL, 1, (True, CANCELLED)),
+            (CANCEL, 2, (False, CANCELLED)),
+            (CANCEL, None, (False, DELETED)),
+            (DELETE, 0, (True, DELETED)),
+            (DELETE, 1, (False, SUBMITTED)),
+            (DELETE, 2, (True, DELETED)),
+            (DELETE, None, (False, DELETED)),
+        ]
+        for action, docstatus, expected in cases:
+            with self.subTest(action=action, docstatus=docstatus):
+                self.assertEqual(_bulk_step(action, docstatus), expected)
+
+
+class TestVoucherOrder(FrappeTestCase):
+    def test_vouchers_come_in_creation_order_with_all_their_rows(self):
+        vouchers = _rows_by_voucher([row(1, voucher="PINV-1"), row(2, voucher="PINV-2"), row(3, voucher="PINV-1")])
+
+        self.assertEqual(
+            [(name, [r.idx for r in rows]) for (_doctype, name), rows in vouchers],
+            [("PINV-1", [1, 3]), ("PINV-2", [2])],
+        )
+
     def test_the_last_created_voucher_is_undone_first_with_all_its_rows(self):
         vouchers = _vouchers_newest_first(
             [row(1, voucher="PINV-1"), row(2, voucher="PINV-2"), row(3, voucher="PINV-1")]
@@ -196,14 +234,34 @@ class TestVouchersNewestFirst(FrappeTestCase):
             [("PINV-2", [2]), ("PINV-1", [1, 3])],
         )
 
+    def test_submit_all_goes_in_creation_order_and_cancel_or_delete_all_newest_first(self):
+        rows = [row(1, voucher="PINV-1"), row(2, voucher="PINV-2")]
+        cases = [(SUBMIT, ["PINV-1", "PINV-2"]), (CANCEL, ["PINV-2", "PINV-1"]), (DELETE, ["PINV-2", "PINV-1"])]
+        for action, names in cases:
+            with self.subTest(action=action):
+                self.assertEqual([name for (_doctype, name), _rows in _bulk_order(action, rows)], names)
+
     def test_rows_without_a_voucher_are_skipped(self):
+        self.assertEqual(_rows_by_voucher([row(1), row(2)]), [])
         self.assertEqual(_vouchers_newest_first([row(1), row(2)]), [])
 
 
-class TestFailureMessage(FrappeTestCase):
-    def test_it_names_the_voucher_type_supplier_date_and_rows(self):
+class TestMessages(FrappeTestCase):
+    def test_a_creation_failure_names_the_voucher_type_supplier_date_and_rows(self):
         message = _failure_message("Purchase Invoice", key(), [row(1), row(3)])
 
         for part in ("Purchase Invoice", SUPPLIER, formatdate(DATE), "(rows 1, 3)"):
             with self.subTest(part=part):
                 self.assertIn(part, message)
+
+    def test_a_bulk_failure_names_the_action_voucher_and_rows(self):
+        for action in BULK_ACTIONS:
+            message = _bulk_failure_message(action, "Purchase Invoice", "PINV-1", [row(1), row(3)])
+            for part in (action, "Purchase Invoice", "PINV-1", "(rows 1, 3)", "No voucher was changed"):
+                with self.subTest(action=action, part=part):
+                    self.assertIn(part, message)
+
+    def test_nothing_to_do_names_the_action(self):
+        for action in BULK_ACTIONS:
+            with self.subTest(action=action):
+                self.assertIn(action, _nothing_to_do_message(action))

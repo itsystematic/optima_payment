@@ -11,6 +11,9 @@ template both live in the voucher header. One savepoint wraps the whole run: whe
 every voucher made before it in the run is rolled back too. Cancelling the tool undoes its vouchers,
 the last created first: submitted ones are cancelled, drafts deleted.
 
+While the tool stays submitted, the bulk actions submit, cancel or delete its vouchers, all or none,
+and hooks.py releases the rows' link so a single voucher can also be cancelled or deleted by hand.
+
 Branching lives in the underscore functions, which take plain rows and return values.
 """
 
@@ -34,8 +37,10 @@ SUBMITTED = "Submitted"
 CANCELLED = "Cancelled"
 DELETED = "Deleted"
 
+SUBMIT = "submit"
 CANCEL = "cancel"
 DELETE = "delete"
+BULK_ACTIONS = (SUBMIT, CANCEL, DELETE)
 
 GroupKey = namedtuple("GroupKey", ["supplier", "posting_date", "vat"])
 
@@ -88,8 +93,9 @@ def _line(voucher_type: str, row) -> dict:
     return line
 
 
-def _created_status(docstatus: int) -> str:
-    return SUBMITTED if docstatus == 1 else DRAFT
+def _voucher_status(docstatus: int | None) -> str:
+    """The row status of a voucher at ``docstatus``; None means the voucher no longer exists."""
+    return {0: DRAFT, 1: SUBMITTED, 2: CANCELLED, None: DELETED}[docstatus]
 
 
 def _rollback_action(docstatus: int | None) -> tuple[str | None, str]:
@@ -98,18 +104,42 @@ def _rollback_action(docstatus: int | None) -> tuple[str | None, str]:
         return CANCEL, CANCELLED
     if docstatus == 0:
         return DELETE, DELETED
-    if docstatus is None:
-        return None, DELETED
-    return None, CANCELLED
+    return None, _voucher_status(docstatus)
 
 
-def _vouchers_newest_first(rows: list) -> list[tuple[tuple[str, str], list]]:
-    """Each voucher the rows point at, with those rows, the last created first."""
+def _bulk_step(action: str, docstatus: int | None) -> tuple[bool, str]:
+    """Whether a bulk action acts on a voucher at ``docstatus``, and the status its rows end at.
+
+    Submit takes drafts and cancel takes submitted vouchers. Delete takes drafts and cancelled
+    vouchers too, which tool cancel keeps.
+    """
+    if action == SUBMIT and docstatus == 0:
+        return True, SUBMITTED
+    if action == CANCEL and docstatus == 1:
+        return True, CANCELLED
+    if action == DELETE and docstatus in (0, 2):
+        return True, DELETED
+    return False, _voucher_status(docstatus)
+
+
+def _rows_by_voucher(rows: list) -> list[tuple[tuple[str, str], list]]:
+    """Each voucher the rows point at, with those rows, in creation order."""
     by_voucher = {}
     for row in rows:
         if row.reference_name:
             by_voucher.setdefault((row.reference_doctype, row.reference_name), []).append(row)
-    return list(reversed(by_voucher.items()))
+    return list(by_voucher.items())
+
+
+def _vouchers_newest_first(rows: list) -> list[tuple[tuple[str, str], list]]:
+    return list(reversed(_rows_by_voucher(rows)))
+
+
+def _bulk_order(action: str, rows: list) -> list[tuple[tuple[str, str], list]]:
+    """Submit follows creation order; cancel and delete undo, so they take the last created first."""
+    if action == SUBMIT:
+        return _rows_by_voucher(rows)
+    return _vouchers_newest_first(rows)
 
 
 def _failure_message(voucher_type: str, key: GroupKey, rows: list) -> str:
@@ -119,6 +149,23 @@ def _failure_message(voucher_type: str, key: GroupKey, rows: list) -> str:
         formatdate(key.posting_date),
         ", ".join(str(row.idx) for row in rows),
     )
+
+
+def _bulk_failure_message(action: str, doctype: str, name: str, rows: list) -> str:
+    message = {
+        SUBMIT: _("Could not submit {0} {1} (rows {2}). No voucher was changed."),
+        CANCEL: _("Could not cancel {0} {1} (rows {2}). No voucher was changed."),
+        DELETE: _("Could not delete {0} {1} (rows {2}). No voucher was changed."),
+    }[action]
+    return message.format(_(doctype), frappe.bold(name), ", ".join(str(row.idx) for row in rows))
+
+
+def _nothing_to_do_message(action: str) -> str:
+    return {
+        SUBMIT: _("No draft voucher to submit."),
+        CANCEL: _("No submitted voucher to cancel."),
+        DELETE: _("No draft or cancelled voucher to delete."),
+    }[action]
 
 
 # ====================================================================================================
@@ -168,7 +215,7 @@ def create_vouchers(tool: Document) -> None:
             frappe.db.rollback(save_point=SAVEPOINT)
             frappe.throw(_failure_message(tool.voucher_type, key, rows))
 
-        status = _created_status(voucher.docstatus)
+        status = _voucher_status(voucher.docstatus)
         for row in rows:
             row.update({"reference_doctype": voucher.doctype, "reference_name": voucher.name, "status": status})
 
@@ -192,12 +239,70 @@ def make_voucher(voucher_type: str, fields: dict, *, submit: bool) -> Document:
 
 def rollback_vouchers(tool: Document) -> None:
     """Cancels the tool's submitted vouchers and deletes its drafts, the last created first."""
+    docstatuses = voucher_docstatuses(tool)
     for (doctype, name), rows in _vouchers_newest_first(tool.items):
-        action, status = _rollback_action(frappe.db.get_value(doctype, name, "docstatus"))
-        if action == CANCEL:
-            frappe.get_doc(doctype, name).cancel()
-        elif action == DELETE:
-            frappe.delete_doc(doctype, name)
+        action, status = _rollback_action(docstatuses.get(name))
+        if action:
+            apply_action(action, doctype, name)
+        set_status(rows, status)
 
-        for row in rows:
+
+# ====================================================================================================
+# VOUCHER STATUS AND BULK ACTIONS
+
+
+def voucher_docstatuses(tool: Document) -> dict[str, int]:
+    """Voucher name -> docstatus, for every voucher the rows point at. A deleted voucher is absent."""
+    names = list({row.reference_name for row in tool.items if row.reference_name})
+    if not names:
+        return {}
+
+    rows = frappe.get_all(tool.voucher_type, filters={"name": ("in", names)}, fields=["name", "docstatus"])
+    return {row.name: row.docstatus for row in rows}
+
+
+def sync_statuses(tool: Document) -> None:
+    """Writes each voucher's current state onto its rows, however the voucher got there."""
+    docstatuses = voucher_docstatuses(tool)
+    for (_doctype, name), rows in _rows_by_voucher(tool.items):
+        set_status(rows, _voucher_status(docstatuses.get(name)))
+
+
+def run_bulk_action(tool: Document, action: str) -> None:
+    """Submits, cancels or deletes every voucher in the state ``action`` takes, all of them or none.
+
+    Every row ends at its voucher's status, including the rows of vouchers the action skips.
+    """
+    docstatuses = voucher_docstatuses(tool)
+
+    frappe.db.savepoint(SAVEPOINT)
+    acted = False
+    for (doctype, name), rows in _bulk_order(action, tool.items):
+        acts, status = _bulk_step(action, docstatuses.get(name))
+        if acts:
+            try:
+                apply_action(action, doctype, name)
+            except EXPECTED:
+                frappe.db.rollback(save_point=SAVEPOINT)
+                frappe.throw(_bulk_failure_message(action, doctype, name, rows))
+            acted = True
+        set_status(rows, status)
+
+    if not acted:
+        frappe.msgprint(_nothing_to_do_message(action))
+
+
+def apply_action(action: str, doctype: str, name: str) -> None:
+    """Submits, cancels or deletes one voucher through its controller, as the current user."""
+    if action == SUBMIT:
+        frappe.get_doc(doctype, name).submit()
+    elif action == CANCEL:
+        frappe.get_doc(doctype, name).cancel()
+    elif action == DELETE:
+        frappe.delete_doc(doctype, name)
+
+
+def set_status(rows: list, status: str) -> None:
+    for row in rows:
+        if row.status != status:
             row.db_set("status", status, update_modified=False)
