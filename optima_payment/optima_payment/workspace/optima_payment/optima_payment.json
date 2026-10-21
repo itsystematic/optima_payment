@@ -9,7 +9,7 @@
    "label": "Letter of Credit Status"
   }
  ],
- "content": "[{\"id\": \"lkjnD15SpM\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Insights</b></span>\", \"col\": 12}}, {\"id\": \"LUuHmHdj0u\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Bank Guarantee-BG Expiring Soon\", \"col\": 6}}, {\"id\": \"1SbZcLI4eK\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Letter of Credit Expiring Soon\", \"col\": 6}}, {\"id\": \"An5PHVQ01M\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Bank Guarantee-BG Status\", \"col\": 6}}, {\"id\": \"4f1JcM5ltV\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Letter of Credit Status\", \"col\": 6}}, {\"id\": \"uETt2L1uct\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"Ucs3VtwGhH\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Quick Access</b></span>\", \"col\": 12}}, {\"id\": \"bwyF0uSTeB\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Bank Guarantee-BG\", \"col\": 3}}, {\"id\": \"ufaTzCLGKP\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Letter of Credit\", \"col\": 3}}, {\"id\": \"ioUQO3Iw9F\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Cheque Deposit Slip\", \"col\": 3}}, {\"id\": \"3fNfvDkIUK\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Cheque Action Log\", \"col\": 3}}, {\"id\": \"ONfjszm8Hx\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Optima Payment Setting\", \"col\": 3}}, {\"id\": \"Axz75vqdZm\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Cheque Dashboard\", \"col\": 3}}, {\"id\": \"BBxaylapAO\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"SfXyc7mNtW\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Masters &amp; Reports</b></span>\", \"col\": 12}}, {\"id\": \"AYyHhHWANT\", \"type\": \"card\", \"data\": {\"card_name\": \"Masters\", \"col\": 4}}, {\"id\": \"o9iOeLW3sv\", \"type\": \"card\", \"data\": {\"card_name\": \"Settings\", \"col\": 4}}, {\"id\": \"dihIhLGhCP\", \"type\": \"card\", \"data\": {\"card_name\": \"Reports\", \"col\": 4}}]",
+ "content": "[{\"id\": \"lkjnD15SpM\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Insights</b></span>\", \"col\": 12}}, {\"id\": \"LUuHmHdj0u\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Bank Guarantee-BG Expiring Soon\", \"col\": 6}}, {\"id\": \"1SbZcLI4eK\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Letter of Credit Expiring Soon\", \"col\": 6}}, {\"id\": \"An5PHVQ01M\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Bank Guarantee-BG Status\", \"col\": 6}}, {\"id\": \"4f1JcM5ltV\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Letter of Credit Status\", \"col\": 6}}, {\"id\": \"uETt2L1uct\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"Ucs3VtwGhH\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Quick Access</b></span>\", \"col\": 12}}, {\"id\": \"bwyF0uSTeB\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Bank Guarantee-BG\", \"col\": 3}}, {\"id\": \"ufaTzCLGKP\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Letter of Credit\", \"col\": 3}}, {\"id\": \"ioUQO3Iw9F\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Cheque Deposit Slip\", \"col\": 3}}, {\"id\": \"3fNfvDkIUK\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Cheque Action Log\", \"col\": 3}}, {\"id\": \"pBt7kWq2Rx\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Purchases Bulk Tool\", \"col\": 3}}, {\"id\": \"ONfjszm8Hx\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Optima Payment Setting\", \"col\": 3}}, {\"id\": \"Axz75vqdZm\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Cheque Dashboard\", \"col\": 3}}, {\"id\": \"BBxaylapAO\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"SfXyc7mNtW\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Masters &amp; Reports</b></span>\", \"col\": 12}}, {\"id\": \"AYyHhHWANT\", \"type\": \"card\", \"data\": {\"card_name\": \"Masters\", \"col\": 4}}, {\"id\": \"o9iOeLW3sv\", \"type\": \"card\", \"data\": {\"card_name\": \"Settings\", \"col\": 4}}, {\"id\": \"dihIhLGhCP\", \"type\": \"card\", \"data\": {\"card_name\": \"Reports\", \"col\": 4}}]",
  "creation": "2026-07-08 00:00:00",
  "custom_blocks": [],
  "docstatus": 0,
@@ -25,7 +25,7 @@
    "hidden": 0,
    "is_query_report": 0,
    "label": "Masters",
-   "link_count": 4,
+   "link_count": 5,
    "onboard": 0,
    "type": "Card Break"
   },
@@ -69,6 +69,17 @@
    "label": "Cheque Action Log",
    "link_count": 0,
    "link_to": "Cheque Action Log",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Purchases Bulk Tool",
+   "link_count": 0,
+   "link_to": "Purchases Bulk Tool",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -137,7 +148,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-07-08 18:21:13.659924",
+ "modified": "2026-10-21 13:00:00.000000",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Optima Payment",
@@ -196,6 +207,14 @@
    "format": "",
    "label": "Cheque Action Log",
    "link_to": "Cheque Action Log",
+   "type": "DocType"
+  },
+  {
+   "color": "Cyan",
+   "doc_view": "List",
+   "format": "",
+   "label": "Purchases Bulk Tool",
+   "link_to": "Purchases Bulk Tool",
    "type": "DocType"
   },
   {
