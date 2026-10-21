@@ -6,7 +6,8 @@
 The branch matrix is in test_vouchers.py. These prove what only a real voucher shows: the rows are
 stamped, ERPNext keeps the typed qty, rate, row date and row warehouse, the template's taxes reach the
 voucher, a failure leaves nothing behind, and a voucher can be cancelled or deleted while the tool
-stays submitted, by hand or through the bulk actions.
+stays submitted, by hand or through the bulk actions. A deleted voucher's rows lose their link, so a
+later voucher given the same name by the naming series stays out of the tool.
 """
 
 import erpnext
@@ -40,13 +41,20 @@ class TestPurchasesBulkToolIntegration(FrappeTestCase):
         names = dict.fromkeys(row.reference_name for row in tool.items)
         return [frappe.get_doc(tool.voucher_type, name) for name in names]
 
-    def get_docstatuses(self, tool) -> list:
-        """Each row's voucher docstatus, None once the voucher is deleted."""
-        return [frappe.db.get_value(tool.voucher_type, row.reference_name, "docstatus") for row in tool.items]
+    def get_voucher_names(self, tool) -> list:
+        return [row.reference_name for row in tool.items]
+
+    def get_docstatuses(self, voucher_type, names) -> list:
+        """Each voucher's docstatus, None once it is deleted."""
+        return [frappe.db.get_value(voucher_type, name, "docstatus") for name in names]
 
     def get_statuses(self, tool) -> list:
         tool.reload()
         return [row.status for row in tool.items]
+
+    def get_links(self, tool) -> list:
+        tool.reload()
+        return self.get_voucher_names(tool)
 
     def set_delete_linked_ledger_entries(self, value: int):
         """Whether deleting a cancelled invoice also deletes its ledger rows, which otherwise block it.
@@ -218,6 +226,7 @@ class TestPurchasesBulkToolIntegration(FrappeTestCase):
         for name in voucher_names:
             self.assertFalse(frappe.db.exists("Purchase Invoice", name))
         self.assertEqual({row.status for row in tool.items}, {"Deleted"})
+        self.assertEqual(self.get_links(tool), [None, None])
 
     def test_cancelling_the_tool_after_cancel_all_keeps_every_row_cancelled(self):
         tool = make_purchases_bulk_tool(
@@ -244,6 +253,32 @@ class TestPurchasesBulkToolIntegration(FrappeTestCase):
 
         self.assertEqual(self.get_statuses(tool), ["Cancelled", "Deleted"])
 
+    def test_deleting_a_voucher_by_hand_unlinks_its_rows_at_once(self):
+        tool = make_purchases_bulk_tool(rows=[{"supplier": self.supplier_a}, {"supplier": self.supplier_b}])
+        kept, deleted = self.get_vouchers(tool)
+
+        frappe.delete_doc(deleted.doctype, deleted.name)
+
+        self.assertEqual(self.get_links(tool), [kept.name, None])
+        self.assertEqual(self.get_statuses(tool), ["Draft", "Deleted"])
+
+    def test_a_voucher_given_a_deleted_name_stays_out_of_the_tool(self):
+        tool = make_purchases_bulk_tool(rows=[{"supplier": self.supplier_a}])
+        names = self.get_voucher_names(tool)
+        api.run_bulk_action(tool.name, DELETE)
+
+        other = make_purchases_bulk_tool(rows=[{"supplier": self.supplier_b}])
+        self.assertEqual(self.get_voucher_names(other), names, "the naming series should give the name out again")
+
+        api.update_statuses(tool.name)
+        api.run_bulk_action(tool.name, SUBMIT)
+        tool.reload()
+        tool.cancel()
+
+        self.assertEqual(self.get_docstatuses(tool.voucher_type, names), [0])
+        self.assertEqual(self.get_statuses(tool), ["Deleted"])
+        self.assertEqual(self.get_links(tool), [None])
+
     def test_update_status_shows_a_draft_submitted_on_its_own(self):
         tool = make_purchases_bulk_tool(rows=[{"supplier": self.supplier_a}])
         (voucher,) = self.get_vouchers(tool)
@@ -255,57 +290,65 @@ class TestPurchasesBulkToolIntegration(FrappeTestCase):
 
     def test_submit_all_submits_the_drafts_and_the_tool_stays_submitted(self):
         tool = make_purchases_bulk_tool(rows=[{"supplier": self.supplier_a}, {"supplier": self.supplier_b}])
+        names = self.get_voucher_names(tool)
 
         api.run_bulk_action(tool.name, SUBMIT)
 
-        self.assertEqual(self.get_docstatuses(tool), [1, 1])
+        self.assertEqual(self.get_docstatuses(tool.voucher_type, names), [1, 1])
         self.assertEqual(self.get_statuses(tool), ["Submitted", "Submitted"])
         self.assertEqual(tool.docstatus, 1)
 
     def test_cancel_all_leaves_the_drafts(self):
         tool = self.make_mixed_tool()
+        names = self.get_voucher_names(tool)
 
         vouchers.run_bulk_action(tool, CANCEL)
 
-        self.assertEqual(self.get_docstatuses(tool), [2, 0])
+        self.assertEqual(self.get_docstatuses(tool.voucher_type, names), [2, 0])
         self.assertEqual(self.get_statuses(tool), ["Cancelled", "Draft"])
 
     def test_delete_all_leaves_the_submitted_vouchers(self):
         tool = self.make_mixed_tool()
+        names = self.get_voucher_names(tool)
 
         vouchers.run_bulk_action(tool, DELETE)
 
-        self.assertEqual(self.get_docstatuses(tool), [1, None])
+        self.assertEqual(self.get_docstatuses(tool.voucher_type, names), [1, None])
         self.assertEqual(self.get_statuses(tool), ["Submitted", "Deleted"])
+        self.assertEqual(self.get_links(tool), [names[0], None])
 
     def test_delete_all_deletes_cancelled_vouchers_too(self):
         tool = self.make_mixed_tool()
+        names = self.get_voucher_names(tool)
         self.get_vouchers(tool)[0].cancel()
         self.set_delete_linked_ledger_entries(1)
 
         vouchers.run_bulk_action(tool, DELETE)
 
-        self.assertEqual(self.get_docstatuses(tool), [None, None])
+        self.assertEqual(self.get_docstatuses(tool.voucher_type, names), [None, None])
         self.assertEqual(self.get_statuses(tool), ["Deleted", "Deleted"])
 
     def test_delete_all_deletes_nothing_when_a_cancelled_invoice_keeps_its_ledger_rows(self):
         tool = self.make_mixed_tool()
+        names = self.get_voucher_names(tool)
         self.get_vouchers(tool)[0].cancel()
         self.set_delete_linked_ledger_entries(0)
 
         with self.assertRaises(frappe.ValidationError):
             vouchers.run_bulk_action(tool, DELETE)
 
-        self.assertEqual(self.get_docstatuses(tool), [2, 0])
+        self.assertEqual(self.get_docstatuses(tool.voucher_type, names), [2, 0])
+        self.assertEqual(self.get_links(tool), names)
 
     def test_submit_all_submits_nothing_when_one_voucher_fails(self):
         tool = make_purchases_bulk_tool(rows=[{"supplier": self.supplier_a}, {"supplier": self.supplier_b}])
+        names = self.get_voucher_names(tool)
         frappe.db.set_value("Supplier", self.supplier_b, "disabled", 1)
 
         with self.assertRaises(frappe.ValidationError):
             vouchers.run_bulk_action(tool, SUBMIT)
 
-        self.assertEqual(self.get_docstatuses(tool), [0, 0])
+        self.assertEqual(self.get_docstatuses(tool.voucher_type, names), [0, 0])
         self.assertEqual(self.get_statuses(tool), ["Draft", "Draft"])
 
     def test_the_api_refuses_a_draft_tool_and_an_unknown_action(self):

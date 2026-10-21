@@ -29,6 +29,7 @@ from optima_payment.purchases_bulk.vouchers import (
     _nothing_to_do_message,
     _rollback_action,
     _row_amount,
+    _row_values,
     _rows_by_voucher,
     _voucher_fields,
     _voucher_status,
@@ -181,6 +182,18 @@ class TestRowStatus(FrappeTestCase):
         for docstatus, status in cases:
             with self.subTest(docstatus=docstatus):
                 self.assertEqual(_voucher_status(docstatus), status)
+
+    def test_only_a_deleted_row_drops_its_voucher_link(self):
+        unlinked = {"reference_doctype": None, "reference_name": None}
+        cases = [
+            (DRAFT, {"status": DRAFT}),
+            (SUBMITTED, {"status": SUBMITTED}),
+            (CANCELLED, {"status": CANCELLED}),
+            (DELETED, {"status": DELETED, **unlinked}),
+        ]
+        for status, values in cases:
+            with self.subTest(status=status):
+                self.assertEqual(_row_values(status), values)
 
     def test_cancelling_the_tool_cancels_submitted_vouchers_and_deletes_drafts(self):
         cases = [

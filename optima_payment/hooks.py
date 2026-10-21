@@ -178,6 +178,15 @@ doc_events = {
     "Journal Entry" :{
         "on_cancel" :  "optima_payment.doc_events.journal_entry.journal_entry_on_cancel",
     },
+    "Purchase Order": {
+        "after_delete": "optima_payment.purchases_bulk.vouchers.unlink_tool_rows",
+    },
+    "Purchase Invoice": {
+        "after_delete": "optima_payment.purchases_bulk.vouchers.unlink_tool_rows",
+    },
+    "Purchase Receipt": {
+        "after_delete": "optima_payment.purchases_bulk.vouchers.unlink_tool_rows",
+    },
     # "Expense Claim" : {
         # "on_submit" : "optima_payment.doc_events.expense_claim.on_submit",
         # "on_cancel" : "optima_payment.doc_events.expense_claim.on_cancel",

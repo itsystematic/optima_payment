@@ -13,6 +13,8 @@ the last created first: submitted ones are cancelled, drafts deleted.
 
 While the tool stays submitted, the bulk actions submit, cancel or delete its vouchers, all or none,
 and hooks.py releases the rows' link so a single voucher can also be cancelled or deleted by hand.
+However a voucher is deleted, its rows drop the link at once: its name can come back on the next
+voucher of its naming series.
 
 Branching lives in the underscore functions, which take plain rows and return values.
 """
@@ -25,6 +27,7 @@ from frappe.model.document import Document
 from frappe.utils import flt, formatdate, getdate
 
 TEMPLATE = "Purchase Taxes and Charges Template"
+TOOL_ITEM = "Purchases Bulk Tool Item"
 PURCHASE_ORDER = "Purchase Order"
 PURCHASE_INVOICE = "Purchase Invoice"
 SAVEPOINT = "purchases_bulk_tool"
@@ -96,6 +99,18 @@ def _line(voucher_type: str, row) -> dict:
 def _voucher_status(docstatus: int | None) -> str:
     """The row status of a voucher at ``docstatus``; None means the voucher no longer exists."""
     return {0: DRAFT, 1: SUBMITTED, 2: CANCELLED, None: DELETED}[docstatus]
+
+
+def _row_values(status: str) -> dict:
+    """What a row holds at ``status``.
+
+    A Deleted row keeps no link. Deleting the newest voucher of a naming series winds its counter
+    back (frappe.model.naming.revert_series_if_last), so the next voucher takes the same name and
+    a row still holding it would adopt a voucher the tool never made.
+    """
+    if status == DELETED:
+        return {"status": DELETED, "reference_doctype": None, "reference_name": None}
+    return {"status": status}
 
 
 def _rollback_action(docstatus: int | None) -> tuple[str | None, str]:
@@ -303,6 +318,19 @@ def apply_action(action: str, doctype: str, name: str) -> None:
 
 
 def set_status(rows: list, status: str) -> None:
+    values = _row_values(status)
     for row in rows:
-        if row.status != status:
-            row.db_set("status", status, update_modified=False)
+        changed = {field: value for field, value in values.items() if row.get(field) != value}
+        if changed:
+            row.db_set(changed, update_modified=False)
+
+
+def unlink_tool_rows(voucher: Document, method=None) -> None:
+    """after_delete of a Purchase Order, Invoice or Receipt: every tool row pointing at it ends at
+    Deleted with no link, before the voucher's name can be given out again."""
+    frappe.db.set_value(
+        TOOL_ITEM,
+        {"reference_doctype": voucher.doctype, "reference_name": voucher.name},
+        _row_values(DELETED),
+        update_modified=False,
+    )
