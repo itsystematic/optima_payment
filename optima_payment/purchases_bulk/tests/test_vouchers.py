@@ -140,34 +140,36 @@ class TestVoucherFields(FrappeTestCase):
                 self.assertEqual({fieldname: fields.get(fieldname) for fieldname in dates}, dates)
                 self.assertNotIn(absent, fields)
 
-    def test_the_warehouse_goes_only_on_orders_and_receipts(self):
+    def test_the_tool_warehouse_goes_on_the_header_and_makes_an_invoice_update_stock(self):
         cases = [
-            ("Purchase Order", WAREHOUSE, WAREHOUSE),
-            ("Purchase Receipt", WAREHOUSE, WAREHOUSE),
-            ("Purchase Invoice", WAREHOUSE, None),
-            ("Purchase Receipt", None, None),
+            ("Purchase Order", WAREHOUSE, (WAREHOUSE, None)),
+            ("Purchase Receipt", WAREHOUSE, (WAREHOUSE, None)),
+            ("Purchase Invoice", WAREHOUSE, (WAREHOUSE, 1)),
+            ("Purchase Invoice", None, (None, 0)),
         ]
         for voucher_type, set_warehouse, expected in cases:
             with self.subTest(voucher_type=voucher_type, set_warehouse=set_warehouse):
                 fields = _voucher_fields(voucher_type, COMPANY, set_warehouse, key(), [row()])
-                self.assertEqual(fields.get("set_warehouse"), expected)
+                self.assertEqual((fields.get("set_warehouse"), fields.get("update_stock")), expected)
 
     def test_each_line_carries_its_row_qty(self):
         fields = _voucher_fields("Purchase Invoice", COMPANY, None, key(), [row(1, qty=3), row(2, qty=0.5)])
 
         self.assertEqual([line["qty"] for line in fields["items"]], [3, 0.5])
 
-    def test_a_row_warehouse_goes_on_its_line_only_on_orders_and_receipts(self):
+    def test_a_row_warehouse_goes_on_its_line_only_when_the_tool_has_a_warehouse(self):
         line = {"item_code": "Cement", "qty": 1, "rate": 100}
+        with_warehouse = {**line, "warehouse": OTHER_WAREHOUSE}
         cases = [
-            ("Purchase Order", OTHER_WAREHOUSE, {**line, "warehouse": OTHER_WAREHOUSE}),
-            ("Purchase Receipt", OTHER_WAREHOUSE, {**line, "warehouse": OTHER_WAREHOUSE}),
-            ("Purchase Invoice", OTHER_WAREHOUSE, line),
-            ("Purchase Receipt", None, line),
+            ("Purchase Order", WAREHOUSE, OTHER_WAREHOUSE, with_warehouse),
+            ("Purchase Receipt", WAREHOUSE, OTHER_WAREHOUSE, with_warehouse),
+            ("Purchase Invoice", WAREHOUSE, OTHER_WAREHOUSE, with_warehouse),
+            ("Purchase Invoice", None, OTHER_WAREHOUSE, line),
+            ("Purchase Receipt", WAREHOUSE, None, line),
         ]
-        for voucher_type, warehouse, expected in cases:
-            with self.subTest(voucher_type=voucher_type, warehouse=warehouse):
-                fields = _voucher_fields(voucher_type, COMPANY, WAREHOUSE, key(), [row(warehouse=warehouse)])
+        for voucher_type, set_warehouse, warehouse, expected in cases:
+            with self.subTest(voucher_type=voucher_type, set_warehouse=set_warehouse, warehouse=warehouse):
+                fields = _voucher_fields(voucher_type, COMPANY, set_warehouse, key(), [row(warehouse=warehouse)])
                 self.assertEqual(fields["items"], [expected])
 
     def test_a_row_warehouse_leaves_the_header_warehouse_in_place(self):

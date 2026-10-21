@@ -155,6 +155,7 @@ class TestPurchasesBulkToolIntegration(FrappeTestCase):
     def test_purchase_order_uses_the_row_date(self):
         tool = make_purchases_bulk_tool(
             voucher_type="Purchase Order",
+            set_warehouse=get_or_create_warehouse(erpnext.get_default_company()),
             rows=[{"supplier": self.supplier_a, "voucher_posting_date": self.past_date}],
         )
 
@@ -199,6 +200,28 @@ class TestPurchasesBulkToolIntegration(FrappeTestCase):
 
         (receipt,) = self.get_vouchers(tool)
         self.assertEqual([line.warehouse for line in receipt.items], [row_warehouse, tool_warehouse])
+
+    def test_an_invoice_with_a_warehouse_updates_stock_into_it(self):
+        company = erpnext.get_default_company()
+        tool_warehouse = get_or_create_warehouse(company, "Optima Bulk Tool Warehouse")
+        row_warehouse = get_or_create_warehouse(company, "Optima Bulk Row Warehouse")
+        stock_item = get_or_create_purchase_item(company, "Optima Test Purchase Stock Item", is_stock_item=1)
+        tool = make_purchases_bulk_tool(
+            set_warehouse=tool_warehouse,
+            rows=[
+                {"supplier": self.supplier_a, "item": stock_item, "warehouse": row_warehouse},
+                {"supplier": self.supplier_a, "item": stock_item},
+            ],
+        )
+
+        (invoice,) = self.get_vouchers(tool)
+        self.assertEqual(invoice.update_stock, 1)
+        self.assertEqual([line.warehouse for line in invoice.items], [row_warehouse, tool_warehouse])
+
+    def test_an_order_or_receipt_needs_the_tool_warehouse(self):
+        for voucher_type in ("Purchase Order", "Purchase Receipt"):
+            with self.subTest(voucher_type=voucher_type), self.assertRaises(frappe.MandatoryError):
+                make_purchases_bulk_tool(voucher_type=voucher_type, do_not_submit=True)
 
     # ============================================================================================
     # CANCEL

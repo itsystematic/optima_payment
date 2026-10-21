@@ -26,6 +26,7 @@ class PurchasesBulkTool(Document):
     # end: auto-generated types
 
     def validate(self):
+        vouchers.validate_warehouse(self)
         vouchers.set_row_values(self)
 
     def before_submit(self):

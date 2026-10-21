@@ -74,24 +74,30 @@ def _date_fields(voucher_type: str, posting_date) -> dict:
 
 
 def _voucher_fields(voucher_type: str, company: str, set_warehouse: str | None, key: GroupKey, rows: list) -> dict:
-    """The voucher ``rows`` become. ``ignore_pricing_rule`` keeps the rate the user typed."""
+    """The voucher ``rows`` become. ``ignore_pricing_rule`` keeps the rate the user typed.
+
+    An invoice updates stock exactly when the tool names a warehouse, whatever the site's default.
+    """
     fields = {
         "company": company,
         "supplier": key.supplier,
         "taxes_and_charges": key.vat,
         "ignore_pricing_rule": 1,
         **_date_fields(voucher_type, key.posting_date),
-        "items": [_line(voucher_type, row) for row in rows],
+        "items": [_line(row, set_warehouse) for row in rows],
     }
-    if set_warehouse and voucher_type != PURCHASE_INVOICE:
+    if voucher_type == PURCHASE_INVOICE:
+        fields["update_stock"] = 1 if set_warehouse else 0
+    if set_warehouse:
         fields["set_warehouse"] = set_warehouse
     return fields
 
 
-def _line(voucher_type: str, row) -> dict:
-    """A row's voucher line. Its own warehouse beats the header's, which ERPNext only fills in a blank."""
+def _line(row, set_warehouse: str | None) -> dict:
+    """A row's voucher line. Its own warehouse counts only when the tool has one, and then beats it:
+    ERPNext fills the header's warehouse only into a blank line."""
     line = {"item_code": row.item, "qty": row.qty, "rate": row.rate}
-    if row.warehouse and voucher_type != PURCHASE_INVOICE:
+    if set_warehouse and row.warehouse:
         line["warehouse"] = row.warehouse
     return line
 
@@ -181,6 +187,22 @@ def _nothing_to_do_message(action: str) -> str:
         CANCEL: _("No submitted voucher to cancel."),
         DELETE: _("No draft or cancelled voucher to delete."),
     }[action]
+
+
+# ====================================================================================================
+# VALIDATION
+
+
+def validate_warehouse(tool: Document) -> None:
+    """Orders and receipts need the tool's warehouse. Frappe checks mandatory_depends_on only in the
+    browser, so the server repeats the rule for imports and API calls."""
+    if tool.voucher_type != PURCHASE_INVOICE and not tool.set_warehouse:
+        frappe.throw(
+            _("{0} is required for a {1}.").format(
+                frappe.bold(_(tool.meta.get_label("set_warehouse"))), _(tool.voucher_type)
+            ),
+            frappe.MandatoryError,
+        )
 
 
 # ====================================================================================================

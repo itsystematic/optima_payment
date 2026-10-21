@@ -74,7 +74,7 @@
    "reqd": 1
   },
   {
-   "depends_on": "eval:in_list([\"Purchase Order\", \"Purchase Receipt\"], parent.voucher_type)",
+   "depends_on": "eval:parent.set_warehouse",
    "description": "Leave blank to use Set Target Warehouse.",
    "fieldname": "warehouse",
    "fieldtype": "Link",
@@ -124,7 +124,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-10-20 16:26:52.569728",
+ "modified": "2026-10-21 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Optima Payment",
  "name": "Purchases Bulk Tool Item",
