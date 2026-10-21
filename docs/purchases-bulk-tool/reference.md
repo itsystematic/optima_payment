@@ -40,7 +40,8 @@ optima_payment/optima_payment/doctype/purchases_bulk_tool/
 ├── purchases_bulk_tool.py   # controller: three hooks that hand off to vouchers.py
 └── purchases_bulk_tool.js   # form script: pickers, new-row date, live amount, Vouchers buttons
 
-optima_payment/hooks.py      # ignore_links_on_delete releases the rows' voucher link
+optima_payment/hooks.py      # ignore_links_on_delete releases the rows' voucher link;
+                             # after_delete on PO / PI / PR unlinks a deleted voucher's rows
 ```
 
 Functions with a leading underscore are the decisions. Adding a grouping rule or a voucher field
@@ -76,7 +77,7 @@ changes one of them, and its branch is tested with plain rows, no site data need
 | `amount` | Currency | Read-only. `qty × rate × (1 + VAT % / 100)`, the VAT % being the template's On Net Total rates; set in `validate` |
 | `status` | Select | Pending / Draft / Submitted / Cancelled / Deleted. Read-only, no-copy |
 | `reference_doctype` | Link DocType | Hidden. The voucher's doctype |
-| `reference_name` | Dynamic Link → `reference_doctype` | The voucher the row went into |
+| `reference_name` | Dynamic Link → `reference_doctype` | The voucher the row went into. Emptied, with `reference_doctype`, once that voucher is deleted (see [Deleted vouchers](#deleted-vouchers)) |
 
 `vat` is required on purpose. Without a template, ERPNext could pull taxes onto the voucher from
 the supplier's tax rule, and the row's `amount` would no longer describe the voucher.
@@ -182,7 +183,7 @@ do with each:
 | missing (deleted outside the tool) | none | **Deleted** |
 
 Row statuses are written with `db_set(..., update_modified=False)` because the tool is already
-cancelled.
+cancelled. A **Deleted** row also loses its voucher link (see [Deleted vouchers](#deleted-vouchers)).
 
 `voucher_docstatuses()` reads every voucher's docstatus in one query before the loop.
 `apply_action()` does the cancel or delete, the same function the bulk actions use.
@@ -242,8 +243,8 @@ cancelled vouchers**, so a click can clear a tool's vouchers completely. Tool ca
 - **Order.** `_bulk_order()` sends Submit in creation order (`_rows_by_voucher()`), and Cancel
   and Delete newest first (`_vouchers_newest_first()`), the order tool cancel uses.
 - **Statuses.** Every row ends at its voucher's status, including the rows of skipped vouchers,
-  so any click also corrects stale statuses. `set_status()` writes a status only when it
-  changed, with `db_set(..., update_modified=False)`. When the action took no voucher, the user
+  so any click also corrects stale statuses. `set_status()` writes what `_row_values()` gives
+  for that status, only the fields that changed, with `db_set(..., update_modified=False)`. When the action took no voucher, the user
   sees `_nothing_to_do_message()`, such as *No draft voucher to submit.* or *No draft or
   cancelled voucher to delete.*
 - **Update Status** runs `sync_statuses()`: it reads the docstatuses and writes
@@ -264,9 +265,9 @@ delete the voucher. With it:
 
 - The bulk actions can cancel and delete vouchers while the tool stays submitted.
 - A single voucher can be cancelled, amended or deleted from its own form, without cancelling
-  the whole tool. **Update Status** then reads its state back onto the rows. The row keeps
-  pointing at the original voucher, not its amendment, and tool cancel never touches the
-  amendment.
+  the whole tool. A delete updates the rows at once; after a submit or cancel, **Update Status**
+  reads the state back onto the rows. A cancelled row keeps pointing at the original voucher,
+  not its amendment, and tool cancel never touches the amendment.
 
 There is no narrower bypass. ERPNext's Purchase Order, Invoice and Receipt `on_cancel` assign
 `ignore_linked_doctypes` themselves, overwriting anything the tool sets, and `flags.ignore_links`
@@ -276,6 +277,35 @@ would also skip real downstream checks such as a Payment Entry against the invoi
 > (`check_if_doc_is_linked` adds the hook's doctypes to its ignore list). A supplier, item, VAT
 > template or warehouse that only a tool row uses can then be deleted. On a **Pending** tool this
 > surfaces later: its submit fails with Frappe's normal link error for the missing record.
+
+---
+
+## Deleted vouchers
+
+Deleting the newest voucher of a naming series winds the series counter back
+(`update_naming_series` → `revert_series_if_last`, in `frappe/model/delete_doc.py` and
+`frappe/model/naming.py`). The next voucher of that series, made by hand or by another tool,
+then gets the deleted voucher's name. Delete All goes newest first, so every voucher it deletes
+is the newest one at that moment, and every name it frees can come back.
+
+A row still holding such a name would adopt a voucher the tool never made: **Update Status**
+would show that voucher's state, the bulk actions would submit, cancel or delete it, and
+cancelling the tool would cancel or delete it.
+
+So a row keeps no link once its voucher is gone. `_row_values(DELETED)` empties
+`reference_doctype` and `reference_name` along with the status, and two places apply it:
+
+- **`unlink_tool_rows()`**, registered in `hooks.py` as the `after_delete` doc_event of Purchase
+  Order, Purchase Invoice and Purchase Receipt. It covers every delete — Delete All, tool
+  cancel, and a voucher deleted from its own form — in the same transaction as the delete.
+  `after_delete` runs only once the delete has passed its link checks, so a refused delete
+  changes no row, and Delete All's savepoint undoes these writes with the vouchers.
+- **`set_status()`**, for a row whose voucher is found missing when the tool reads the
+  docstatuses: one deleted before this hook existed, or removed without `frappe.delete_doc`.
+
+A submit or cancel never frees a name, so those rows keep their link. The deleted voucher stays
+in **Deleted Documents**, but the row no longer names it. A voucher restored from there is not
+linked back to the tool.
 
 ### Row status
 
@@ -290,8 +320,9 @@ stateDiagram-v2
     Cancelled --> Deleted: Delete All, or deleted by hand
 ```
 
-The tool's own submit, its cancel and the bulk actions write the new status at once. A change
-made from the voucher's form shows after **Update Status**, or the next bulk action.
+The tool's own submit, its cancel, the bulk actions and any voucher delete write the new status
+at once. A submit or cancel made from the voucher's form shows after **Update Status**, or the
+next bulk action. A **Deleted** row has an empty Voucher column.
 
 `status`, `reference_doctype` and `reference_name` are `no_copy`. An amended tool therefore
 starts at **Pending** and creates fresh vouchers.
@@ -322,8 +353,8 @@ See [testing.md](../development/testing.md). The tests come as a pair in
 
 | File | Layer | What it proves |
 |------|-------|----------------|
-| `test_vouchers.py` | Matrix: plain rows, nothing written | Every branch of the decisions: amount with qty and rounding, grouping by each header value, date fields per voucher type, header and line warehouse, qty per line, row status per docstatus, each bulk action × docstatus, voucher order both ways, rollback actions, the failure and nothing-to-do messages |
-| `test_vouchers_integration.py` | Integration: real saves | What only a real voucher shows: rows stamped, typed qty, rate and row date kept, a row warehouse beating `set_warehouse`, template taxes copied, the row amount equal to the voucher's grand total, the savepoint abort on create and on Submit All, a voucher cancelled or deleted by hand and Update Status reading it back, each bulk action taking only its own state, tool cancel after Cancel All, the API refusing a draft tool or an unknown action, PO and PR |
+| `test_vouchers.py` | Matrix: plain rows, nothing written | Every branch of the decisions: amount with qty and rounding, grouping by each header value, date fields per voucher type, header and line warehouse, qty per line, row status per docstatus, which statuses drop the voucher link, each bulk action × docstatus, voucher order both ways, rollback actions, the failure and nothing-to-do messages |
+| `test_vouchers_integration.py` | Integration: real saves | What only a real voucher shows: rows stamped, typed qty, rate and row date kept, a row warehouse beating `set_warehouse`, template taxes copied, the row amount equal to the voucher's grand total, the savepoint abort on create and on Submit All, a voucher cancelled or deleted by hand and Update Status reading it back, a hand delete unlinking its rows at once, a voucher given a deleted voucher's name staying out of the tool, each bulk action taking only its own state, tool cancel after Cancel All, the API refusing a draft tool or an unknown action, PO and PR |
 
 The integration fixtures come from `optima_payment/tests/utils.py`. The suite owns its whole VAT
 chain (account, Item Tax Template, purchase template, items), so no template the site holds

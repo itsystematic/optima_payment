@@ -76,11 +76,16 @@ went into.
 | **Draft** | The voucher is a draft (Auto Submit was off, and nobody has submitted it yet) |
 | **Submitted** | The voucher is submitted |
 | **Cancelled** | The voucher was cancelled: by **Cancel All**, from its own form, or by cancelling the tool |
-| **Deleted** | The voucher was deleted: a draft or cancelled one by **Delete All** or from its own form, or a draft by cancelling the tool |
+| **Deleted** | The voucher was deleted: a draft or cancelled one by **Delete All** or from its own form, or a draft by cancelling the tool. The **Voucher** column is emptied |
 
-The buttons and the tool's own cancel update the status straight away. If you submit, cancel or
-delete a voucher from its own form, click **Vouchers → Update Status** to bring the rows up to
+The buttons, the tool's own cancel and any delete update the status straight away. If you submit
+or cancel a voucher from its own form, click **Vouchers → Update Status** to bring the rows up to
 date.
+
+> **Why a deleted row loses its voucher.** When the newest voucher of a numbering series is
+> deleted, ERPNext gives its number to the next voucher of that series. If the row kept the
+> number, the tool would take that new, unrelated voucher for its own. A deleted voucher can still
+> be found under **Deleted Documents**.
 
 ---
 
