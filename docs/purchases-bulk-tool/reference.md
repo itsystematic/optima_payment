@@ -9,8 +9,8 @@ click-by-click guide aimed at accountants, see [user-guide.md](user-guide.md).
 
 ## What it is
 
-A submittable tool whose child grid holds one purchase line per row, with its own qty and, for
-orders and receipts, an optional warehouse. Submitting the tool creates a **Purchase Order**,
+A submittable tool whose child grid holds one purchase line per row, with its own qty and an
+optional warehouse. Submitting the tool creates a **Purchase Order**,
 **Purchase Invoice** or **Purchase Receipt** per group of rows. While it stays submitted, a
 **Vouchers** button group submits, cancels or deletes those vouchers in bulk and reads their
 state back onto the rows. A single voucher can also be cancelled or deleted from its own form.
@@ -58,7 +58,7 @@ changes one of them, and its branch is tested with plain rows, no site data need
 |-------|------|-------|
 | `company` | Link Company | Required. Remembers the last value. Filters the VAT and warehouse pickers |
 | `voucher_type` | Select | Purchase Order / Purchase Invoice / Purchase Receipt |
-| `set_warehouse` | Link Warehouse | Shown for PO / PR only; copied to each voucher's `set_warehouse`, so it fills every line without its own warehouse |
+| `set_warehouse` | Link Warehouse | Required for PO / PR, optional for PI. Copied to each voucher's `set_warehouse`, so it fills every line without its own warehouse. On a PI it also decides `update_stock` |
 | `posting_date` | Date | Defaults to today. Default date for each new row (client) and for any row left blank (server) |
 | `auto_submit` | Check | Submit the vouchers too, not only insert them |
 | `items` | Table → Purchases Bulk Tool Item | Required |
@@ -73,7 +73,7 @@ changes one of them, and its branch is tested with plain rows, no site data need
 | `qty` | Float | Required, default 1, not negative. Sent as the voucher line's qty |
 | `rate` | Currency | Required. Sent as the voucher line's rate |
 | `vat` | Link Purchase Taxes and Charges Template | Required. Part of the grouping key; becomes the voucher's `taxes_and_charges` |
-| `warehouse` | Link Warehouse | Optional, row form only (not a grid column). Shown when the tool's voucher type is PO / PR. Sent as the line's `warehouse`; blank falls back to `set_warehouse` |
+| `warehouse` | Link Warehouse | Optional, row form only (not a grid column). Shown once the tool has a `set_warehouse`, and sent as the line's `warehouse` only then; blank falls back to `set_warehouse` |
 | `amount` | Currency | Read-only. `qty × rate × (1 + VAT % / 100)`, the VAT % being the template's On Net Total rates; set in `validate` |
 | `status` | Select | Pending / Draft / Submitted / Cancelled / Deleted. Read-only, no-copy |
 | `reference_doctype` | Link DocType | Hidden. The voucher's doctype |
@@ -82,10 +82,13 @@ changes one of them, and its branch is tested with plain rows, no site data need
 `vat` is required on purpose. Without a template, ERPNext could pull taxes onto the voucher from
 the supplier's tax rule, and the row's `amount` would no longer describe the voucher.
 
-`warehouse` is optional on purpose. ERPNext requires a warehouse per **stock** line of a PO or PR,
-not per voucher type, so a mandatory field would block service lines. When a stock line has none
-from any source, ERPNext's own *Warehouse is mandatory* error names the row, above the tool's
-failure message.
+`set_warehouse` is required for a PO or PR, so every stock line has a warehouse without typing
+one per row. The form marks it with `mandatory_depends_on`, which Frappe checks only in the
+browser, so `vouchers.validate_warehouse()` repeats the rule on the server for imports and API
+calls. On a PI the field is optional and decides whether the invoice moves stock: a warehouse sets
+`update_stock = 1` and fills the lines, a blank one sets `update_stock = 0`, whatever the site's
+default. The row `warehouse` only overrides the tool's, so it counts only when the tool has one,
+the same rule the form uses to show it.
 
 The grid has 10 column units: Date 1, Supplier 2, Item 1, Qty 1, Rate 1, VAT 1, Amount 1,
 Status 1, Voucher 1. That budget is full, so `warehouse` lives in the row form only.
@@ -96,7 +99,7 @@ Status 1, Voucher 1. That budget is full, so `warehouse` lives in the row form o
 
 | Hook | Method | Why there |
 |------|--------|-----------|
-| `validate` | `vouchers.set_row_values()` | Fills a blank row date from `posting_date` and computes `amount` |
+| `validate` | `vouchers.validate_warehouse()`, then `vouchers.set_row_values()` | Refuses a PO or PR tool without `set_warehouse`; fills a blank row date from `posting_date` and computes `amount` |
 | `before_submit` | `vouchers.create_vouchers()` | The row stamps (`reference_*`, `status`) are then saved with the parent in the same `_save`, with no `db_set` |
 | `on_cancel` | `vouchers.rollback_vouchers()` | Runs once the tool's own cancel has passed its checks and its rows are saved at docstatus 2. The rows never block their vouchers' cancel or delete, in this hook or any other, because the link is [released](#released-link) |
 
@@ -122,9 +125,10 @@ appends the template's taxes, inserts it and submits it when **Auto Submit** is 
 | `company`, `supplier`, `taxes_and_charges = vat` | ✓ | ✓ | ✓ |
 | `ignore_pricing_rule = 1` (keeps the typed rate) | ✓ | ✓ | ✓ |
 | Date | `transaction_date` and `schedule_date` = group date | `set_posting_time = 1`, `posting_date` = group date | `set_posting_time = 1`, `posting_date` = group date |
-| `set_warehouse` (when given) | ✓ | — | ✓ |
+| `set_warehouse` | ✓ (required) | ✓ (when given) | ✓ (required) |
+| `update_stock` | — | `1` with `set_warehouse`, else `0` | — |
 | One line per row: `item_code`, the row's `qty`, `rate` | ✓ | ✓ | ✓ |
-| Line `warehouse` (when the row has one) | ✓ | — | ✓ |
+| Line `warehouse` (when the row and the tool both have one) | ✓ | ✓ | ✓ |
 
 - **`set_posting_time = 1`** is needed because without it `TransactionBase.validate_posting_time`
   resets `posting_date` to today.
@@ -132,7 +136,7 @@ appends the template's taxes, inserts it and submits it when **Auto Submit** is 
   group or brand default. A line's warehouse wins because `set_missing_item_details` calls
   `get_item_details` with `overwrite_warehouse=False` (`stock/get_item_details.py`
   `get_item_warehouse`), so `set_warehouse` only fills a blank line. When the lines end up with
-  different warehouses, the PO and PR controllers clear the header `set_warehouse`
+  different warehouses, the PO, PI and PR controllers clear the header `set_warehouse`
   (`reset_default_field_value`); each line keeps its own.
 - **`append_taxes_from_master()`** is called before `insert()`. ERPNext copies a template's tax
   rows on the server only when the Accounts Settings flag *Add taxes from Taxes and Charges
@@ -353,8 +357,8 @@ See [testing.md](../development/testing.md). The tests come as a pair in
 
 | File | Layer | What it proves |
 |------|-------|----------------|
-| `test_vouchers.py` | Matrix: plain rows, nothing written | Every branch of the decisions: amount with qty and rounding, grouping by each header value, date fields per voucher type, header and line warehouse, qty per line, row status per docstatus, which statuses drop the voucher link, each bulk action × docstatus, voucher order both ways, rollback actions, the failure and nothing-to-do messages |
-| `test_vouchers_integration.py` | Integration: real saves | What only a real voucher shows: rows stamped, typed qty, rate and row date kept, a row warehouse beating `set_warehouse`, template taxes copied, the row amount equal to the voucher's grand total, the savepoint abort on create and on Submit All, a voucher cancelled or deleted by hand and Update Status reading it back, a hand delete unlinking its rows at once, a voucher given a deleted voucher's name staying out of the tool, each bulk action taking only its own state, tool cancel after Cancel All, the API refusing a draft tool or an unknown action, PO and PR |
+| `test_vouchers.py` | Matrix: plain rows, nothing written | Every branch of the decisions: amount with qty and rounding, grouping by each header value, date fields per voucher type, header and line warehouse, `update_stock` on an invoice, qty per line, row status per docstatus, which statuses drop the voucher link, each bulk action × docstatus, voucher order both ways, rollback actions, the failure and nothing-to-do messages |
+| `test_vouchers_integration.py` | Integration: real saves | What only a real voucher shows: rows stamped, typed qty, rate and row date kept, a row warehouse beating `set_warehouse`, an invoice with a warehouse updating stock into its lines, a PO or PR refused without `set_warehouse`, template taxes copied, the row amount equal to the voucher's grand total, the savepoint abort on create and on Submit All, a voucher cancelled or deleted by hand and Update Status reading it back, a hand delete unlinking its rows at once, a voucher given a deleted voucher's name staying out of the tool, each bulk action taking only its own state, tool cancel after Cancel All, the API refusing a draft tool or an unknown action, PO and PR |
 
 The integration fixtures come from `optima_payment/tests/utils.py`. The suite owns its whole VAT
 chain (account, Item Tax Template, purchase template, items), so no template the site holds

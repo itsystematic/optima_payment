@@ -42,9 +42,9 @@ PBT-00001 ┬→ ACC-PINV-2026-00041  Al Noor Trading  rows 1, 3  (Cement 100 + 
    company (for example *KSA VAT 15% Buying*). The VAT column only offers your company's
    templates.
 2. **Items** — only items marked *Is Purchase Item* can be picked.
-3. **Warehouse** — for Purchase Orders and Purchase Receipts of stock items, ERPNext needs a
-   warehouse on every line. Fill **Set Target Warehouse** on the tool for all lines, or give a
-   row its own **Warehouse**. Service lines need none.
+3. **Warehouse** — a Purchase Order or Purchase Receipt tool needs a **Set Target Warehouse**
+   (the field shows a red asterisk). On a Purchase Invoice it is optional: fill it only if the
+   invoice should also bring the goods into stock.
 
 ---
 
@@ -53,14 +53,16 @@ PBT-00001 ┬→ ACC-PINV-2026-00041  Al Noor Trading  rows 1, 3  (Cement 100 + 
 1. New **Purchases Bulk Tool**. Pick the **Company** and the **Voucher Type**.
 2. Set the **Posting Date**. Every new row starts with this date; change a row's date if that
    purchase happened on another day.
-3. *(Purchase Order / Receipt only)* choose the **Set Target Warehouse**.
+3. Choose the **Set Target Warehouse**: required for a Purchase Order or Receipt. For a Purchase
+   Invoice, fill it to have each invoice **update stock** into that warehouse, or leave it blank
+   for invoices that don't touch stock.
 4. *(Optional)* tick **Auto Submit Vouchers** to submit the vouchers as well. Leave it unticked to
    get drafts you can review first.
 5. Fill the **Items** grid: date, supplier, item, **Qty**, rate and VAT. Qty starts at 1. The
    **Amount** column shows qty × rate, plus VAT.
-6. *(Purchase Order / Receipt only, optional)* to put one line in another warehouse, open the
-   row (the edit icon at the end of it) and pick its **Warehouse**. A row's own warehouse wins
-   over **Set Target Warehouse**; leave it blank to use the tool's.
+6. *(Optional, once Set Target Warehouse is filled)* to put one line in another warehouse, open
+   the row (the edit icon at the end of it) and pick its **Warehouse**. A row's own warehouse
+   wins over **Set Target Warehouse**; leave it blank to use the tool's.
 7. **Save**, then **Submit**.
 
 After submit, every row shows its **Status** and a **Voucher** link that opens the voucher it
@@ -142,7 +144,7 @@ first, followed by the tool's summary:
 |---------|-------|-----|
 | *Could not create the Purchase Invoice for supplier … dated … (rows …). No voucher was created.* | That voucher failed; the message above it says why (disabled supplier, missing account, closed period…) | Fix the named rows or the master data, then submit again |
 | *Disabled Warehouse … cannot be used for this transaction.* | **Set Target Warehouse** is disabled | Pick an active warehouse |
-| *Row #…: Warehouse is mandatory for stock Item …* | A stock item on a Purchase Order / Receipt with no warehouse | Fill **Set Target Warehouse**, or that row's **Warehouse** |
+| *Missing Fields: Set Target Warehouse* | A Purchase Order / Receipt tool saved without a warehouse | Fill **Set Target Warehouse** |
 | *Could not submit Purchase Invoice … (rows …). No voucher was changed.* (or *cancel*, *delete*) | A **Submit All**, **Cancel All** or **Delete All** stopped at that voucher; the message above it says why | Fix that voucher or its master data, then click the button again |
 | *Cannot delete or cancel because Purchase Invoice … is linked with GL Entry …*, above *Could not delete …* | **Delete All** reached a cancelled invoice or receipt, whose ledger entries stay after cancel | Tick **Delete Accounting and Stock Ledger Entries on deletion of Transaction** in Accounts Settings, or delete the drafts one by one from their own forms |
 | *Cannot delete or cancel because Purchase Invoice … is linked with Payment Entry …* | A voucher already has later documents | Cancel those documents first, then cancel the tool |
