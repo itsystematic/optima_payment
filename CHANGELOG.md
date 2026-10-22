@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Statement of Account** (كشف حساب) for customers and suppliers: **Customer Statement** and
+  **Supplier Statement** reports, opened from **View ▸ Statement of Account** on the party, list one
+  party's vouchers for one company and period with the opening, running and closing balance read
+  as DR / CR, and Total Debit, Total Credit and Outstanding Balance cards. Built on ERPNext's
+  General Ledger, so the figures always agree with it.
+- A **Statement of Account** preview page with Send Email (the PDF attached, logged on the party's
+  timeline), Download PDF, Print and Export to Excel. The statement is translated and right to left
+  in Arabic.
+
 ## [15.2.0] - 2026-07-06
 
 ### Added

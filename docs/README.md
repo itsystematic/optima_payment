@@ -10,6 +10,7 @@ Documentation is organized **by domain**. Each folder has its own index.
 | [Bank Guarantee](bank-guarantee/) | Accountants, implementers & developers | [bank-guarantee/](bank-guarantee/README.md) |
 | [Letter of Credit](letter-of-credit/) | Accountants, implementers & developers | [letter-of-credit/](letter-of-credit/README.md) |
 | [Purchases Bulk Tool](purchases-bulk-tool/) | Accountants, implementers & developers | [purchases-bulk-tool/](purchases-bulk-tool/README.md) |
+| [Statement of Account](party-statement/) | Accountants, implementers & developers | [party-statement/](party-statement/README.md) |
 | [Setup framework](setup/) | Developers | [setup/](setup/README.md) |
 
 ## Cross-cutting
@@ -22,5 +23,5 @@ Documentation is organized **by domain**. Each folder has its own index.
 
 ### Quick links by audience
 
-- **Accountants / implementers:** [Cheque](cheque/user-guide.md) · [Bank Guarantee](bank-guarantee/user-guide.md) · [Letter of Credit](letter-of-credit/user-guide.md) · [Purchases Bulk Tool](purchases-bulk-tool/user-guide.md)
-- **Developers:** [Cheque](cheque/reference.md) · [Bank Guarantee](bank-guarantee/reference.md) · [Letter of Credit](letter-of-credit/reference.md) · [Purchases Bulk Tool](purchases-bulk-tool/reference.md) · [Setup architecture](setup/architecture.md) · [Setup Q&A](setup/questions-and-answers.md) · [Testing](development/testing.md)
+- **Accountants / implementers:** [Cheque](cheque/user-guide.md) · [Bank Guarantee](bank-guarantee/user-guide.md) · [Letter of Credit](letter-of-credit/user-guide.md) · [Purchases Bulk Tool](purchases-bulk-tool/user-guide.md) · [Statement of Account](party-statement/user-guide.md)
+- **Developers:** [Cheque](cheque/reference.md) · [Bank Guarantee](bank-guarantee/reference.md) · [Letter of Credit](letter-of-credit/reference.md) · [Purchases Bulk Tool](purchases-bulk-tool/reference.md) · [Statement of Account](party-statement/reference.md) · [Setup architecture](setup/architecture.md) · [Setup Q&A](setup/questions-and-answers.md) · [Testing](development/testing.md)
