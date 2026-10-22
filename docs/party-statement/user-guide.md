@@ -66,9 +66,10 @@ The report shows the lines, with the three totals as cards above them. You can a
 ## Preview, print and send
 
 Click **Preview** on the report. The preview page shows the statement exactly as the party will
-receive it: your company's name at the top, the title *Statement of Account*, the party and the
-period, the lines, and the three totals. The party, company and dates at the top of the page can be
-changed there too; the preview refreshes by itself.
+receive it: your company's name at the top, with the company's **Company Name In Arabic** below it
+when that is filled in, the title *Statement of Account*, the party and the period, the lines, and
+the three totals. The party, company and dates at the top of the page can be changed there too; the
+preview refreshes by itself.
 
 | Button | What it does |
 |--------|--------------|

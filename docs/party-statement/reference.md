@@ -149,8 +149,9 @@ last fallback.
 - A voucher that both debits and credits the party's account (an invoice paid at once) is one entry
   with both columns filled.
 
-`StatementHeader` carries what the header shows: company, party type, party, party name
-(`customer_name` / `supplier_name`, else the ID), the period and the currency.
+`StatementHeader` carries what the header shows: company, the company's Arabic name (optima_zatca's
+`company_name_in_arabic` on Company), party type, party, party name (`customer_name` /
+`supplier_name`, else the ID), the period and the currency.
 
 ---
 
@@ -235,7 +236,8 @@ date sits in a `<span dir="ltr">`: inside Arabic text a hyphenated date would ot
 to read `2026-10-22`.
 
 > **The company name, not a Letter Head.** The header is the company's name as text, agreed with
-> stakeholders instead of a full Letter Head.
+> stakeholders instead of a full Letter Head. Its Arabic name follows on the line below when it is
+> set and differs from the company's name; the Excel sheet keeps the company's name only.
 
 wkhtmltopdf fetches the print CSS from the site's URL. A PDF made from the command line on a bench
 whose site name doesn't resolve fails with `HostNotFoundError`; inside a request it uses the
@@ -287,7 +289,7 @@ See [testing.md](../development/testing.md). The tests come as a pair in
 | File | Layer | What it proves |
 |------|-------|----------------|
 | `test_statement.py` | Matrix: plain rows, nothing written | GL filters, opening from the leading row (debit, credit, absent, one-sided or both sides), the Closing row as opening plus totals, the ledger currency fallbacks, an empty period, a running balance crossing zero, totals and closing, the ledger's own trailing rows ignored, float noise rounding to a positive zero, precision, DR / CR including zero, input checks and their messages, report rows and summary cards with their indicators, the band, the Excel layout, file names |
-| `test_statement_integration.py` | Integration: real Journal Entries | The Opening row, entries and Closing row equal to the site's own General Ledger for the same party, with a debit and a credit before the period so either Opening style shows, a supplier reading CR, the report's rows and summary cards, the API refusing another party type and a user without the report's roles, an Accounts User getting the print page with the company and the party, the Excel download |
+| `test_statement_integration.py` | Integration: real Journal Entries | The Opening row, entries and Closing row equal to the site's own General Ledger for the same party, with a debit and a credit before the period so either Opening style shows, a supplier reading CR, the report's rows and summary cards, the API refusing another party type and a user without the report's roles, an Accounts User getting the print page with the company, its Arabic name and the party, the Excel download |
 
 The integration fixtures come from `optima_payment/tests/utils.py` (`make_party_journal_entry`,
 `get_or_create_user`, and the shared party factories). A Journal Entry is the shortest voucher that
