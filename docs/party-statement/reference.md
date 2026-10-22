@@ -223,13 +223,18 @@ Filters: Company (default: the user's), Party (`party`, a Link to the party type
 house structure: HTML for structure only, every visual decision in the CSS file, widths in
 `<colgroup>`, every cell's alignment stated rather than inherited, and **literal colours** because
 wkhtmltopdf ignores CSS custom properties. `statement.css` also hides printview's own action
-banner, whose Print / Get PDF links target a doctype print, and holds its look against two things the
-site's print setup imposes:
+banner, whose Print / Get PDF links target a doctype print, and holds its look against three things
+the site's print setup imposes:
 
 | Imposed by | Rule | Answer in `statement.css` |
 |------------|------|---------------------------|
 | A Print Style (Print Settings) | `.print-format th { background-color: #eee !important; border-bottom: 0 !important }` | The header shading and the totals' divider repeat `!important` on a more specific selector |
 | Bootstrap's print reset, applied in the PDF and the printout | `@media print { * { color: #000 } }` | The band's spans take their colour directly instead of inheriting it |
+| Frappe's print view on screen (`templates/styles/standard.css`) | A grey `.print-format-gutter` and a white body around the page, in either desk theme | On screen only, both are transparent so the preview frame shows the desk's light or dark background, and the page gets a faint outline; the PDF and the printout use print media and keep their look |
+
+The preview page's own CSS gives the frame `color-scheme: light`. The desk's dark theme sets
+`color-scheme: dark`, which the frame would inherit, and a browser paints an opaque white backdrop
+behind a frame whose scheme differs from its document's, hiding the desk behind the statement.
 
 The band is laid out in the template rather than from `band()` (which the Excel sheet uses), so each
 date sits in a `<span dir="ltr">`: inside Arabic text a hyphenated date would otherwise be reordered
