@@ -50,7 +50,7 @@ optima_payment.party_statement.report_settings = function (party_type) {
 			} else if (column.fieldname === "voucher_type") {
 				value = default_formatter(__(value), row, column, data);
 			} else if (["debit", "credit"].includes(column.fieldname) && !flt(value)) {
-				value = "-";
+				value = `<div class="text-center">-</div>`;
 			} else {
 				value = default_formatter(value, row, column, data);
 			}
