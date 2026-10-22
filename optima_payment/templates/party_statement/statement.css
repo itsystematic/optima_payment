@@ -10,6 +10,20 @@
     display: none;
 }
 
+/* Frappe paints the gutter around the page grey and the body white, whatever the desk's theme.
+   Without them the preview frame shows the desk's own background, light or dark, and the outline
+   keeps the page's edge on a white desk. */
+@media screen {
+    body,
+    .print-format-gutter {
+        background-color: transparent;
+    }
+
+    .print-format {
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+}
+
 .print-format .party-statement {
     color: #222222;
 }

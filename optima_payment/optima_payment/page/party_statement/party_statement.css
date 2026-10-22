@@ -3,6 +3,9 @@
 	width: 100%;
 	min-height: 400px;
 	border: 0;
+	/* The statement is a light document. Under the desk's dark theme a frame whose scheme differs
+	   from its document's gets an opaque white backdrop from the browser, hiding the desk behind. */
+	color-scheme: light;
 }
 
 .party-statement-page .party-statement-frame.hidden {
