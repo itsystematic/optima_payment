@@ -1,0 +1,32 @@
+{
+ "content": null,
+ "creation": "2026-10-22 00:00:00",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2026-10-22 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Optima Payment",
+ "name": "party-statement",
+ "owner": "Administrator",
+ "page_name": "party-statement",
+ "roles": [
+  {
+   "role": "Accounts User"
+  },
+  {
+   "role": "Accounts Manager"
+  },
+  {
+   "role": "Optima Payment User"
+  },
+  {
+   "role": "Optima Payment Manager"
+  }
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "Statement of Account"
+}

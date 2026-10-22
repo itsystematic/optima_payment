@@ -1,0 +1,340 @@
+# Copyright (c) 2026, IT Systematic and contributors
+# For license information, please see license.txt
+
+"""Customer and Supplier statement of account: one party's vouchers over a period, with its opening,
+running and closing balance.
+
+The rows come from ERPNext's General Ledger filtered to the party, as in Process Statement of
+Accounts, so a statement always agrees with the ledger. The report, the preview page, the PDF, the
+email attachment and the Excel file are all built from the same Statement.
+
+A positive balance is a debit (DR). Branching lives in the functions under DECISIONS, which take plain
+rows and return values.
+"""
+
+import re
+from dataclasses import dataclass
+from datetime import date
+
+import frappe
+from erpnext.accounts.report.general_ledger.general_ledger import execute as general_ledger
+from frappe import _
+from frappe.utils import flt, fmt_money, formatdate, getdate
+from frappe.utils.jinja_globals import is_rtl
+from frappe.utils.pdf import get_pdf
+from frappe.www.printview import get_print_style
+
+CUSTOMER = "Customer"
+SUPPLIER = "Supplier"
+REPORTS = {CUSTOMER: "Customer Statement", SUPPLIER: "Supplier Statement"}
+
+DR = "DR"
+CR = "CR"
+SIDE_INDICATORS = {DR: "Red", CR: "Green"}
+
+# "Balance" and the debit and credit totals already carry translations from other apps that read
+# wrong on a statement, so the statement's own wording is looked up under this context.
+TRANSLATION_CONTEXT = "Party Statement"
+
+TEMPLATE = "optima_payment/templates/party_statement/statement.html"
+STYLESHEET = ("templates", "party_statement", "statement.css")
+
+UNSAFE_FILE_CHARACTERS = re.compile(r'[\\/:*?"<>|]+')
+
+
+@dataclass
+class Statement:
+    opening: float
+    entries: list
+    total_debit: float
+    total_credit: float
+    closing: float
+
+
+@dataclass
+class StatementHeader:
+    """Whose statement it is and for which period, as its header shows them."""
+
+    company: str
+    party_type: str
+    party: str
+    party_name: str
+    from_date: date
+    to_date: date
+    currency: str
+
+
+# ====================================================================================================
+# DECISIONS
+# Pure: no database.
+
+
+def validate_party_type(party_type: str) -> None:
+    if party_type not in REPORTS:
+        frappe.throw(
+            _("A statement of account is for a Customer or a Supplier, not {0}.").format(frappe.bold(party_type))
+        )
+
+
+def validate_filters(party_type: str, party, company, from_date, to_date) -> None:
+    missing = [
+        label
+        for label, value in ((party_type, party), ("Company", company), ("From Date", from_date), ("To Date", to_date))
+        if not value
+    ]
+    if missing:
+        frappe.throw(
+            _("Set {0} first.").format(", ".join(frappe.bold(_(label)) for label in missing)), frappe.MandatoryError
+        )
+
+    if getdate(from_date) > getdate(to_date):
+        frappe.throw(_("From Date must be on or before To Date."))
+
+
+def gl_filters(party_type: str, party: str, company: str, from_date, to_date) -> frappe._dict:
+    """The General Ledger filters for one party: an opening row, then one row per voucher.
+
+    presentation_currency stays unset, so the ledger reports in the party's account currency.
+    """
+    return frappe._dict(
+        company=company,
+        from_date=getdate(from_date),
+        to_date=getdate(to_date),
+        party_type=party_type,
+        party=[party],
+        categorize_by="Categorize by Voucher (Consolidated)",
+        include_default_book_entries=1,
+        show_opening_entries=0,
+    )
+
+
+def build_statement(gl_rows: list, precision: int = 2) -> Statement:
+    """The statement in ``gl_rows``, the General Ledger's rows for one party.
+
+    The opening is the ledger's leading row, the one without a posting date. Every row with a voucher
+    is an entry. The ledger's trailing Total and Closing rows are left out: the totals and the running
+    balance are recomputed from the entries, rounded at each step so float noise never reads as CR.
+    """
+    opening = 0.0
+    if gl_rows and not gl_rows[0].get("posting_date"):
+        opening = _round(flt(gl_rows[0].get("debit")) - flt(gl_rows[0].get("credit")), precision)
+
+    balance = opening
+    entries = []
+    for row in gl_rows:
+        if not row.get("voucher_no"):
+            continue
+        debit, credit = _round(row.get("debit"), precision), _round(row.get("credit"), precision)
+        balance = _round(balance + debit - credit, precision)
+        entries.append(
+            frappe._dict(
+                posting_date=row.get("posting_date"),
+                voucher_type=row.get("voucher_type"),
+                voucher_no=row.get("voucher_no"),
+                debit=debit,
+                credit=credit,
+                balance=balance,
+            )
+        )
+
+    total_debit = _round(sum(entry.debit for entry in entries), precision)
+    total_credit = _round(sum(entry.credit for entry in entries), precision)
+    return Statement(
+        opening=opening,
+        entries=entries,
+        total_debit=total_debit,
+        total_credit=total_credit,
+        closing=_round(opening + total_debit - total_credit, precision),
+    )
+
+
+def _round(value, precision: int) -> float:
+    # Float noise such as -2e-13 rounds to -0.0, which would print as "-0" in an export.
+    return flt(value, precision) or 0.0
+
+
+def dr_cr(amount: float) -> tuple[float, str]:
+    """A balance as an unsigned amount and its side. Zero reads as DR."""
+    return abs(amount), CR if amount < 0 else DR
+
+
+def statement_label(text: str) -> str:
+    """``text`` in the statement's own wording (see TRANSLATION_CONTEXT)."""
+    return _(text, context=TRANSLATION_CONTEXT)
+
+
+def band(header: StatementHeader) -> list[str]:
+    """The Excel sheet's line above the columns: the party, the period and the currency.
+
+    The print template lays the same line out itself, to keep each date left to right inside
+    Arabic text.
+    """
+    return [
+        f"{_(header.party_type)}: {header.party_name}",
+        "{0}: {1} {2} {3}".format(
+            _("Statement Period"), formatdate(header.from_date), _("to"), formatdate(header.to_date)
+        ),
+        f"{_('Currency')}: {header.currency}",
+    ]
+
+
+def report_columns() -> list[dict]:
+    return [
+        {"fieldname": "posting_date", "label": _("Date"), "fieldtype": "Date", "width": 110},
+        {"fieldname": "voucher_type", "label": _("Voucher Type"), "fieldtype": "Data", "width": 180},
+        {
+            "fieldname": "voucher_no",
+            "label": _("Voucher No."),
+            "fieldtype": "Dynamic Link",
+            "options": "voucher_type",
+            "width": 180,
+        },
+        {"fieldname": "debit", "label": _("Debit"), "fieldtype": "Currency", "options": "currency", "width": 140},
+        {"fieldname": "credit", "label": _("Credit"), "fieldtype": "Currency", "options": "currency", "width": 140},
+        {
+            "fieldname": "balance",
+            "label": statement_label("Balance"),
+            "fieldtype": "Currency",
+            "options": "currency",
+            "width": 160,
+        },
+    ]
+
+
+def report_rows(statement: Statement, currency: str) -> list[dict]:
+    """The entries between bold Opening Balance and Closing Balance rows.
+
+    The balance stays signed, so the report's own export keeps its side; the report's formatter shows
+    it as DR or CR.
+    """
+
+    def label_row(label: str, balance: float) -> dict:
+        return {"voucher_type": label, "balance": balance, "currency": currency, "bold": 1}
+
+    return [
+        label_row(_("Opening Balance"), statement.opening),
+        *({**entry, "currency": currency} for entry in statement.entries),
+        label_row(_("Closing Balance"), statement.closing),
+    ]
+
+
+def report_summary(statement: Statement, currency: str) -> list[dict]:
+    amount, side = dr_cr(statement.closing)
+    return [
+        {
+            "label": statement_label("Total Debit"),
+            "value": statement.total_debit,
+            "datatype": "Currency",
+            "currency": currency,
+        },
+        {
+            "label": statement_label("Total Credit"),
+            "value": statement.total_credit,
+            "datatype": "Currency",
+            "currency": currency,
+        },
+        {
+            "label": _("Outstanding Balance"),
+            "value": f"{fmt_money(amount, currency=currency)} {statement_label(side)}",
+            "datatype": "Data",
+            "indicator": SIDE_INDICATORS[side],
+        },
+    ]
+
+
+def excel_rows(statement: Statement, header: StatementHeader) -> list[list]:
+    """The preview's Excel sheet, laid out like the PDF. Each balance is unsigned, with its side in the
+    column after it."""
+
+    def balance_cells(balance: float) -> list:
+        amount, side = dr_cr(balance)
+        return [amount, statement_label(side)]
+
+    outstanding, side = dr_cr(statement.closing)
+    return [
+        [header.company],
+        [_("Statement of Account")],
+        [" | ".join(band(header))],
+        [],
+        [
+            _("Date"),
+            _("Voucher Type"),
+            _("Voucher No."),
+            _("Debit"),
+            _("Credit"),
+            statement_label("Balance"),
+            statement_label("DR / CR"),
+        ],
+        [None, _("Opening Balance"), None, None, None, *balance_cells(statement.opening)],
+        *(
+            [entry.posting_date, _(entry.voucher_type), entry.voucher_no, entry.debit, entry.credit]
+            + balance_cells(entry.balance)
+            for entry in statement.entries
+        ),
+        [None, _("Closing Balance"), None, None, None, *balance_cells(statement.closing)],
+        [],
+        [statement_label("Total Debit"), statement.total_debit],
+        [statement_label("Total Credit"), statement.total_credit],
+        [_("Outstanding Balance"), outstanding, statement_label(side)],
+    ]
+
+
+def file_name(party: str, to_date, extension: str) -> str:
+    """Statement-<party>-<to date>.<extension>, with what a file name can't hold replaced by a dash."""
+    return f"Statement-{UNSAFE_FILE_CHARACTERS.sub('-', party)}-{getdate(to_date).isoformat()}.{extension}"
+
+
+# ====================================================================================================
+# LEDGER
+
+
+def get_statement(party_type: str, party: str, company: str, from_date, to_date) -> tuple[Statement, StatementHeader]:
+    """The party's statement from the General Ledger, which applies the user's GL Entry permissions."""
+    validate_filters(party_type, party, company, from_date, to_date)
+
+    filters = gl_filters(party_type, party, company, from_date, to_date)
+    _columns, rows = general_ledger(filters)
+
+    header = StatementHeader(
+        company=company,
+        party_type=party_type,
+        party=party,
+        party_name=frappe.db.get_value(party_type, party, f"{frappe.scrub(party_type)}_name") or party,
+        from_date=getdate(from_date),
+        to_date=getdate(to_date),
+        # The ledger sets this to the party's account currency while it runs.
+        currency=filters.presentation_currency,
+    )
+    return build_statement(rows, frappe.get_precision("GL Entry", "debit") or 2), header
+
+
+# ====================================================================================================
+# RENDERING
+
+
+def render_html(statement: Statement, header: StatementHeader) -> str:
+    """The statement as a standalone print page, for the preview's iframe, the PDF and the attachment."""
+    body = frappe.render_template(
+        TEMPLATE,
+        {
+            "statement": statement,
+            "header": header,
+            "dr_cr": dr_cr,
+            "label": statement_label,
+        },
+    )
+    stylesheet = frappe.read_file(frappe.get_app_path("optima_payment", *STYLESHEET))
+    return frappe.render_template(
+        "frappe/www/printview.html",
+        {
+            "body": body,
+            "print_style": f"{get_print_style()}\n{stylesheet}",
+            "title": f"{_('Statement of Account')} - {header.party_name}",
+            "lang": frappe.local.lang,
+            "layout_direction": "rtl" if is_rtl() else "ltr",
+        },
+    )
+
+
+def render_pdf(statement: Statement, header: StatementHeader) -> bytes:
+    return get_pdf(render_html(statement, header))

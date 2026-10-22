@@ -1,0 +1,15 @@
+.party-statement-page .party-statement-frame {
+	display: block;
+	width: 100%;
+	min-height: 400px;
+	border: 0;
+}
+
+.party-statement-page .party-statement-frame.hidden {
+	display: none;
+}
+
+.party-statement-page .party-statement-message {
+	padding: var(--padding-xl);
+	text-align: center;
+}

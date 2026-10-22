@@ -1,0 +1,81 @@
+{%- macro amount(value) -%}
+{{ frappe.utils.fmt_money(value) if value else "-" }}
+{%- endmacro -%}
+
+{%- macro balance_cell(value) -%}
+{%- set unsigned, side = dr_cr(value) -%}
+<td class="balance {{ side | lower }}">{{ frappe.utils.fmt_money(unsigned) }} {{ label(side) }}</td>
+{%- endmacro -%}
+
+<div class="party-statement">
+    <div class="statement-head">
+        <div class="company-name">{{ header.company }}</div>
+        <div class="statement-title">{{ _("Statement of Account") }}</div>
+    </div>
+
+    <table class="statement-table" width="100%">
+        <colgroup>
+            <col class="c-date"><col class="c-type"><col class="c-voucher">
+            <col class="c-amount"><col class="c-amount"><col class="c-balance">
+        </colgroup>
+        <thead>
+            <tr class="band">
+                <th colspan="6">
+                    <span class="band-segment">{{ _(header.party_type) }}: {{ header.party_name }}</span>
+                    <span class="band-sep">|</span>
+                    <span class="band-segment">{{ _("Statement Period") }}:
+                        <span dir="ltr">{{ frappe.utils.formatdate(header.from_date) }}</span>
+                        {{ _("to") }}
+                        <span dir="ltr">{{ frappe.utils.formatdate(header.to_date) }}</span></span>
+                    <span class="band-sep">|</span>
+                    <span class="band-segment">{{ _("Currency") }}: {{ header.currency }}</span>
+                </th>
+            </tr>
+            <tr class="column-titles">
+                <th>{{ _("Date") }}</th>
+                <th>{{ _("Voucher Type") }}</th>
+                <th>{{ _("Voucher No.") }}</th>
+                <th>{{ _("Debit") }}</th>
+                <th>{{ _("Credit") }}</th>
+                <th>{{ label("Balance") }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="balance-row">
+                <td colspan="5">{{ _("Opening Balance") }}</td>
+                {{ balance_cell(statement.opening) }}
+            </tr>
+            {%- for entry in statement.entries %}
+            <tr>
+                <td>{{ frappe.utils.formatdate(entry.posting_date) }}</td>
+                <td>{{ _(entry.voucher_type) }}</td>
+                <td>{{ entry.voucher_no }}</td>
+                <td>{{ amount(entry.debit) }}</td>
+                <td>{{ amount(entry.credit) }}</td>
+                {{ balance_cell(entry.balance) }}
+            </tr>
+            {%- endfor %}
+            <tr class="balance-row">
+                <td colspan="5">{{ _("Closing Balance") }}</td>
+                {{ balance_cell(statement.closing) }}
+            </tr>
+        </tbody>
+    </table>
+
+    {%- set outstanding, side = dr_cr(statement.closing) %}
+    <table class="totals-table" width="100%">
+        <colgroup>
+            <col class="c-total"><col class="c-total"><col class="c-total">
+        </colgroup>
+        <tr class="total-labels">
+            <th>{{ label("Total Debit") }}</th>
+            <th>{{ label("Total Credit") }}</th>
+            <th>{{ _("Outstanding Balance") }}</th>
+        </tr>
+        <tr class="total-values">
+            <td>{{ frappe.utils.fmt_money(statement.total_debit) }}</td>
+            <td>{{ frappe.utils.fmt_money(statement.total_credit) }}</td>
+            <td class="{{ side | lower }}">{{ frappe.utils.fmt_money(outstanding) }} {{ label(side) }}</td>
+        </tr>
+    </table>
+</div>

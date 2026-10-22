@@ -31,7 +31,8 @@ required_apps = [
 # include js, css files in header of desk.html
 # app_include_css = "/assets/optima_payment/css/optima_payment.css"
 app_include_js = [
-    "/assets/optima_payment/js/utils.js"
+    "/assets/optima_payment/js/utils.js",
+    "/assets/optima_payment/js/party_statement.js",
 ]
 
 # include js, css files in header of web template
@@ -65,6 +66,8 @@ doctype_js = {
     "Bank": "public/js/bank.js",
     "Bank Account": "public/js/bank_account.js",
     "Bank Guarantee" : "public/js/bank_guarantee.js",
+    "Customer": "public/js/customer.js",
+    "Supplier": "public/js/supplier.js",
 }
 doctype_list_js = {
     "Payment Entry" : "public/js/payment_entry_list.js",

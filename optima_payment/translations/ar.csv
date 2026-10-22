@@ -95,3 +95,28 @@ Bank Facilities Account,حساب التسهيلات البنكيه
 Facility Amount,قيمه التسهيلات
 Extend,تمديد
 Extend Validity,تمديد الصلاحية
+Statement of Account,كشف حساب
+Customer Statement,كشف حساب العميل
+Supplier Statement,كشف حساب المورد
+Opening Balance,الرصيد الافتتاحي
+Closing Balance,الرصيد الختامي
+Outstanding Balance,الرصيد المستحق
+Statement Period,فترة الكشف
+Voucher No.,رقم السند
+Balance,الرصيد,Party Statement
+Total Debit,إجمالي المدين,Party Statement
+Total Credit,إجمالي الدائن,Party Statement
+DR,مدين,Party Statement
+CR,دائن,Party Statement
+DR / CR,مدين / دائن,Party Statement
+Export to Excel,تصدير إلى Excel
+Open Report,فتح التقرير
+Select a {0} first.,اختر {0} أولاً.
+"Select a party, a company and a period first.",اختر الطرف والشركة والفترة أولاً.
+"Select a party, a company and a period to see the statement.",اختر الطرف والشركة والفترة لعرض كشف الحساب.
+Preparing the statement PDF...,جارٍ تجهيز ملف PDF لكشف الحساب...
+"Statement of Account for {0}, {1} to {2}",كشف حساب {0}، من {1} إلى {2}
+"A statement of account is for a Customer or a Supplier, not {0}.",كشف الحساب للعملاء أو الموردين فقط، وليس {0}.
+Set {0} first.,حدد {0} أولاً.
+From Date must be on or before To Date.,يجب أن يكون تاريخ البداية في تاريخ النهاية أو قبله.
+You are not permitted to open the {0} report.,ليس لديك صلاحية فتح تقرير {0}.

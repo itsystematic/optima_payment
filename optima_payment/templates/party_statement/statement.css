@@ -1,0 +1,161 @@
+/* ====================================================================================================
+ * PAGE
+ * Colours are literals on purpose: wkhtmltopdf's WebKit predates CSS custom properties, so a var()
+ * would be dropped from the PDF while still showing in the preview.
+ */
+
+/* printview.html always renders Print / Get PDF links meant for a document's print view. They point at
+   a doctype download this page has none of, and the preview page has its own buttons. */
+.action-banner {
+    display: none;
+}
+
+.print-format .party-statement {
+    color: #222222;
+}
+
+.print-format .statement-head {
+    text-align: center;
+    padding-bottom: 10px;
+    margin-bottom: 16px;
+    border-bottom: 2px solid #2c4a8a;
+}
+
+.print-format .company-name {
+    font-size: 1.5em;
+    font-weight: bold;
+}
+
+.print-format .statement-title {
+    font-size: 1.15em;
+    color: #2c4a8a;
+}
+
+
+/* ====================================================================================================
+ * TABLE GEOMETRY
+ * Every cell is centred, stated rather than inherited: an Arabic statement is dir="rtl" and an
+ * unaligned cell would drift right.
+ */
+
+.print-format .statement-table,
+.print-format .totals-table {
+    table-layout: fixed;
+    border-collapse: collapse;
+}
+
+/* Sized so a voucher number like ACC-PINV-2026-00243, a voucher type like "سندات القبض والصرف"
+   and a seven-digit balance each stay on one line in the 6.8in the print page leaves. */
+col.c-date    { width: 12%; }
+col.c-type    { width: 20%; }
+col.c-voucher { width: 22%; }
+col.c-amount  { width: 13%; }
+col.c-balance { width: 20%; }
+
+col.c-total { width: 33.33%; }
+
+.print-format .statement-table td,
+.print-format .statement-table th,
+.print-format .totals-table td,
+.print-format .totals-table th {
+    text-align: center;
+    vertical-align: middle;
+    word-wrap: break-word;
+}
+
+.print-format .statement-table td,
+.print-format .statement-table th {
+    padding: 7px 5px;
+    font-size: 0.9em;
+    border: 1px solid #dde4ee;
+}
+
+/* A row split across two pages loses its balance from the eye; keep each one whole. */
+.print-format .statement-table tr {
+    page-break-inside: avoid;
+}
+
+
+/* ====================================================================================================
+ * STATEMENT TABLE
+ * A site's Print Style can set `.print-format th { background-color: #eee !important;
+ * border-bottom: 0 !important }`. The header shading and the totals' divider repeat !important and
+ * win on specificity.
+ */
+
+.print-format .statement-table .band th {
+    background-color: #dbe5f4 !important;
+}
+
+/* Under print media, which the PDF uses, Bootstrap's reset gives every element color: #000. The
+   band's text sits in spans, so they take the colour themselves instead of inheriting it. */
+.print-format .statement-table .band th,
+.print-format .statement-table .band span {
+    color: #2c4a8a;
+}
+
+.print-format .band-sep {
+    padding: 0 10px;
+}
+
+/* dir="ltr" keeps a date's day-month-year order inside Arabic text; nowrap keeps it whole when the
+   band wraps, since it would otherwise break at a hyphen. */
+.print-format .band span[dir="ltr"] {
+    white-space: nowrap;
+}
+
+.print-format .statement-table .column-titles th {
+    background-color: #e8eef8 !important;
+    color: #2c4a8a;
+}
+
+.print-format .statement-table .balance-row td {
+    background-color: #dce6f5;
+    font-weight: bold;
+}
+
+.print-format .statement-table .balance {
+    font-weight: bold;
+}
+
+/* DR: the party owes the company. CR: the company owes the party. Three classes, so these also beat
+   the totals' green below on count rather than on their place in this file. */
+.print-format .party-statement .dr {
+    color: #d32f2f;
+}
+
+.print-format .party-statement .cr {
+    color: #2e7d32;
+}
+
+
+/* ====================================================================================================
+ * TOTALS
+ */
+
+.print-format .totals-table {
+    margin-top: 40px;
+    background-color: #f2f5fa;
+    border: 1px solid #d5dde9;
+}
+
+.print-format .totals-table th {
+    padding: 10px 12px 4px;
+    color: #2c4a8a;
+    background-color: #f2f5fa !important;
+    border-bottom: 1px solid #d5dde9 !important;
+}
+
+.print-format .totals-table td {
+    padding: 6px 12px 12px;
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #2e7d32;
+}
+
+/* Both sides rather than one, so the dividers fall between the boxes in an RTL statement too. */
+.print-format .totals-table th,
+.print-format .totals-table td {
+    border-left: 1px solid #d5dde9;
+    border-right: 1px solid #d5dde9;
+}
