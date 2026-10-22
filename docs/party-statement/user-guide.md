@@ -15,8 +15,11 @@ For one customer or supplier, one company and one period:
 - the **Closing Balance**, and three totals: **Total Debit**, **Total Credit** and **Outstanding
   Balance**.
 
-The figures come from the same ledger as ERPNext's **General Ledger** report, so the two always
-agree.
+The figures come from your **General Ledger** report, so the two always agree. The Opening Balance
+and Closing Balance rows show the same Debit and Credit as the General Ledger's *Opening* and
+*Closing (Opening + Total)* rows, and the same balance. Like the General Ledger, the statement leaves
+out Journal Entries of type Credit Note and Debit Note, which on these sites only move amounts
+within the party's own account.
 
 ### DR and CR
 
@@ -35,12 +38,13 @@ Customer *Al Noor Trading*, period 01-01-2026 to 30-06-2026, owing 1,000.00 at t
 
 | Date | Voucher Type | Voucher No. | Debit | Credit | Balance |
 |------|--------------|-------------|-------|--------|---------|
-| | **Opening Balance** | | | | **1,000.00 DR** |
+| | **Opening Balance** | | **1,000.00** | - | **1,000.00 DR** |
 | 18-01-2026 | Payment Entry | PAY-2026-00012 | - | 1,500.00 | 500.00 CR |
 | 19-01-2026 | Sales Invoice | SINV-2026-00031 | 800.00 | - | 300.00 DR |
-| | **Closing Balance** | | | | **300.00 DR** |
+| | **Closing Balance** | | **1,800.00** | **1,500.00** | **300.00 DR** |
 
-Total Debit 800.00, Total Credit 1,500.00, Outstanding Balance **300.00 DR**.
+Total Debit 800.00, Total Credit 1,500.00, Outstanding Balance **300.00 DR**. The totals cover the
+period only; the Closing Balance row adds the opening to them, as the General Ledger does.
 
 ---
 

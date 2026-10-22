@@ -20,6 +20,12 @@ records sync as standard records on migrate.
 > `get_pdf`. Reusing the report means the statement inherits the ledger's rules (cancelled entries,
 > opening entries, finance books, the user's GL Entry permissions) and always agrees with it.
 
+> **The site's General Ledger, not necessarily ERPNext's.** An app can point the *General Ledger*
+> Report record at its own copy of the report through a fixture: on this bench `wts` and
+> `property_management` do, and their older copies build the Opening row differently (see
+> [The ledger call](#the-ledger-call)). `general_ledger()` runs whichever copy the record points at,
+> so the statement's rows, Opening and Closing equal the General Ledger the site's users open.
+
 ---
 
 ## Where the code lives
@@ -34,7 +40,7 @@ optima_payment/party_statement/
 └── statement.py
     ├── DECISIONS   # pure: input checks, GL filters, build_statement, dr_cr, the band,
     │               #       report columns / rows / summary, Excel rows, file name
-    ├── LEDGER      # get_statement: runs the General Ledger, reads the party name
+    ├── LEDGER      # get_statement, general_ledger: runs the site's General Ledger report
     └── RENDERING   # render_html (Jinja + printview.html), render_pdf
 
 optima_payment/templates/party_statement/
@@ -72,7 +78,7 @@ flowchart LR
     page --> xlsx["api.download_excel"]
     page --> mail["api.make_email_attachment"]
     run & html & pdf & xlsx & mail --> gs["statement.get_statement"]
-    gs --> gl["general_ledger.execute"]
+    gs --> gl["statement.general_ledger<br/>(the Report record's module)"]
 ```
 
 The page's iframe, the PDF and the email attachment all come from `render_html`, so what the user
@@ -83,20 +89,40 @@ Statement by `excel_rows`.
 
 ## The ledger call
 
-`gl_filters` asks the General Ledger for:
+`general_ledger(filters)` reads the *General Ledger* Report record, resolves its module's `execute`
+the way `Report.execute_module` does, and calls it with the filters themselves. `execute_module`
+would pass a copy, and the ledger records the currency it reported in on the filters it is given.
+
+`gl_filters` asks for:
 
 | Filter | Value | Why |
 |--------|-------|-----|
 | `party_type`, `party` | the party, as a one-item list | One statement, one party |
 | `company` | required | One company per statement; the header names it |
 | `from_date`, `to_date` | the period | |
-| `categorize_by` | `Categorize by Voucher (Consolidated)` | One row per voucher and account, after one opening row |
+| `categorize_by` | `Categorize by Voucher (Consolidated)` | One row per voucher and account, after one opening row. ERPNext reads this name |
+| `group_by` | `Group by Voucher (Consolidated)` | The same, under the name the older copies read |
 | `include_default_book_entries` | 1 | The company's default finance book plus untagged entries, as the GL report does |
 | `show_opening_entries` | 0 | Opening-entry vouchers count towards the opening balance |
-| `presentation_currency` | unset | `set_account_currency` then reports in the party's **account currency**; it is read back from the filters after the run and shown in the band |
+| `exclude_credit_debit_notes` | 1 | The `wts` copy's screen default: it leaves out Journal Entries of type Credit Note and Debit Note. Without it the Opening row would differ from the one users see. Other copies ignore the key |
+| `presentation_currency` | unset | The ledger reports in the party's **account currency** |
 
-The ledger returns, in this mode: one opening row (no `posting_date`), the voucher rows, then a
-*Total* row and a *Closing (Opening + Total)* row.
+The ledger returns, in this mode: one Opening row (no `posting_date`), the voucher rows, then a
+*Total* row and a *Closing (Opening + Total)* row. The copies differ on the Opening row:
+
+| Copy | Opening debit / credit | Closing debit / credit |
+|------|------------------------|------------------------|
+| ERPNext | the net opening, on one side | Opening + Total |
+| `wts`, `property_management` | every earlier debit and every earlier credit, gross | Opening + Total |
+
+`ledger_currency` reads the currency back: ERPNext's copy records `presentation_currency`, the older
+copies only an `account_currency` that differs from the company's, so the company currency is the
+last fallback.
+
+> **Excluded notes and balances.** Leaving out credit and debit note Journal Entries changes no
+> balance when each note debits and credits the same party, which is how system-generated
+> reconciliation notes post. On ims.local, 374 of 375 such party postings net to zero; one manual note
+> is one-sided, and the statement, like the `wts` General Ledger, leaves it out.
 
 ---
 
@@ -106,15 +132,17 @@ The ledger returns, in this mode: one opening row (no `posting_date`), the vouch
 
 | Field | Meaning |
 |-------|---------|
-| `opening` | `debit − credit` of the leading row when it has no `posting_date`; 0 otherwise |
+| `opening_debit`, `opening_credit` | The leading row's debit and credit when it has no `posting_date`, as the ledger shows them; 0 otherwise |
+| `opening` | `opening_debit − opening_credit` |
 | `entries` | Every row with a `voucher_no`: `posting_date`, `voucher_type`, `voucher_no`, `debit`, `credit`, and the running `balance` |
 | `total_debit`, `total_credit` | Sums over the entries |
+| `closing_debit`, `closing_credit` | `opening_debit + total_debit`, `opening_credit + total_credit`: the ledger's Closing row, whichever copy built it |
 | `closing` | `opening + total_debit − total_credit`, which equals the last entry's balance |
 
 - **Positive is DR.** `dr_cr(amount)` turns a signed balance into `(abs amount, "DR" | "CR")`;
   **zero reads DR**.
-- The ledger's trailing Total and Closing rows are **never read**: the totals are recomputed, so the
-  statement doesn't depend on their position.
+- The ledger's trailing Total and Closing rows are **never read**: the totals and the Closing row
+  are recomputed, so the statement doesn't depend on their position.
 - Every amount is rounded to the GL Entry `debit` precision at each step, and a rounded `-0.0`
   becomes `0.0`. The ledger's float sums leave noise like `2.27e-13` CR in the opening, which would
   otherwise print as CR or as `-0` in an export.
@@ -134,15 +162,14 @@ The ledger returns, in this mode: one opening row (no `posting_date`), the vouch
 - **Columns** — Date, Voucher Type, Voucher No. (Dynamic Link on `voucher_type`), Debit, Credit,
   Balance; the amounts are Currency with `options: "currency"`, and every row carries `currency`.
 - **Rows** — a bold *Opening Balance* row, the entries, a bold *Closing Balance* row. The label sits
-  in `voucher_type`; `bold: 1` marks the label rows. The **balance stays signed**, so Frappe's own
-  report export keeps the side.
+  in `voucher_type`; `bold: 1` marks the label rows, which carry the ledger's Opening and Closing
+  debit and credit. The **balance stays signed**, so Frappe's own report export keeps the side.
 - **Summary** — Total Debit, Total Credit (Currency cards) and Outstanding Balance (a Data card such
   as `SAR 300.00 DR`, indicator **Red** for DR and **Green** for CR).
 
 The client formatter (`report_settings` in `public/js/party_statement.js`) shows the balance as
-`abs DR` in `text-danger` or `abs CR` in `text-success`, a `-` for an entry's zero debit or credit
-and nothing at all on the balance rows (the Currency formatter would print 0.00), translates the
-voucher type, and bolds the label rows. `add_total_row` is 0: the summary cards carry the totals.
+`abs DR` in `text-danger` or `abs CR` in `text-success`, a centred `-` for a zero debit or credit,
+translates the voucher type, and bolds the label rows. `add_total_row` is 0: the summary cards carry the totals.
 
 Filters: Company (default: the user's), Party (`party`, a Link to the party type), From Date
 (default: start of the current fiscal year), To Date (default: today), all required.
@@ -249,8 +276,8 @@ See [testing.md](../development/testing.md). The tests come as a pair in
 
 | File | Layer | What it proves |
 |------|-------|----------------|
-| `test_statement.py` | Matrix: plain rows, nothing written | GL filters, opening from the leading row (debit, credit, absent), an empty period, a running balance crossing zero, totals and closing, the ledger's own trailing rows ignored, float noise rounding to a positive zero, precision, DR / CR including zero, input checks and their messages, report rows and summary cards with their indicators, the band, the Excel layout, file names |
-| `test_statement_integration.py` | Integration: real Journal Entries | Opening, entries and closing agreeing with the General Ledger for the same party, a supplier reading CR, the report's rows and summary cards, the API refusing another party type and a user without the report's roles, an Accounts User getting the print page with the company and the party, the Excel download |
+| `test_statement.py` | Matrix: plain rows, nothing written | GL filters, opening from the leading row (debit, credit, absent, one-sided or both sides), the Closing row as opening plus totals, the ledger currency fallbacks, an empty period, a running balance crossing zero, totals and closing, the ledger's own trailing rows ignored, float noise rounding to a positive zero, precision, DR / CR including zero, input checks and their messages, report rows and summary cards with their indicators, the band, the Excel layout, file names |
+| `test_statement_integration.py` | Integration: real Journal Entries | The Opening row, entries and Closing row equal to the site's own General Ledger for the same party, with a debit and a credit before the period so either Opening style shows, a supplier reading CR, the report's rows and summary cards, the API refusing another party type and a user without the report's roles, an Accounts User getting the print page with the company and the party, the Excel download |
 
 The integration fixtures come from `optima_payment/tests/utils.py` (`make_party_journal_entry`,
 `get_or_create_user`, and the shared party factories). A Journal Entry is the shortest voucher that
