@@ -42,7 +42,9 @@
         </thead>
         <tbody>
             <tr class="balance-row">
-                <td colspan="5">{{ _("Opening Balance") }}</td>
+                <td colspan="3">{{ _("Opening Balance") }}</td>
+                <td>{{ amount(statement.opening_debit) }}</td>
+                <td>{{ amount(statement.opening_credit) }}</td>
                 {{ balance_cell(statement.opening) }}
             </tr>
             {%- for entry in statement.entries %}
@@ -56,7 +58,9 @@
             </tr>
             {%- endfor %}
             <tr class="balance-row">
-                <td colspan="5">{{ _("Closing Balance") }}</td>
+                <td colspan="3">{{ _("Closing Balance") }}</td>
+                <td>{{ amount(statement.closing_debit) }}</td>
+                <td>{{ amount(statement.closing_credit) }}</td>
                 {{ balance_cell(statement.closing) }}
             </tr>
         </tbody>

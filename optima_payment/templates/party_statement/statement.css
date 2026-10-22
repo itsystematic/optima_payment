@@ -45,12 +45,13 @@
 }
 
 /* Sized so a voucher number like ACC-PINV-2026-00243, a voucher type like "سندات القبض والصرف"
-   and a seven-digit balance each stay on one line in the 6.8in the print page leaves. */
+   and a seven-digit amount in the bold Opening and Closing rows each stay on one line in the 6.8in
+   the print page leaves. */
 col.c-date    { width: 12%; }
-col.c-type    { width: 20%; }
-col.c-voucher { width: 22%; }
-col.c-amount  { width: 13%; }
-col.c-balance { width: 20%; }
+col.c-type    { width: 18%; }
+col.c-voucher { width: 21%; }
+col.c-amount  { width: 15%; }
+col.c-balance { width: 19%; }
 
 col.c-total { width: 33.33%; }
 

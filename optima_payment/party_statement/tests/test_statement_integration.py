@@ -3,22 +3,22 @@
 
 """The statement of account through the real General Ledger, report and API.
 
-The branch matrix is in test_statement.py. These prove what only real vouchers show: the opening,
-the entries and the closing agree with the General Ledger for the same party, the report returns its
+The branch matrix is in test_statement.py. These prove what only real vouchers show: the Opening row,
+the entries and the Closing row equal the site's own General Ledger for the same party (ERPNext's, or
+the copy an app swaps in, whose Opening keeps debit and credit apart), the report returns its
 summary cards, the API refuses other party types and users who can't open the report, an Accounts
 User gets the print page naming the company and the party, and the Excel download is a real xlsx.
 """
 
 import erpnext
 import frappe
-from erpnext.accounts.report.general_ledger.general_ledger import execute as general_ledger
 from erpnext.accounts.utils import get_fiscal_year
 from frappe.tests.utils import FrappeTestCase
-from frappe.utils import add_days, getdate, nowdate
+from frappe.utils import add_days, flt, getdate, nowdate
 
 from optima_payment.optima_payment.report.customer_statement.customer_statement import execute
 from optima_payment.party_statement import api
-from optima_payment.party_statement.statement import gl_filters, get_statement
+from optima_payment.party_statement.statement import general_ledger, get_statement, gl_filters
 from optima_payment.tests.utils import (
     get_or_create_customer,
     get_or_create_supplier,
@@ -51,10 +51,20 @@ class TestPartyStatementIntegration(FrappeTestCase):
         _columns, rows = general_ledger(gl_filters(party_type, party, self.company, self.from_date, self.to_date))
         return rows
 
+    def ledger_side(self, row) -> tuple[float, float]:
+        return flt(row.debit, 2), flt(row.credit, 2)
+
     def make_customer_vouchers(self):
-        """100 owed before the period, then 30 paid and 50 more owed inside it: 120 DR at the end."""
+        """100 owed and 40 paid before the period, then 30 paid and 50 more owed inside it.
+
+        The opening is 60 DR, which ERPNext's ledger shows as 60 / 0 and the copies apps swap in as
+        100 / 40. The closing is 80 DR.
+        """
         make_party_journal_entry(
             party_type="Customer", party=self.customer, amount=100, posting_date=self.before_period
+        )
+        make_party_journal_entry(
+            party_type="Customer", party=self.customer, amount=-40, posting_date=self.before_period
         )
         paid = make_party_journal_entry(
             party_type="Customer", party=self.customer, amount=-30, posting_date=self.from_date
@@ -71,17 +81,17 @@ class TestPartyStatementIntegration(FrappeTestCase):
         ledger = self.general_ledger_rows("Customer", self.customer)
         ledger_opening, ledger_closing = ledger[0], ledger[-1]
 
-        self.assertEqual(statement.opening, 100.0)
-        self.assertEqual(statement.opening, ledger_opening.debit - ledger_opening.credit)
+        self.assertEqual((statement.opening_debit, statement.opening_credit), self.ledger_side(ledger_opening))
+        self.assertEqual(statement.opening, 60.0)
         self.assertEqual(
             [(entry.voucher_no, entry.debit, entry.credit, entry.balance) for entry in statement.entries],
-            [(paid.name, 0.0, 30.0, 70.0), (owed.name, 50.0, 0.0, 120.0)],
+            [(paid.name, 0.0, 30.0, 30.0), (owed.name, 50.0, 0.0, 80.0)],
         )
         self.assertEqual(
             [entry.voucher_no for entry in statement.entries], [row.voucher_no for row in ledger if row.voucher_no]
         )
-        self.assertEqual(statement.closing, 120.0)
-        self.assertEqual(statement.closing, ledger_closing.debit - ledger_closing.credit)
+        self.assertEqual((statement.closing_debit, statement.closing_credit), self.ledger_side(ledger_closing))
+        self.assertEqual(statement.closing, 80.0)
         self.assertEqual(header.currency, frappe.get_cached_value("Company", self.company, "default_currency"))
 
     def test_a_supplier_owed_money_reads_as_credit(self):
@@ -111,7 +121,7 @@ class TestPartyStatementIntegration(FrappeTestCase):
             [column["fieldname"] for column in columns],
             ["posting_date", "voucher_type", "voucher_no", "debit", "credit", "balance"],
         )
-        self.assertEqual([row["balance"] for row in rows], [100.0, 70.0, 120.0, 120.0])
+        self.assertEqual([row["balance"] for row in rows], [60.0, 30.0, 80.0, 80.0])
         self.assertEqual([card["value"] for card in summary[:2]], [50.0, 30.0])
         self.assertEqual(summary[2]["indicator"], "Red")
 

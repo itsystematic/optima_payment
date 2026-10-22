@@ -50,8 +50,7 @@ optima_payment.party_statement.report_settings = function (party_type) {
 			} else if (column.fieldname === "voucher_type") {
 				value = default_formatter(__(value), row, column, data);
 			} else if (["debit", "credit"].includes(column.fieldname) && !flt(value)) {
-				// The Currency formatter would print 0.00 even for the balance rows, which have no amounts.
-				value = data.bold ? "" : "-";
+				value = "-";
 			} else {
 				value = default_formatter(value, row, column, data);
 			}

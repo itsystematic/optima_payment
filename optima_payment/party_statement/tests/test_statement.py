@@ -25,6 +25,7 @@ from optima_payment.party_statement.statement import (
     excel_rows,
     file_name,
     gl_filters,
+    ledger_currency,
     report_rows,
     report_summary,
     validate_filters,
@@ -86,8 +87,10 @@ class TestGlFilters(FrappeTestCase):
                 "party_type": "Customer",
                 "party": [CUSTOMER],
                 "categorize_by": "Categorize by Voucher (Consolidated)",
+                "group_by": "Group by Voucher (Consolidated)",
                 "include_default_book_entries": 1,
                 "show_opening_entries": 0,
+                "exclude_credit_debit_notes": 1,
             },
         )
 
@@ -95,14 +98,27 @@ class TestGlFilters(FrappeTestCase):
         self.assertNotIn("presentation_currency", gl_filters("Customer", CUSTOMER, COMPANY, FROM_DATE, TO_DATE))
 
 
+def empty_statement(opening_debit=0.0, opening_credit=0.0):
+    """A statement with no entries: its Closing row repeats its Opening row."""
+    opening = opening_debit - opening_credit
+    return Statement(
+        opening=opening,
+        entries=[],
+        total_debit=0.0,
+        total_credit=0.0,
+        closing=opening,
+        opening_debit=opening_debit,
+        opening_credit=opening_credit,
+        closing_debit=opening_debit,
+        closing_credit=opening_credit,
+    )
+
+
 class TestBuildStatement(FrappeTestCase):
     def test_an_empty_period_keeps_the_opening_as_the_closing(self):
         statement = build_statement([opening_row(debit=250), *trailing_rows()])
 
-        self.assertEqual(
-            statement,
-            Statement(opening=250.0, entries=[], total_debit=0.0, total_credit=0.0, closing=250.0),
-        )
+        self.assertEqual(statement, empty_statement(opening_debit=250.0))
 
     def test_a_party_with_no_ledger_rows_is_all_zero(self):
         cases = [
@@ -111,13 +127,33 @@ class TestBuildStatement(FrappeTestCase):
         ]
         for label, rows in cases:
             with self.subTest(case=label):
-                self.assertEqual(
-                    build_statement(rows),
-                    Statement(opening=0.0, entries=[], total_debit=0.0, total_credit=0.0, closing=0.0),
-                )
+                self.assertEqual(build_statement(rows), empty_statement())
 
     def test_a_credit_opening_is_negative(self):
         self.assertEqual(build_statement([opening_row(credit=80)]).opening, -80.0)
+
+    def test_the_opening_keeps_debit_and_credit_as_the_ledger_shows_them(self):
+        cases = [
+            ("netted to one side, as in ERPNext", opening_row(debit=60), (60.0, 0.0)),
+            (
+                "both sides, as in the copies apps swap in",
+                opening_row(debit=1700861.32, credit=1700801.32),
+                (1700861.32, 1700801.32),
+            ),
+        ]
+        for label, row, sides in cases:
+            with self.subTest(case=label):
+                statement = build_statement([row])
+                self.assertEqual((statement.opening_debit, statement.opening_credit), sides)
+                self.assertEqual(statement.opening, 60.0)
+
+    def test_the_closing_row_is_the_opening_plus_the_totals(self):
+        statement = build_statement(
+            [opening_row(debit=100, credit=40), entry_row("PE-1", credit=30), entry_row("SINV-1", debit=50)]
+        )
+
+        self.assertEqual((statement.closing_debit, statement.closing_credit), (150.0, 70.0))
+        self.assertEqual(statement.closing, statement.closing_debit - statement.closing_credit)
 
     def test_without_a_leading_opening_row_the_opening_is_zero(self):
         statement = build_statement([entry_row("SINV-1", debit=100)])
@@ -181,6 +217,18 @@ class TestBuildStatement(FrappeTestCase):
         self.assertEqual(statement.entries[0].debit, 10.01)
 
 
+class TestLedgerCurrency(FrappeTestCase):
+    def test_the_first_currency_the_ledger_recorded_wins(self):
+        cases = [
+            ("presentation currency", {"presentation_currency": "USD", "account_currency": "EUR"}, "USD"),
+            ("account currency only, as older copies record it", {"account_currency": "EUR"}, "EUR"),
+            ("neither", {}, CURRENCY),
+        ]
+        for label, filters, currency in cases:
+            with self.subTest(case=label):
+                self.assertEqual(ledger_currency(filters, CURRENCY), currency)
+
+
 class TestDrCr(FrappeTestCase):
     def test_the_sign_picks_the_side_and_zero_reads_as_dr(self):
         cases = [
@@ -228,14 +276,30 @@ class TestReportRows(FrappeTestCase):
             [opening_row(debit=100), entry_row("PE-1", credit=150, voucher_type="Payment Entry")]
         )
 
-    def test_bold_opening_and_closing_rows_frame_the_entries(self):
+    def test_bold_opening_and_closing_rows_carry_the_ledgers_debit_and_credit(self):
         rows = report_rows(self.statement, CURRENCY)
 
         self.assertEqual(
-            rows[0], {"voucher_type": "Opening Balance", "balance": 100.0, "currency": CURRENCY, "bold": 1}
+            rows[0],
+            {
+                "voucher_type": "Opening Balance",
+                "debit": 100.0,
+                "credit": 0.0,
+                "balance": 100.0,
+                "currency": CURRENCY,
+                "bold": 1,
+            },
         )
         self.assertEqual(
-            rows[-1], {"voucher_type": "Closing Balance", "balance": -50.0, "currency": CURRENCY, "bold": 1}
+            rows[-1],
+            {
+                "voucher_type": "Closing Balance",
+                "debit": 100.0,
+                "credit": 150.0,
+                "balance": -50.0,
+                "currency": CURRENCY,
+                "bold": 1,
+            },
         )
         self.assertEqual([row["voucher_no"] for row in rows[1:-1]], ["PE-1"])
 
@@ -301,10 +365,10 @@ class TestExcelRows(FrappeTestCase):
         self.assertEqual(rows[2], [" | ".join(band(make_header()))])
         self.assertEqual(rows[3], [])
         self.assertEqual(rows[4], ["Date", "Voucher Type", "Voucher No.", "Debit", "Credit", "Balance", "DR / CR"])
-        self.assertEqual(rows[5], [None, "Opening Balance", None, None, None, 20.0, CR])
+        self.assertEqual(rows[5], [None, "Opening Balance", None, 0.0, 20.0, 20.0, CR])
         self.assertEqual(rows[6], [date(2026, 2, 1), "Sales Invoice", "SINV-1", 100.0, 0.0, 80.0, DR])
         self.assertEqual(rows[7], [date(2026, 3, 1), "Payment Entry", "PE-1", 0.0, 150.0, 70.0, CR])
-        self.assertEqual(rows[8], [None, "Closing Balance", None, None, None, 70.0, CR])
+        self.assertEqual(rows[8], [None, "Closing Balance", None, 100.0, 170.0, 70.0, CR])
         self.assertEqual(rows[9], [])
         self.assertEqual(
             rows[10:],

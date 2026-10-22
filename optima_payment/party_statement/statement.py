@@ -4,8 +4,10 @@
 """Customer and Supplier statement of account: one party's vouchers over a period, with its opening,
 running and closing balance.
 
-The rows come from ERPNext's General Ledger filtered to the party, as in Process Statement of
-Accounts, so a statement always agrees with the ledger. The report, the preview page, the PDF, the
+The rows come from the site's General Ledger report filtered to the party, as in Process Statement
+of Accounts. That is whichever copy the Report record points at: ERPNext's, or one an app swaps in
+(wts and property_management ship their own). So the statement's rows, and its Opening and Closing
+rows, always equal the General Ledger the users see. The report, the preview page, the PDF, the
 email attachment and the Excel file are all built from the same Statement.
 
 A positive balance is a debit (DR). Branching lives in the functions under DECISIONS, which take plain
@@ -17,8 +19,8 @@ from dataclasses import dataclass
 from datetime import date
 
 import frappe
-from erpnext.accounts.report.general_ledger.general_ledger import execute as general_ledger
 from frappe import _
+from frappe.core.doctype.report.report import get_report_module_dotted_path
 from frappe.utils import flt, fmt_money, formatdate, getdate
 from frappe.utils.jinja_globals import is_rtl
 from frappe.utils.pdf import get_pdf
@@ -27,6 +29,7 @@ from frappe.www.printview import get_print_style
 CUSTOMER = "Customer"
 SUPPLIER = "Supplier"
 REPORTS = {CUSTOMER: "Customer Statement", SUPPLIER: "Supplier Statement"}
+GENERAL_LEDGER = "General Ledger"
 
 DR = "DR"
 CR = "CR"
@@ -49,6 +52,10 @@ class Statement:
     total_debit: float
     total_credit: float
     closing: float
+    opening_debit: float
+    opening_credit: float
+    closing_debit: float
+    closing_credit: float
 
 
 @dataclass
@@ -94,6 +101,9 @@ def validate_filters(party_type: str, party, company, from_date, to_date) -> Non
 def gl_filters(party_type: str, party: str, company: str, from_date, to_date) -> frappe._dict:
     """The General Ledger filters for one party: an opening row, then one row per voucher.
 
+    The voucher grouping is given under both names: ERPNext reads categorize_by, while the older
+    copies apps swap in read group_by. exclude_credit_debit_notes is the wts copy's screen default;
+    without it the Opening row would differ from the one users see. Other copies ignore the key.
     presentation_currency stays unset, so the ledger reports in the party's account currency.
     """
     return frappe._dict(
@@ -103,21 +113,27 @@ def gl_filters(party_type: str, party: str, company: str, from_date, to_date) ->
         party_type=party_type,
         party=[party],
         categorize_by="Categorize by Voucher (Consolidated)",
+        group_by="Group by Voucher (Consolidated)",
         include_default_book_entries=1,
         show_opening_entries=0,
+        exclude_credit_debit_notes=1,
     )
 
 
 def build_statement(gl_rows: list, precision: int = 2) -> Statement:
     """The statement in ``gl_rows``, the General Ledger's rows for one party.
 
-    The opening is the ledger's leading row, the one without a posting date. Every row with a voucher
-    is an entry. The ledger's trailing Total and Closing rows are left out: the totals and the running
-    balance are recomputed from the entries, rounded at each step so float noise never reads as CR.
+    The opening is the ledger's leading row, the one without a posting date, debit and credit as the
+    ledger shows them: ERPNext's nets them to one side, the copies apps swap in keep both. Every row
+    with a voucher is an entry. The ledger's trailing Total and Closing rows are left out: the totals
+    and the running balance are recomputed from the entries, rounded at each step so float noise
+    never reads as CR, and the Closing row is the opening plus the totals, as every copy builds it.
     """
-    opening = 0.0
+    opening_debit = opening_credit = 0.0
     if gl_rows and not gl_rows[0].get("posting_date"):
-        opening = _round(flt(gl_rows[0].get("debit")) - flt(gl_rows[0].get("credit")), precision)
+        opening_debit = _round(gl_rows[0].get("debit"), precision)
+        opening_credit = _round(gl_rows[0].get("credit"), precision)
+    opening = _round(opening_debit - opening_credit, precision)
 
     balance = opening
     entries = []
@@ -145,12 +161,22 @@ def build_statement(gl_rows: list, precision: int = 2) -> Statement:
         total_debit=total_debit,
         total_credit=total_credit,
         closing=_round(opening + total_debit - total_credit, precision),
+        opening_debit=opening_debit,
+        opening_credit=opening_credit,
+        closing_debit=_round(opening_debit + total_debit, precision),
+        closing_credit=_round(opening_credit + total_credit, precision),
     )
 
 
 def _round(value, precision: int) -> float:
     # Float noise such as -2e-13 rounds to -0.0, which would print as "-0" in an export.
     return flt(value, precision) or 0.0
+
+
+def ledger_currency(filters: dict, company_currency: str) -> str:
+    """The currency the ledger reported in. ERPNext's copy records it as presentation_currency; the
+    older copies record only an account currency that differs from the company's."""
+    return filters.get("presentation_currency") or filters.get("account_currency") or company_currency
 
 
 def dr_cr(amount: float) -> tuple[float, str]:
@@ -202,19 +228,27 @@ def report_columns() -> list[dict]:
 
 
 def report_rows(statement: Statement, currency: str) -> list[dict]:
-    """The entries between bold Opening Balance and Closing Balance rows.
+    """The entries between bold Opening Balance and Closing Balance rows, which carry the General
+    Ledger's own Opening and Closing debit and credit.
 
     The balance stays signed, so the report's own export keeps its side; the report's formatter shows
     it as DR or CR.
     """
 
-    def label_row(label: str, balance: float) -> dict:
-        return {"voucher_type": label, "balance": balance, "currency": currency, "bold": 1}
+    def label_row(label: str, debit: float, credit: float, balance: float) -> dict:
+        return {
+            "voucher_type": label,
+            "debit": debit,
+            "credit": credit,
+            "balance": balance,
+            "currency": currency,
+            "bold": 1,
+        }
 
     return [
-        label_row(_("Opening Balance"), statement.opening),
+        label_row(_("Opening Balance"), statement.opening_debit, statement.opening_credit, statement.opening),
         *({**entry, "currency": currency} for entry in statement.entries),
-        label_row(_("Closing Balance"), statement.closing),
+        label_row(_("Closing Balance"), statement.closing_debit, statement.closing_credit, statement.closing),
     ]
 
 
@@ -265,13 +299,27 @@ def excel_rows(statement: Statement, header: StatementHeader) -> list[list]:
             statement_label("Balance"),
             statement_label("DR / CR"),
         ],
-        [None, _("Opening Balance"), None, None, None, *balance_cells(statement.opening)],
+        [
+            None,
+            _("Opening Balance"),
+            None,
+            statement.opening_debit,
+            statement.opening_credit,
+            *balance_cells(statement.opening),
+        ],
         *(
             [entry.posting_date, _(entry.voucher_type), entry.voucher_no, entry.debit, entry.credit]
             + balance_cells(entry.balance)
             for entry in statement.entries
         ),
-        [None, _("Closing Balance"), None, None, None, *balance_cells(statement.closing)],
+        [
+            None,
+            _("Closing Balance"),
+            None,
+            statement.closing_debit,
+            statement.closing_credit,
+            *balance_cells(statement.closing),
+        ],
         [],
         [statement_label("Total Debit"), statement.total_debit],
         [statement_label("Total Credit"), statement.total_credit],
@@ -302,10 +350,21 @@ def get_statement(party_type: str, party: str, company: str, from_date, to_date)
         party_name=frappe.db.get_value(party_type, party, f"{frappe.scrub(party_type)}_name") or party,
         from_date=getdate(from_date),
         to_date=getdate(to_date),
-        # The ledger sets this to the party's account currency while it runs.
-        currency=filters.presentation_currency,
+        currency=ledger_currency(filters, frappe.get_cached_value("Company", company, "default_currency")),
     )
     return build_statement(rows, frappe.get_precision("GL Entry", "debit") or 2), header
+
+
+def general_ledger(filters: frappe._dict) -> tuple[list, list]:
+    """Runs the site's General Ledger report: the copy its Report record points at.
+
+    Report.execute_module would pass the report a copy of ``filters``; the ledger records the currency
+    it reported in on the filters it is given, so the module's execute is called directly.
+    """
+    report = frappe.get_cached_doc("Report", GENERAL_LEDGER)
+    execute = frappe.get_attr(f"{get_report_module_dotted_path(report.module, report.name)}.execute")
+    columns, rows = execute(filters)[:2]
+    return columns, rows
 
 
 # ====================================================================================================
