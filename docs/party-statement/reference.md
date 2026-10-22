@@ -58,7 +58,7 @@ optima_payment/optima_payment/page/party_statement/
 └── party_statement.css   # the iframe and the empty-state message
 
 optima_payment/public/js/
-├── party_statement.js    # app_include_js: report settings, balance formatter, form button
+├── party_statement.js    # app_include_js: report settings, column fitting, balance formatter, form button
 ├── customer.js           # doctype_js: View ▸ Statement of Account
 └── supplier.js           # doctype_js: View ▸ Statement of Account
 ```
@@ -170,6 +170,16 @@ last fallback.
 The client formatter (`report_settings` in `public/js/party_statement.js`) shows the balance as
 `abs DR` in `text-danger` or `abs CR` in `text-success`, a centred `-` for a zero debit or credit,
 translates the voucher type, and bolds the label rows. `add_total_row` is 0: the summary cards carry the totals.
+
+The columns fill the page. Frappe draws report columns at exactly their declared widths, so
+`fit_columns` (run from `after_datatable_render`) widens them in proportion to fill the table's
+width, and never makes them narrower than declared: a screen too narrow for them scrolls sideways,
+as before, rather than cutting amounts off. `keep_columns_fitted` (set up in `onload`) refits on the
+full-width toggle, on a window resize, and on returning to the report, so a width change made on
+another page is caught too. frappe-datatable's own `fluid` layout is not used, because a window
+resize while the report is hidden breaks its widths. Its `ratio` layout is not used either: it
+leaves the row number column out of its sum, which causes a sideways scroll, and it has no minimum
+width.
 
 Filters: Company (default: the user's), Party (`party`, a Link to the party type), From Date
 (default: start of the current fiscal year), To Date (default: today), all required.
