@@ -65,6 +65,7 @@ def trailing_rows(debit=0.0, credit=0.0):
 def make_header(party_type="Customer"):
     return StatementHeader(
         company=COMPANY,
+        company_name_in_arabic=None,
         party_type=party_type,
         party=CUSTOMER,
         party_name=CUSTOMER,

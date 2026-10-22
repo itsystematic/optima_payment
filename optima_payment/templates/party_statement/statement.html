@@ -10,6 +10,9 @@
 <div class="party-statement">
     <div class="statement-head">
         <div class="company-name">{{ header.company }}</div>
+        {%- if header.company_name_in_arabic and header.company_name_in_arabic != header.company %}
+        <div class="company-name" dir="rtl">{{ header.company_name_in_arabic }}</div>
+        {%- endif %}
         <div class="statement-title">{{ _("Statement of Account") }}</div>
     </div>
 

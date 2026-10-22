@@ -63,6 +63,7 @@ class StatementHeader:
     """Whose statement it is and for which period, as its header shows them."""
 
     company: str
+    company_name_in_arabic: str | None
     party_type: str
     party: str
     party_name: str
@@ -345,6 +346,7 @@ def get_statement(party_type: str, party: str, company: str, from_date, to_date)
 
     header = StatementHeader(
         company=company,
+        company_name_in_arabic=frappe.get_cached_value("Company", company, "company_name_in_arabic"),
         party_type=party_type,
         party=party,
         party_name=frappe.db.get_value(party_type, party, f"{frappe.scrub(party_type)}_name") or party,
