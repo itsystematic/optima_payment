@@ -6,12 +6,14 @@ and the full chain required to submit a Bank Guarantee-BG (Optima Payment
 Setting, Bank, Account, Cost Center, Project, Customer/Supplier, and a
 reference Sales/Purchase Order with its own taxes table pre-populated to dodge
 this site's KSA/ZATCA mandatory-field customizations), plus Purchases Bulk Tool
-documents with their purchase taxes template. Tests import these factories
+documents with their purchase taxes template, and the party Journal Entries
+and users the statement of account needs. Tests import these factories
 instead of constructing documents inline.
 """
 
 import frappe
 import erpnext
+from erpnext.accounts.party import get_party_account
 from frappe.utils import add_days, nowdate
 
 from optima_payment.override.doctype_class.payment_entry import CustomPaymentEntry
@@ -727,3 +729,72 @@ def make_purchases_bulk_tool(
         doc.submit()
 
     return doc
+
+
+# ====================================================================================================
+# PARTY STATEMENT FACTORIES
+# A Journal Entry is the shortest voucher that posts to a party: one row on the party's own account,
+# balanced by a bank or cash account, which needs no item, tax or cost center rule.
+
+
+def make_party_journal_entry(
+    *,
+    party_type: str,
+    party: str,
+    amount: float,
+    posting_date: str,
+    company: str | None = None,
+    do_not_submit: bool = False,
+) -> frappe.model.document.Document:
+    """A Journal Entry that debits ``party`` by ``amount``; a negative amount credits it."""
+    company = company or erpnext.get_default_company()
+    party_debit, party_credit = (amount, 0) if amount > 0 else (0, -amount)
+    jv = frappe.get_doc(
+        {
+            "doctype": "Journal Entry",
+            "voucher_type": "Journal Entry",
+            "company": company,
+            "posting_date": posting_date,
+            "accounts": [
+                {
+                    "account": get_party_account(party_type, party, company),
+                    "party_type": party_type,
+                    "party": party,
+                    "debit_in_account_currency": party_debit,
+                    "credit_in_account_currency": party_credit,
+                    "cost_center": get_or_create_cost_center(company),
+                },
+                {
+                    "account": get_payment_entry_account(company),
+                    "debit_in_account_currency": party_credit,
+                    "credit_in_account_currency": party_debit,
+                    "cost_center": get_or_create_cost_center(company),
+                },
+            ],
+        }
+    )
+    jv.insert(ignore_permissions=True)
+
+    if not do_not_submit:
+        jv.submit()
+
+    return jv
+
+
+def get_or_create_user(email: str, roles: list[str]) -> str:
+    """A desk User holding exactly ``roles``, for permission tests run under frappe.set_user."""
+    if not frappe.db.exists("User", email):
+        frappe.get_doc(
+            {
+                "doctype": "User",
+                "email": email,
+                "first_name": email.split("@")[0],
+                "send_welcome_email": 0,
+                "user_type": "System User",
+            }
+        ).insert(ignore_permissions=True)
+
+    user = frappe.get_doc("User", email)
+    user.set("roles", [{"role": role} for role in roles])
+    user.save(ignore_permissions=True)
+    return email
