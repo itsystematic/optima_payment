@@ -45,7 +45,7 @@ STYLESHEET = ("templates", "party_statement", "statement.css")
 UNSAFE_FILE_CHARACTERS = re.compile(r'[\\/:*?"<>|]+')
 
 
-@dataclass
+@dataclass(frozen=True)
 class Statement:
     opening: float
     entries: list
@@ -58,7 +58,7 @@ class Statement:
     closing_credit: float
 
 
-@dataclass
+@dataclass(frozen=True)
 class StatementHeader:
     """Whose statement it is and for which period, as its header shows them."""
 
