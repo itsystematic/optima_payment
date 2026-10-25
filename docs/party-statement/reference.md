@@ -153,6 +153,9 @@ last fallback.
 `company_name_in_arabic` on Company), party type, party, party name (`customer_name` /
 `supplier_name`, else the ID), the period and the currency.
 
+Both are frozen dataclasses: every output reads the same pair, so none of them can change a value
+the others show. The `entries` list itself is not frozen.
+
 ---
 
 ## Report
