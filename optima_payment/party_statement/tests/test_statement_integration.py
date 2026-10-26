@@ -14,7 +14,7 @@ import erpnext
 import frappe
 from erpnext.accounts.utils import get_fiscal_year
 from frappe.tests.utils import FrappeTestCase
-from frappe.utils import add_days, flt, getdate, nowdate
+from frappe.utils import add_days, flt, fmt_money, getdate, nowdate
 
 from optima_payment.optima_payment.report.customer_statement.customer_statement import execute
 from optima_payment.party_statement import api
@@ -108,7 +108,7 @@ class TestPartyStatementIntegration(FrappeTestCase):
     def test_the_report_returns_its_rows_and_summary_cards(self):
         self.make_customer_vouchers()
 
-        columns, rows, _message, _chart, summary = execute(
+        columns, rows, message, _chart, summary = execute(
             {
                 "company": self.company,
                 "party": self.customer,
@@ -125,13 +125,13 @@ class TestPartyStatementIntegration(FrappeTestCase):
         self.assertEqual([row["indicator"] for row in rows], ["Green"] * 4)
 
         closing_row = rows[-1]
-        closing_debit, closing_credit, closing_balance, separator, debit, credit, _net = summary
+        closing_debit, closing_credit, closing_balance = summary
         self.assertEqual(
             (closing_debit["value"], closing_credit["value"]), (closing_row["debit"], closing_row["credit"])
         )
         self.assertEqual(closing_balance["indicator"], "Green")
-        self.assertEqual(separator["type"], "separator")
-        self.assertEqual((debit["value"], credit["value"]), (50.0, 30.0))
+        self.assertIn(f"total debit: {fmt_money(50, currency=closing_row['currency'])},", message)
+        self.assertIn(f"total credit: {fmt_money(30, currency=closing_row['currency'])},", message)
 
     def test_the_api_refuses_a_party_type_other_than_customer_or_supplier(self):
         with self.assertRaises(frappe.ValidationError):

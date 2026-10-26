@@ -111,8 +111,7 @@ CR,دائن,Party Statement
 DR / CR,مدين / دائن,Party Statement
 Closing Debit,المدين الختامي
 Closing Credit,الدائن الختامي
-Net for the Period,صافي الفترة
-For the period {0} to {1},عن الفترة من {0} إلى {1}
+"For the period {0} to {1}: total debit: {2}, total credit: {3}, net: {4}.","خلال الفترة من {0} إلى {1}: إجمالي المدين: {2}، إجمالي الدائن: {3}، الصافي: {4}."
 Export to Excel,تصدير إلى Excel
 Open Report,فتح التقرير
 Select a {0} first.,اختر {0} أولاً.

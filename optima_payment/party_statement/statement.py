@@ -275,37 +275,36 @@ def report_rows(statement: Statement, header: StatementHeader) -> list[dict]:
 
 
 def report_summary(statement: Statement, header: StatementHeader) -> list[dict]:
-    """Two cards in Frappe's one summary strip, each adding up on its own: the Closing Balance row,
-    then, after a separator naming the period, the period's debit, credit and net.
-
-    The period's net is its debit less its credit, not the closing balance, which also carries the
-    opening. It is a movement rather than a balance, so it takes no colour: a customer paying off
-    their debt would otherwise read red.
-    """
+    """The Closing Balance row as cards, so they add up: closing debit − closing credit = balance."""
 
     def amount_card(label: str, value: float) -> dict:
         return {"label": label, "value": value, "datatype": "Currency", "currency": header.currency}
 
-    def balance_card(label: str, value: float) -> dict:
-        return {"label": label, "value": balance_text(value, header.currency), "datatype": "Data"}
-
-    # The separator's value is inserted as HTML. dir="ltr" keeps each date's order inside Arabic text.
-    period = _("For the period {0} to {1}").format(
-        f'<span dir="ltr">{formatdate(header.from_date)}</span>',
-        f'<span dir="ltr">{formatdate(header.to_date)}</span>',
-    )
     return [
         amount_card(_("Closing Debit"), statement.closing_debit),
         amount_card(_("Closing Credit"), statement.closing_credit),
         {
-            **balance_card(_("Closing Balance"), statement.closing),
+            "label": _("Closing Balance"),
+            "value": balance_text(statement.closing, header.currency),
+            "datatype": "Data",
             "indicator": balance_indicator(header.party_type, statement.closing),
         },
-        {"type": "separator", "value": period},
-        amount_card(_("Debit"), statement.total_debit),
-        amount_card(_("Credit"), statement.total_credit),
-        balance_card(_("Net for the Period"), statement.total_debit - statement.total_credit),
     ]
+
+
+def report_message(statement: Statement, header: StatementHeader) -> str:
+    """The plain line Frappe shows with the report's cards: what moved in the period alone.
+
+    Its net leaves out the opening, so it is not the closing balance; it is a movement, so it takes no
+    colour. Frappe inserts the line as HTML, and dir="ltr" keeps each date's order inside Arabic text.
+    """
+    return _("For the period {0} to {1}: total debit: {2}, total credit: {3}, net: {4}.").format(
+        f'<span dir="ltr">{formatdate(header.from_date)}</span>',
+        f'<span dir="ltr">{formatdate(header.to_date)}</span>',
+        fmt_money(statement.total_debit, currency=header.currency),
+        fmt_money(statement.total_credit, currency=header.currency),
+        balance_text(statement.total_debit - statement.total_credit, header.currency),
+    )
 
 
 def excel_rows(statement: Statement, header: StatementHeader) -> list[list]:

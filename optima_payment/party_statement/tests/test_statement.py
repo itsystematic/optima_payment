@@ -30,6 +30,7 @@ from optima_payment.party_statement.statement import (
     gl_filters,
     ledger_currency,
     render_html,
+    report_message,
     report_rows,
     report_summary,
     validate_filters,
@@ -359,52 +360,18 @@ class TestReportSummary(FrappeTestCase):
             [opening_row(debit=100), entry_row("SINV-1", debit=300), entry_row("PE-1", credit=120)]
         )
 
-    def test_a_closing_card_then_a_period_card_after_a_separator(self):
-        summary = report_summary(self.statement, make_header())
-
-        self.assertEqual(
-            [card.get("label") or card["type"] for card in summary],
-            [
-                "Closing Debit",
-                "Closing Credit",
-                "Closing Balance",
-                "separator",
-                "Debit",
-                "Credit",
-                "Net for the Period",
-            ],
-        )
-
-    def test_the_closing_card_is_the_closing_balance_row(self):
-        closing_debit, closing_credit, closing_balance = report_summary(self.statement, make_header())[:3]
+    def test_the_cards_are_the_closing_balance_row(self):
+        closing_debit, closing_credit, closing_balance = report_summary(self.statement, make_header())
         closing_row = report_rows(self.statement, make_header())[-1]
 
         self.assertEqual(
-            (closing_debit["value"], closing_debit["datatype"], closing_debit["currency"]),
-            (closing_row["debit"], "Currency", CURRENCY),
+            (closing_debit["label"], closing_debit["value"], closing_debit["datatype"], closing_debit["currency"]),
+            ("Closing Debit", closing_row["debit"], "Currency", CURRENCY),
         )
-        self.assertEqual(closing_credit["value"], closing_row["credit"])
-        self.assertEqual(closing_balance["value"], balance_text(280.0, CURRENCY))
-
-    def test_the_period_card_adds_up_on_its_own(self):
-        debit, credit, net = report_summary(self.statement, make_header())[4:]
-
-        self.assertEqual((debit["value"], credit["value"]), (300.0, 120.0))
-        self.assertEqual(net["value"], balance_text(180.0, CURRENCY))
-
-    def test_the_separator_names_the_period_with_each_date_left_to_right(self):
-        separator = report_summary(self.statement, make_header())[3]
-
+        self.assertEqual((closing_credit["label"], closing_credit["value"]), ("Closing Credit", closing_row["credit"]))
         self.assertEqual(
-            separator["value"],
-            f'For the period <span dir="ltr">{formatdate(FROM_DATE)}</span>'
-            f' to <span dir="ltr">{formatdate(TO_DATE)}</span>',
+            (closing_balance["label"], closing_balance["value"]), ("Closing Balance", balance_text(280.0, CURRENCY))
         )
-
-    def test_only_the_closing_balance_is_coloured(self):
-        summary = report_summary(self.statement, make_header())
-
-        self.assertEqual([card.get("label") for card in summary if "indicator" in card], ["Closing Balance"])
 
     def test_the_closing_balance_is_coloured_for_the_party_type(self):
         cases = [
@@ -420,11 +387,40 @@ class TestReportSummary(FrappeTestCase):
                 closing_balance = report_summary(build_statement(rows), make_header(party_type))[2]
                 self.assertEqual(closing_balance["indicator"], indicator)
 
-    def test_a_settled_balance_reads_without_a_side(self):
-        summary = report_summary(build_statement([]), make_header())
+    def test_a_settled_closing_balance_reads_without_a_side(self):
+        closing_balance = report_summary(build_statement([]), make_header())[2]
 
-        self.assertEqual((summary[2]["value"], summary[-1]["value"]), (balance_text(0.0, CURRENCY),) * 2)
-        self.assertFalse(summary[2]["value"].endswith(DR))
+        self.assertEqual(closing_balance["value"], balance_text(0.0, CURRENCY))
+        self.assertFalse(closing_balance["value"].endswith(DR))
+
+
+class TestReportMessage(FrappeTestCase):
+    def test_the_period_alone_with_each_date_left_to_right(self):
+        statement = build_statement(
+            [opening_row(debit=100), entry_row("SINV-1", debit=300), entry_row("PE-1", credit=120)]
+        )
+
+        self.assertEqual(
+            report_message(statement, make_header()),
+            f'For the period <span dir="ltr">{formatdate(FROM_DATE)}</span>'
+            f' to <span dir="ltr">{formatdate(TO_DATE)}</span>:'
+            f" total debit: {fmt_money(300.0, currency=CURRENCY)},"
+            f" total credit: {fmt_money(120.0, currency=CURRENCY)},"
+            f" net: {balance_text(180.0, CURRENCY)}.",
+        )
+
+    def test_the_net_takes_its_side_or_none_when_the_period_nets_to_zero(self):
+        cases = [
+            ("credit", [entry_row("PE-1", credit=50)], balance_text(-50.0, CURRENCY)),
+            (
+                "nets to zero",
+                [entry_row("SINV-1", debit=50), entry_row("PE-1", credit=50)],
+                balance_text(0.0, CURRENCY),
+            ),
+        ]
+        for label, rows, net in cases:
+            with self.subTest(case=label):
+                self.assertTrue(report_message(build_statement(rows), make_header()).endswith(f" net: {net}."))
 
 
 class TestBand(FrappeTestCase):

@@ -60,7 +60,6 @@ optima_payment.party_statement.report_settings = function (party_type) {
 
 		after_datatable_render(datatable) {
 			optima_payment.party_statement.fit_columns(datatable);
-			optima_payment.party_statement.split_summary(frappe.query_report);
 		},
 
 		onload(report) {
@@ -115,22 +114,15 @@ optima_payment.party_statement.keep_columns_fitted = function (report) {
 	$(report.parent).off("show.party_statement").on("show.party_statement", fit);
 };
 
-// Frappe lays every summary card out in one strip. The separator the server puts between the closing
-// card and the period card is stretched across it, so the period's cards start a row of their own.
-// Frappe empties the strip before each report renders its summary, so the class never outlives the
-// statement.
-optima_payment.party_statement.split_summary = function (report) {
-	report.$summary.find(".summary-separator").addClass("party-statement-divider");
-};
-
 // A balance reads as its amount and side, as on the printed statement, or its amount alone when
-// settled. The row's indicator carries its colour, which depends on the party type.
+// settled. The row's indicator (Green, Red or Blue, decided with the party type) picks the same shade
+// as the Closing Balance card.
 optima_payment.party_statement.format_balance = function (data) {
 	const balance = flt(data.balance);
 	const amount = format_currency(Math.abs(balance), data.currency);
 	const side = balance > 0 ? "DR" : balance < 0 ? "CR" : null;
 	const text = side ? `${amount} ${__(side, null, "Party Statement")}` : amount;
-	return `<span class="party-statement-balance ${data.indicator.toLowerCase()}">${text}</span>`;
+	return `<span style="color: var(--${data.indicator.toLowerCase()}-500)">${text}</span>`;
 };
 
 optima_payment.party_statement.add_form_button = function (frm) {

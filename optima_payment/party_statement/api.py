@@ -16,6 +16,7 @@ from optima_payment.party_statement.statement import (
     render_html,
     render_pdf,
     report_columns,
+    report_message,
     report_rows,
     report_summary,
     validate_party_type,
@@ -41,7 +42,7 @@ def run_report(party_type: str, filters: dict | None) -> tuple:
     return (
         report_columns(),
         report_rows(statement, header),
-        None,
+        report_message(statement, header),
         None,
         report_summary(statement, header),
     )
