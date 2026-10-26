@@ -129,7 +129,7 @@ col.c-total { width: 33.33%; }
     font-weight: bold;
 }
 
-/* No colour on a balance: the statement goes to the party, and only the report colours balances. */
+/* Uncoloured: the statement goes to the party. */
 .print-format .statement-table .balance {
     font-weight: bold;
 }

@@ -34,8 +34,7 @@ GENERAL_LEDGER = "General Ledger"
 DR = "DR"
 CR = "CR"
 
-# The side a party's balance normally sits on: a customer owes the company, the company owes a
-# supplier. The report colours that side green and the other one, an advance or an overpayment, red.
+# Where each party's balance usually sits; the report shows it green and the other side red.
 NORMAL_SIDES = {CUSTOMER: DR, SUPPLIER: CR}
 
 # "Balance" and the debit and credit totals already carry translations from other apps that read
@@ -203,9 +202,8 @@ def balance_text(amount: float, currency: str | None = None) -> str:
 
 
 def balance_indicator(party_type: str, amount: float) -> str:
-    """The report's colour for a balance: Green on the party's normal side, Red on the other, Blue when
-    settled. The printed statement goes to the party and is not coloured."""
-    _unsigned, side = dr_cr(amount)
+    """Green on the party's usual side, Red on the other, Blue when settled. Report only."""
+    side = dr_cr(amount)[1]
     if not side:
         return "Blue"
     return "Green" if side == NORMAL_SIDES[party_type] else "Red"
@@ -258,7 +256,7 @@ def report_rows(statement: Statement, header: StatementHeader) -> list[dict]:
     Ledger's own Opening and Closing debit and credit.
 
     The balance stays signed, so the report's own export keeps its side; the report's formatter shows
-    it as DR or CR, in the colour of the row's indicator.
+    it as DR or CR.
     """
 
     def report_row(**fields) -> dict:
@@ -293,10 +291,9 @@ def report_summary(statement: Statement, header: StatementHeader) -> list[dict]:
 
 
 def report_message(statement: Statement, header: StatementHeader) -> str:
-    """The plain line Frappe shows with the report's cards: what moved in the period alone.
+    """The period's debit, credit and net, without the opening. Uncoloured: the net is a movement.
 
-    Its net leaves out the opening, so it is not the closing balance; it is a movement, so it takes no
-    colour. Frappe inserts the line as HTML, and dir="ltr" keeps each date's order inside Arabic text.
+    Frappe inserts it as HTML; dir="ltr" keeps each date in order inside Arabic text.
     """
     return _("For the period {0} to {1}: total debit: {2}, total credit: {3}, net: {4}.").format(
         f'<span dir="ltr">{formatdate(header.from_date)}</span>',
