@@ -122,8 +122,16 @@ class TestPartyStatementIntegration(FrappeTestCase):
             ["posting_date", "voucher_type", "voucher_no", "debit", "credit", "balance"],
         )
         self.assertEqual([row["balance"] for row in rows], [60.0, 30.0, 80.0, 80.0])
-        self.assertEqual([card["value"] for card in summary[:2]], [50.0, 30.0])
-        self.assertEqual(summary[2]["indicator"], "Red")
+        self.assertEqual([row["indicator"] for row in rows], ["Green"] * 4)
+
+        closing_row = rows[-1]
+        closing_debit, closing_credit, closing_balance, separator, debit, credit, _net = summary
+        self.assertEqual(
+            (closing_debit["value"], closing_credit["value"]), (closing_row["debit"], closing_row["credit"])
+        )
+        self.assertEqual(closing_balance["indicator"], "Green")
+        self.assertEqual(separator["type"], "separator")
+        self.assertEqual((debit["value"], credit["value"]), (50.0, 30.0))
 
     def test_the_api_refuses_a_party_type_other_than_customer_or_supplier(self):
         with self.assertRaises(frappe.ValidationError):

@@ -28,7 +28,7 @@ required_apps = [
 # ------------------
 
 # include js, css files in header of desk.html
-# app_include_css = "/assets/optima_payment/css/optima_payment.css"
+app_include_css = "/assets/optima_payment/css/party_statement.css"
 app_include_js = [
     "/assets/optima_payment/js/utils.js",
     "/assets/optima_payment/js/party_statement.js",

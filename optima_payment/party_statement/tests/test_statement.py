@@ -13,13 +13,15 @@ from datetime import date
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
-from frappe.utils import formatdate, getdate
+from frappe.utils import fmt_money, formatdate, getdate
 
 from optima_payment.party_statement.statement import (
     CR,
     DR,
     Statement,
     StatementHeader,
+    balance_indicator,
+    balance_text,
     band,
     build_statement,
     dr_cr,
@@ -208,7 +210,7 @@ class TestBuildStatement(FrappeTestCase):
         )
 
     def test_float_noise_rounds_to_a_positive_zero(self):
-        """The ledger has summed an opening of 2.2737e-13 CR on a real site; it must read 0.00 DR."""
+        """The ledger has summed an opening of 2.2737e-13 CR on a real site; it must read 0.00."""
         statement = build_statement([opening_row(credit=2.2737367544323206e-13)])
 
         self.assertEqual(statement.opening, 0.0)
@@ -233,16 +235,44 @@ class TestLedgerCurrency(FrappeTestCase):
 
 
 class TestDrCr(FrappeTestCase):
-    def test_the_sign_picks_the_side_and_zero_reads_as_dr(self):
+    def test_the_sign_picks_the_side_and_zero_has_none(self):
         cases = [
             ("debit", 24495.0, (24495.0, DR)),
             ("credit", -27324.45, (27324.45, CR)),
-            ("zero", 0.0, (0.0, DR)),
-            ("negative zero", -0.0, (0.0, DR)),
+            ("zero", 0.0, (0.0, None)),
+            ("negative zero", -0.0, (0.0, None)),
         ]
         for label, amount, expected in cases:
             with self.subTest(case=label):
                 self.assertEqual(dr_cr(amount), expected)
+
+
+class TestBalanceText(FrappeTestCase):
+    def test_the_amount_and_its_side_or_the_amount_alone_when_settled(self):
+        cases = [
+            ("debit", 300.0, None, f"{fmt_money(300.0)} DR"),
+            ("credit", -50.0, None, f"{fmt_money(50.0)} CR"),
+            ("settled", 0.0, None, fmt_money(0.0)),
+            ("with a currency", 300.0, CURRENCY, f"{fmt_money(300.0, currency=CURRENCY)} DR"),
+        ]
+        for label, amount, currency, expected in cases:
+            with self.subTest(case=label):
+                self.assertEqual(balance_text(amount, currency), expected)
+
+
+class TestBalanceIndicator(FrappeTestCase):
+    def test_green_on_the_partys_normal_side_red_on_the_other_and_blue_when_settled(self):
+        cases = [
+            ("customer owes the company", "Customer", 100.0, "Green"),
+            ("customer paid in advance", "Customer", -100.0, "Red"),
+            ("customer settled", "Customer", 0.0, "Blue"),
+            ("company owes the supplier", "Supplier", -100.0, "Green"),
+            ("supplier overpaid", "Supplier", 100.0, "Red"),
+            ("supplier settled", "Supplier", 0.0, "Blue"),
+        ]
+        for label, party_type, amount, indicator in cases:
+            with self.subTest(case=label):
+                self.assertEqual(balance_indicator(party_type, amount), indicator)
 
 
 class TestValidation(FrappeTestCase):
@@ -280,7 +310,7 @@ class TestReportRows(FrappeTestCase):
         )
 
     def test_bold_opening_and_closing_rows_carry_the_ledgers_debit_and_credit(self):
-        rows = report_rows(self.statement, CURRENCY)
+        rows = report_rows(self.statement, make_header())
 
         self.assertEqual(
             rows[0],
@@ -290,6 +320,7 @@ class TestReportRows(FrappeTestCase):
                 "credit": 0.0,
                 "balance": 100.0,
                 "currency": CURRENCY,
+                "indicator": "Green",
                 "bold": 1,
             },
         )
@@ -301,42 +332,99 @@ class TestReportRows(FrappeTestCase):
                 "credit": 150.0,
                 "balance": -50.0,
                 "currency": CURRENCY,
+                "indicator": "Red",
                 "bold": 1,
             },
         )
         self.assertEqual([row["voucher_no"] for row in rows[1:-1]], ["PE-1"])
 
     def test_entries_keep_a_signed_balance_and_carry_the_currency(self):
-        entry = report_rows(self.statement, CURRENCY)[1]
+        entry = report_rows(self.statement, make_header())[1]
 
         self.assertEqual((entry["balance"], entry["currency"]), (-50.0, CURRENCY))
         self.assertNotIn("bold", entry)
 
+    def test_each_row_is_coloured_for_its_party_type(self):
+        cases = [("Customer", ["Green", "Red", "Red"]), ("Supplier", ["Red", "Green", "Green"])]
+        for party_type, indicators in cases:
+            with self.subTest(party_type=party_type):
+                rows = report_rows(self.statement, make_header(party_type))
+                self.assertEqual([row["indicator"] for row in rows], indicators)
+
 
 class TestReportSummary(FrappeTestCase):
-    def test_three_cards_with_the_outstanding_side(self):
-        statement = build_statement([opening_row(), entry_row("SINV-1", debit=300), entry_row("PE-1", credit=100)])
+    def setUp(self):
+        # Opening 100 DR, then 300 owed and 120 paid: closing 280 DR.
+        self.statement = build_statement(
+            [opening_row(debit=100), entry_row("SINV-1", debit=300), entry_row("PE-1", credit=120)]
+        )
 
-        debit, credit, outstanding = report_summary(statement, CURRENCY)
+    def test_a_closing_card_then_a_period_card_after_a_separator(self):
+        summary = report_summary(self.statement, make_header())
 
         self.assertEqual(
-            (debit["label"], debit["value"], debit["datatype"], debit["currency"]),
-            ("Total Debit", 300.0, "Currency", CURRENCY),
+            [card.get("label") or card["type"] for card in summary],
+            [
+                "Closing Debit",
+                "Closing Credit",
+                "Closing Balance",
+                "separator",
+                "Debit",
+                "Credit",
+                "Net for the Period",
+            ],
         )
-        self.assertEqual((credit["label"], credit["value"]), ("Total Credit", 100.0))
-        self.assertEqual(outstanding["label"], "Outstanding Balance")
-        self.assertTrue(outstanding["value"].endswith("200.00 DR"), outstanding["value"])
 
-    def test_the_outstanding_card_is_red_for_dr_and_green_for_cr(self):
+    def test_the_closing_card_is_the_closing_balance_row(self):
+        closing_debit, closing_credit, closing_balance = report_summary(self.statement, make_header())[:3]
+        closing_row = report_rows(self.statement, make_header())[-1]
+
+        self.assertEqual(
+            (closing_debit["value"], closing_debit["datatype"], closing_debit["currency"]),
+            (closing_row["debit"], "Currency", CURRENCY),
+        )
+        self.assertEqual(closing_credit["value"], closing_row["credit"])
+        self.assertEqual(closing_balance["value"], balance_text(280.0, CURRENCY))
+
+    def test_the_period_card_adds_up_on_its_own(self):
+        debit, credit, net = report_summary(self.statement, make_header())[4:]
+
+        self.assertEqual((debit["value"], credit["value"]), (300.0, 120.0))
+        self.assertEqual(net["value"], balance_text(180.0, CURRENCY))
+
+    def test_the_separator_names_the_period_with_each_date_left_to_right(self):
+        separator = report_summary(self.statement, make_header())[3]
+
+        self.assertEqual(
+            separator["value"],
+            f'For the period <span dir="ltr">{formatdate(FROM_DATE)}</span>'
+            f' to <span dir="ltr">{formatdate(TO_DATE)}</span>',
+        )
+
+    def test_only_the_closing_balance_is_coloured(self):
+        summary = report_summary(self.statement, make_header())
+
+        self.assertEqual([card.get("label") for card in summary if "indicator" in card], ["Closing Balance"])
+
+    def test_the_closing_balance_is_coloured_for_the_party_type(self):
         cases = [
-            ("owes the company", [entry_row("SINV-1", debit=10)], "Red"),
-            ("settled", [], "Red"),
-            ("in credit", [entry_row("PE-1", credit=10)], "Green"),
+            ("customer owes the company", "Customer", [entry_row("SINV-1", debit=10)], "Green"),
+            ("customer settled", "Customer", [], "Blue"),
+            ("customer paid in advance", "Customer", [entry_row("PE-1", credit=10)], "Red"),
+            ("company owes the supplier", "Supplier", [entry_row("PINV-1", credit=10)], "Green"),
+            ("supplier settled", "Supplier", [], "Blue"),
+            ("supplier overpaid", "Supplier", [entry_row("PE-1", debit=10)], "Red"),
         ]
-        for label, rows, indicator in cases:
+        for label, party_type, rows, indicator in cases:
             with self.subTest(case=label):
-                outstanding = report_summary(build_statement(rows), CURRENCY)[2]
-                self.assertEqual(outstanding["indicator"], indicator)
+                closing_balance = report_summary(build_statement(rows), make_header(party_type))[2]
+                self.assertEqual(closing_balance["indicator"], indicator)
+
+    def test_a_settled_balance_reads_without_a_side(self):
+        summary = report_summary(build_statement([]), make_header())
+
+        self.assertEqual((summary[2]["value"], summary[-1]["value"]), (balance_text(0.0, CURRENCY),) * 2)
+        self.assertFalse(summary[2]["value"].endswith(DR))
 
 
 class TestBand(FrappeTestCase):
@@ -384,6 +472,12 @@ class TestExcelRows(FrappeTestCase):
             rows[10:],
             [["Total Debit", 100.0], ["Total Credit", 150.0], ["Outstanding Balance", 70.0, CR]],
         )
+
+    def test_a_settled_balance_leaves_its_side_blank(self):
+        rows = excel_rows(build_statement([entry_row("SINV-1", debit=50, credit=50)]), make_header())
+
+        self.assertEqual(rows[6][-2:], [0.0, None])
+        self.assertEqual(rows[-1], ["Outstanding Balance", 0.0, None])
 
 
 class TestFileName(FrappeTestCase):

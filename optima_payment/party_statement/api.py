@@ -40,10 +40,10 @@ def run_report(party_type: str, filters: dict | None) -> tuple:
     statement, header = get_statement(party_type, filters.party, filters.company, filters.from_date, filters.to_date)
     return (
         report_columns(),
-        report_rows(statement, header.currency),
+        report_rows(statement, header),
         None,
         None,
-        report_summary(statement, header.currency),
+        report_summary(statement, header),
     )
 
 

@@ -1,0 +1,35 @@
+/* Customer Statement and Supplier Statement reports. The printed statement has its own stylesheet,
+   templates/party_statement/statement.css. */
+
+/* The same shades as Frappe's summary cards, so a balance reads alike in the cards and the column. */
+.party-statement-balance.green {
+	color: var(--green-500);
+}
+
+.party-statement-balance.red {
+	color: var(--red-500);
+}
+
+.party-statement-balance.blue {
+	color: var(--blue-500);
+}
+
+/* The separator between the closing card and the period card, as a line across the summary strip
+   with the period under it (see split_summary in public/js/party_statement.js). Frappe draws a
+   separator as a small framed symbol; four classes outweigh its three. */
+.report-summary .summary-separator.party-statement-divider {
+	flex-basis: 100%;
+	margin: 0;
+	padding-top: var(--padding-md);
+	border-top: 1px solid var(--border-color);
+}
+
+.report-summary .summary-separator.party-statement-divider .summary-value {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: none;
+	font-size: var(--text-base);
+	font-weight: normal;
+	line-height: 1.5;
+}

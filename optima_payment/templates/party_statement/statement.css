@@ -129,18 +129,9 @@ col.c-total { width: 33.33%; }
     font-weight: bold;
 }
 
+/* No colour on a balance: the statement goes to the party, and only the report colours balances. */
 .print-format .statement-table .balance {
     font-weight: bold;
-}
-
-/* DR: the party owes the company. CR: the company owes the party. Three classes, so these also beat
-   the totals' green below on count rather than on their place in this file. */
-.print-format .party-statement .dr {
-    color: #d32f2f;
-}
-
-.print-format .party-statement .cr {
-    color: #2e7d32;
 }
 
 
@@ -165,7 +156,6 @@ col.c-total { width: 33.33%; }
     padding: 6px 12px 12px;
     font-size: 1.2em;
     font-weight: bold;
-    color: #2e7d32;
 }
 
 /* Both sides rather than one, so the dividers fall between the boxes in an RTL statement too. */

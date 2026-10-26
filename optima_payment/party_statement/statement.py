@@ -33,7 +33,10 @@ GENERAL_LEDGER = "General Ledger"
 
 DR = "DR"
 CR = "CR"
-SIDE_INDICATORS = {DR: "Red", CR: "Green"}
+
+# The side a party's balance normally sits on: a customer owes the company, the company owes a
+# supplier. The report colours that side green and the other one, an advance or an overpayment, red.
+NORMAL_SIDES = {CUSTOMER: DR, SUPPLIER: CR}
 
 # "Balance" and the debit and credit totals already carry translations from other apps that read
 # wrong on a statement, so the statement's own wording is looked up under this context.
@@ -180,14 +183,32 @@ def ledger_currency(filters: dict, company_currency: str) -> str:
     return filters.get("presentation_currency") or filters.get("account_currency") or company_currency
 
 
-def dr_cr(amount: float) -> tuple[float, str]:
-    """A balance as an unsigned amount and its side. Zero reads as DR."""
+def dr_cr(amount: float) -> tuple[float, str | None]:
+    """A balance as an unsigned amount and its side. A settled balance has no side."""
+    if not amount:
+        return 0.0, None
     return abs(amount), CR if amount < 0 else DR
 
 
 def statement_label(text: str) -> str:
     """``text`` in the statement's own wording (see TRANSLATION_CONTEXT)."""
     return _(text, context=TRANSLATION_CONTEXT)
+
+
+def balance_text(amount: float, currency: str | None = None) -> str:
+    """A balance as the statement writes it: "300.00 DR", "50.00 CR", or "0.00" when settled."""
+    unsigned, side = dr_cr(amount)
+    money = fmt_money(unsigned, currency=currency)
+    return f"{money} {statement_label(side)}" if side else money
+
+
+def balance_indicator(party_type: str, amount: float) -> str:
+    """The report's colour for a balance: Green on the party's normal side, Red on the other, Blue when
+    settled. The printed statement goes to the party and is not coloured."""
+    _unsigned, side = dr_cr(amount)
+    if not side:
+        return "Blue"
+    return "Green" if side == NORMAL_SIDES[party_type] else "Red"
 
 
 def band(header: StatementHeader) -> list[str]:
@@ -228,52 +249,62 @@ def report_columns() -> list[dict]:
     ]
 
 
-def report_rows(statement: Statement, currency: str) -> list[dict]:
+def report_rows(statement: Statement, header: StatementHeader) -> list[dict]:
     """The entries between bold Opening Balance and Closing Balance rows, which carry the General
     Ledger's own Opening and Closing debit and credit.
 
     The balance stays signed, so the report's own export keeps its side; the report's formatter shows
-    it as DR or CR.
+    it as DR or CR, in the colour of the row's indicator.
     """
 
-    def label_row(label: str, debit: float, credit: float, balance: float) -> dict:
+    def report_row(**fields) -> dict:
         return {
-            "voucher_type": label,
-            "debit": debit,
-            "credit": credit,
-            "balance": balance,
-            "currency": currency,
-            "bold": 1,
+            **fields,
+            "currency": header.currency,
+            "indicator": balance_indicator(header.party_type, fields["balance"]),
         }
+
+    def label_row(label: str, debit: float, credit: float, balance: float) -> dict:
+        return report_row(voucher_type=label, debit=debit, credit=credit, balance=balance, bold=1)
 
     return [
         label_row(_("Opening Balance"), statement.opening_debit, statement.opening_credit, statement.opening),
-        *({**entry, "currency": currency} for entry in statement.entries),
+        *(report_row(**entry) for entry in statement.entries),
         label_row(_("Closing Balance"), statement.closing_debit, statement.closing_credit, statement.closing),
     ]
 
 
-def report_summary(statement: Statement, currency: str) -> list[dict]:
-    amount, side = dr_cr(statement.closing)
+def report_summary(statement: Statement, header: StatementHeader) -> list[dict]:
+    """Two cards in Frappe's one summary strip, each adding up on its own: the Closing Balance row,
+    then, after a separator naming the period, the period's debit, credit and net.
+
+    The period's net is its debit less its credit, not the closing balance, which also carries the
+    opening. It is a movement rather than a balance, so it takes no colour: a customer paying off
+    their debt would otherwise read red.
+    """
+
+    def amount_card(label: str, value: float) -> dict:
+        return {"label": label, "value": value, "datatype": "Currency", "currency": header.currency}
+
+    def balance_card(label: str, value: float) -> dict:
+        return {"label": label, "value": balance_text(value, header.currency), "datatype": "Data"}
+
+    # The separator's value is inserted as HTML. dir="ltr" keeps each date's order inside Arabic text.
+    period = _("For the period {0} to {1}").format(
+        f'<span dir="ltr">{formatdate(header.from_date)}</span>',
+        f'<span dir="ltr">{formatdate(header.to_date)}</span>',
+    )
     return [
+        amount_card(_("Closing Debit"), statement.closing_debit),
+        amount_card(_("Closing Credit"), statement.closing_credit),
         {
-            "label": statement_label("Total Debit"),
-            "value": statement.total_debit,
-            "datatype": "Currency",
-            "currency": currency,
+            **balance_card(_("Closing Balance"), statement.closing),
+            "indicator": balance_indicator(header.party_type, statement.closing),
         },
-        {
-            "label": statement_label("Total Credit"),
-            "value": statement.total_credit,
-            "datatype": "Currency",
-            "currency": currency,
-        },
-        {
-            "label": _("Outstanding Balance"),
-            "value": f"{fmt_money(amount, currency=currency)} {statement_label(side)}",
-            "datatype": "Data",
-            "indicator": SIDE_INDICATORS[side],
-        },
+        {"type": "separator", "value": period},
+        amount_card(_("Debit"), statement.total_debit),
+        amount_card(_("Credit"), statement.total_credit),
+        balance_card(_("Net for the Period"), statement.total_debit - statement.total_credit),
     ]
 
 
@@ -283,9 +314,8 @@ def excel_rows(statement: Statement, header: StatementHeader) -> list[list]:
 
     def balance_cells(balance: float) -> list:
         amount, side = dr_cr(balance)
-        return [amount, statement_label(side)]
+        return [amount, statement_label(side) if side else None]
 
-    outstanding, side = dr_cr(statement.closing)
     return [
         [header.company],
         [_("Statement of Account")],
@@ -324,7 +354,7 @@ def excel_rows(statement: Statement, header: StatementHeader) -> list[list]:
         [],
         [statement_label("Total Debit"), statement.total_debit],
         [statement_label("Total Credit"), statement.total_credit],
-        [_("Outstanding Balance"), outstanding, statement_label(side)],
+        [_("Outstanding Balance"), *balance_cells(statement.closing)],
     ]
 
 
@@ -380,7 +410,7 @@ def render_html(statement: Statement, header: StatementHeader) -> str:
         {
             "statement": statement,
             "header": header,
-            "dr_cr": dr_cr,
+            "balance_text": balance_text,
             "label": statement_label,
         },
     )

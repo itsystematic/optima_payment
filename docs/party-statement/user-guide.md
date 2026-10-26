@@ -12,8 +12,9 @@ For one customer or supplier, one company and one period:
 - the **Opening Balance**: what the party owed, or was owed, on the day before the period starts;
 - **every invoice and payment** in the period, one line per document, with its debit or credit;
 - the **balance after each line**;
-- the **Closing Balance**, and three totals: **Total Debit**, **Total Credit** and **Outstanding
-  Balance**.
+- the **Closing Balance**;
+- totals: on the report, two cards (see [The report's cards](#the-reports-cards)); on the printed
+  statement, **Total Debit**, **Total Credit** and **Outstanding Balance**.
 
 The figures come from your **General Ledger** report, so the two always agree. The Opening Balance
 and Closing Balance rows show the same Debit and Credit as the General Ledger's *Opening* and
@@ -23,14 +24,24 @@ within the party's own account.
 
 ### DR and CR
 
-Every balance is shown as an amount followed by **DR** or **CR**:
+Every balance is shown as an amount followed by **DR** or **CR**. A zero balance is settled and
+reads **0.00**, with neither.
 
-| Shown as | Colour | For a customer | For a supplier |
-|----------|--------|----------------|----------------|
-| **DR** | red | The customer owes you | You paid the supplier more than they billed |
-| **CR** | green | The customer paid in advance | You owe the supplier |
+| Shown as | For a customer | For a supplier |
+|----------|----------------|----------------|
+| **DR** | The customer owes you | You paid the supplier more than they billed |
+| **CR** | The customer paid in advance | You owe the supplier |
 
-A zero balance reads **0.00 DR**.
+On the report, each balance is coloured by what it means for that party. **Green** is the balance
+you'd expect, **red** is the unusual one worth a look, and **blue** is settled:
+
+| Balance | Customer | Supplier |
+|---------|----------|----------|
+| **DR** | green | red |
+| **0.00** | blue | blue |
+| **CR** | red | green |
+
+The printed statement, the PDF and the emailed copy go to the party, so they carry no colours.
 
 ### Worked example
 
@@ -43,8 +54,28 @@ Customer *Al Noor Trading*, period 01-01-2026 to 30-06-2026, owing 1,000.00 at t
 | 19-01-2026 | Sales Invoice | SINV-2026-00031 | 800.00 | - | 300.00 DR |
 | | **Closing Balance** | | **1,800.00** | **1,500.00** | **300.00 DR** |
 
-Total Debit 800.00, Total Credit 1,500.00, Outstanding Balance **300.00 DR**. The totals cover the
-period only; the Closing Balance row adds the opening to them, as the General Ledger does.
+On the printed statement: Total Debit 800.00, Total Credit 1,500.00, Outstanding Balance
+**300.00 DR**. The totals cover the period only; the Closing Balance row adds the opening to them,
+as the General Ledger does.
+
+### The report's cards
+
+Above the lines, the report shows two cards, and each one adds up on its own. For the example:
+
+| Card | Debit | Credit | Balance |
+|------|-------|--------|---------|
+| **Closing** | Closing Debit 1,800.00 | Closing Credit 1,500.00 | Closing Balance **300.00 DR** |
+| **For the period** 01-01-2026 to 30-06-2026 | Debit 800.00 | Credit 1,500.00 | Net for the Period **700.00 CR** |
+
+- The **closing card** repeats the Closing Balance row: 1,800.00 − 1,500.00 = 300.00 DR. Only its
+  balance is coloured.
+- The **period card**, under a line naming the period, holds what happened in the period alone:
+  800.00 − 1,500.00 = 700.00 CR. Its net is not the outstanding balance, because it leaves out the
+  opening.
+
+Closing Debit and Closing Credit are the General Ledger's own Closing row. On sites whose ledger
+shows every earlier debit and credit in its Opening row, they are the totals since the account
+opened, so they can be much larger than the period's.
 
 ---
 
@@ -58,7 +89,7 @@ period only; the Closing Balance row adds the opening to them, as the General Le
    - **From Date** — defaults to the start of the current fiscal year.
    - **To Date** — defaults to today.
 
-The report shows the lines, with the three totals as cards above them. You can also open
+The report shows the lines, with the closing and period cards above them. You can also open
 **Customer Statement** or **Supplier Statement** from the search bar and pick the party there.
 
 ---
