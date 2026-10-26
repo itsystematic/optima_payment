@@ -42,7 +42,7 @@ you'd expect, **red** is the unusual one worth a look, and **blue** is settled:
 | **0.00** | blue | blue |
 | **CR** | red | green |
 
-The printed statement, the PDF and the emailed copy go to the party, so they carry no colours.
+The printed statement and the emailed copy go to the party, so they carry no colours.
 
 ### Worked example
 
@@ -110,8 +110,7 @@ preview refreshes by itself.
 | Button | What it does |
 |--------|--------------|
 | **Send Email** | Prepares the statement as a PDF and opens the email window, addressed to the party's email, with the PDF already attached and ticked. Choose an email template if you have one, then **Send** |
-| **Download PDF** | Downloads `Statement-<party>-<to date>.pdf` |
-| **Print** | Prints the statement |
+| **Print** | Prints the statement. To keep a PDF, choose **Save as PDF** as the printer in the print window |
 | **Export to Excel** | Downloads the same statement as `Statement-<party>-<to date>.xlsx`, with the DR / CR side in its own column |
 | **Open Report** | Goes back to the report with the same filters |
 
@@ -119,8 +118,8 @@ A sent statement appears on the party's timeline, under its activity.
 
 ### Language
 
-The statement follows **your** language. With Arabic as your language, the PDF, the printout and the
-email attachment are in Arabic and read right to left. To send an English statement from an Arabic
+The statement follows **your** language. With Arabic as your language, the printout and the email
+attachment are in Arabic and read right to left. To send an English statement from an Arabic
 desk, switch your language first (avatar ▸ **My Settings** ▸ **Language**).
 
 ---

@@ -1,8 +1,8 @@
 # Statement of Account
 
 Developer + power-user reference for the **customer and supplier statement of account**: where its
-figures come from, how one Statement feeds the report, the preview, the PDF, the email attachment
-and the Excel file, and who may see it. For a click-by-click guide aimed at accountants, see
+figures come from, how one Statement feeds the report, the preview, the email attachment and the
+Excel file, and who may see it. For a click-by-click guide aimed at accountants, see
 [user-guide.md](user-guide.md).
 
 ---
@@ -36,7 +36,7 @@ return values, with no database access. Everything that reads or renders calls t
 ```
 optima_payment/party_statement/
 ├── api.py          # the doors: check_access, run_report (the reports' execute), and the
-│                   # whitelisted preview / PDF / Excel / email-attachment methods
+│                   # whitelisted preview / Excel / email-attachment methods
 └── statement.py
     ├── DECISIONS   # pure: input checks, GL filters, build_statement, dr_cr, the band,
     │               #       report columns / rows / summary, Excel rows, file name
@@ -54,7 +54,7 @@ optima_payment/optima_payment/report/{customer,supplier}_statement/
 
 optima_payment/optima_payment/page/party_statement/
 ├── party_statement.json  # Page "party-statement", the four roles
-├── party_statement.js    # filter fields, the iframe, the five buttons
+├── party_statement.js    # filter fields, the iframe, the four buttons
 └── party_statement.css   # the iframe and the empty-state message
 
 optima_payment/public/js/
@@ -74,16 +74,15 @@ flowchart LR
     page -- Open Report --> report
     report --> run["api.run_report"]
     page --> html["api.get_preview_html"]
-    page --> pdf["api.download_pdf"]
     page --> xlsx["api.download_excel"]
     page --> mail["api.make_email_attachment"]
-    run & html & pdf & xlsx & mail --> gs["statement.get_statement"]
+    run & html & xlsx & mail --> gs["statement.get_statement"]
     gs --> gl["statement.general_ledger<br/>(the Report record's module)"]
 ```
 
-The page's iframe, the PDF and the email attachment all come from `render_html`, so what the user
-previews is byte-for-byte what the party receives. The Excel file is laid out from the same
-Statement by `excel_rows`.
+The page's iframe, and so its printout, and the email attachment all come from `render_html`, so
+what the user previews is byte-for-byte what the party receives. The Excel file is laid out from
+the same Statement by `excel_rows`.
 
 ---
 
@@ -195,8 +194,8 @@ the others show. The `entries` list itself is not frozen.
 | CR | Red — paid in advance | Green — the company owes it |
 
 Green is the side the party's balance normally sits on (`NORMAL_SIDES`), red the other one, which
-deserves a look. The printed statement, the PDF and the email attachment go to the party and carry
-no colour on any amount.
+deserves a look. The printed statement and the email attachment go to the party and carry no
+colour on any amount.
 
 The client formatter (`report_settings` in `public/js/party_statement.js`) shows the balance as
 `abs DR`, `abs CR` or `abs` alone when settled, in the colour of the row's `indicator`
@@ -232,8 +231,9 @@ Filters: Company (default: the user's), Party (`party`, a Link to the party type
   party. A newer request always wins over a slower older one.
 - **Body** — an `<iframe>` whose `srcdoc` is `get_preview_html`. The iframe keeps the desk's CSS out
   of the statement and the statement's out of the desk; it grows to the statement's height on load.
-- **Buttons** — Send Email (primary), Download PDF, Print (`iframe.contentWindow.print()`, as
-  Frappe's print view does), Export to Excel, Open Report.
+- **Buttons** — Send Email (primary), Print (`iframe.contentWindow.print()`, as Frappe's print
+  view does), Export to Excel, Open Report. There is no PDF download: the print window's **Save as
+  PDF** saves the same page.
 - **Send Email** — calls `make_email_attachment`, then opens `frappe.views.CommunicationComposer`
   with `doc: {doctype: party_type, name: party}`, the party's `email_id` and a subject, and adds the
   File with `render_attachment_rows(file)`, ticked. Sending goes through
@@ -253,12 +253,12 @@ Filters: Company (default: the user's), Party (`party`, a Link to the party type
 | `lang` | `frappe.local.lang`, the requesting user's language |
 | `layout_direction` | `rtl` when that language is right to left |
 
-`render_pdf` passes the result to `frappe.utils.pdf.get_pdf`. The template follows the print-format
-house structure: HTML for structure only, every visual decision in the CSS file, widths in
-`<colgroup>`, every cell's alignment stated rather than inherited, and **literal colours** because
-wkhtmltopdf ignores CSS custom properties. `statement.css` also hides printview's own action
-banner, whose Print / Get PDF links target a doctype print, and holds its look against three things
-the site's print setup imposes:
+`render_pdf` passes the result to `frappe.utils.pdf.get_pdf` for the email attachment. The template
+follows the print-format house structure: HTML for structure only, every visual decision in the CSS
+file, widths in `<colgroup>`, every cell's alignment stated rather than inherited, and **literal
+colours** because wkhtmltopdf ignores CSS custom properties. `statement.css` also hides printview's
+own action banner, whose Print / Get PDF links target a doctype print, and holds its look against
+three things the site's print setup imposes:
 
 | Imposed by | Rule | Answer in `statement.css` |
 |------------|------|---------------------------|
@@ -301,7 +301,6 @@ conditions on top.
 | Method | HTTP | Returns |
 |--------|------|---------|
 | `get_preview_html` | GET / POST | The full HTML page for the iframe |
-| `download_pdf` | GET | `Statement-<party>-<to_date>.pdf` as a download |
 | `download_excel` | GET | `Statement-<party>-<to_date>.xlsx` (`make_xlsx`) as a download |
 | `make_email_attachment` | POST | `{file: {name, file_name, file_url}, recipients, subject}`; the PDF is saved as a **private, unattached File** in *Home/Attachments*, as the composer's own uploader does without a form. It is saved when the composer opens, so a discarded email still leaves the File behind |
 
