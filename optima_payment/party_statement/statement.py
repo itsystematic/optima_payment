@@ -317,6 +317,10 @@ def excel_rows(statement: Statement, header: StatementHeader) -> list[list]:
         [_("Statement of Account")],
         [" | ".join(band(header))],
         [],
+        [_("Closing Debit"), statement.closing_debit],
+        [_("Closing Credit"), statement.closing_credit],
+        [_("Closing Balance"), *balance_cells(statement.closing)],
+        [],
         [
             _("Date"),
             _("Voucher Type"),
@@ -347,10 +351,6 @@ def excel_rows(statement: Statement, header: StatementHeader) -> list[list]:
             statement.closing_credit,
             *balance_cells(statement.closing),
         ],
-        [],
-        [statement_label("Total Debit"), statement.total_debit],
-        [statement_label("Total Credit"), statement.total_credit],
-        [_("Outstanding Balance"), *balance_cells(statement.closing)],
     ]
 
 

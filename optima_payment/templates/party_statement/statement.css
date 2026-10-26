@@ -136,11 +136,11 @@ col.c-total { width: 33.33%; }
 
 
 /* ====================================================================================================
- * TOTALS
+ * CLOSING CARD
  */
 
 .print-format .totals-table {
-    margin-top: 40px;
+    margin-bottom: 16px;
     background-color: #f2f5fa;
     border: 1px solid #d5dde9;
 }

@@ -100,12 +100,9 @@ Customer Statement,كشف حساب العميل
 Supplier Statement,كشف حساب المورد
 Opening Balance,الرصيد الافتتاحي
 Closing Balance,الرصيد الختامي
-Outstanding Balance,الرصيد المستحق
 Statement Period,فترة الكشف
 Voucher No.,رقم السند
 Balance,الرصيد,Party Statement
-Total Debit,إجمالي المدين,Party Statement
-Total Credit,إجمالي الدائن,Party Statement
 DR,مدين,Party Statement
 CR,دائن,Party Statement
 DR / CR,مدين / دائن,Party Statement

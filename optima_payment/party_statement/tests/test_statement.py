@@ -451,6 +451,11 @@ class TestRenderHtml(FrappeTestCase):
 
         self.assertIn("شركة كشف الحساب", render_html(build_statement([]), header))
 
+    def test_the_closing_card_comes_before_the_lines(self):
+        html = render_html(build_statement([entry_row("SINV-1", debit=300)]), make_header())
+
+        self.assertLess(html.index("Closing Debit"), html.index('<table class="statement-table"'))
+
 
 class TestExcelRows(FrappeTestCase):
     def test_the_sheet_reads_like_the_pdf(self):
@@ -468,22 +473,21 @@ class TestExcelRows(FrappeTestCase):
         self.assertEqual(rows[1], ["Statement of Account"])
         self.assertEqual(rows[2], [" | ".join(band(make_header()))])
         self.assertEqual(rows[3], [])
-        self.assertEqual(rows[4], ["Date", "Voucher Type", "Voucher No.", "Debit", "Credit", "Balance", "DR / CR"])
-        self.assertEqual(rows[5], [None, "Opening Balance", None, 0.0, 20.0, 20.0, CR])
-        self.assertEqual(rows[6], [date(2026, 2, 1), "Sales Invoice", "SINV-1", 100.0, 0.0, 80.0, DR])
-        self.assertEqual(rows[7], [date(2026, 3, 1), "Payment Entry", "PE-1", 0.0, 150.0, 70.0, CR])
-        self.assertEqual(rows[8], [None, "Closing Balance", None, 100.0, 170.0, 70.0, CR])
-        self.assertEqual(rows[9], [])
         self.assertEqual(
-            rows[10:],
-            [["Total Debit", 100.0], ["Total Credit", 150.0], ["Outstanding Balance", 70.0, CR]],
+            rows[4:7], [["Closing Debit", 100.0], ["Closing Credit", 170.0], ["Closing Balance", 70.0, CR]]
         )
+        self.assertEqual(rows[7], [])
+        self.assertEqual(rows[8], ["Date", "Voucher Type", "Voucher No.", "Debit", "Credit", "Balance", "DR / CR"])
+        self.assertEqual(rows[9], [None, "Opening Balance", None, 0.0, 20.0, 20.0, CR])
+        self.assertEqual(rows[10], [date(2026, 2, 1), "Sales Invoice", "SINV-1", 100.0, 0.0, 80.0, DR])
+        self.assertEqual(rows[11], [date(2026, 3, 1), "Payment Entry", "PE-1", 0.0, 150.0, 70.0, CR])
+        self.assertEqual(rows[12:], [[None, "Closing Balance", None, 100.0, 170.0, 70.0, CR]])
 
     def test_a_settled_balance_leaves_its_side_blank(self):
         rows = excel_rows(build_statement([entry_row("SINV-1", debit=50, credit=50)]), make_header())
 
-        self.assertEqual(rows[6][-2:], [0.0, None])
-        self.assertEqual(rows[-1], ["Outstanding Balance", 0.0, None])
+        self.assertEqual(rows[6], ["Closing Balance", 0.0, None])
+        self.assertEqual(rows[10][-2:], [0.0, None])
 
 
 class TestFileName(FrappeTestCase):

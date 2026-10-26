@@ -15,6 +15,22 @@
         <div class="statement-title">{{ _("Statement of Account") }}</div>
     </div>
 
+    <table class="totals-table" width="100%">
+        <colgroup>
+            <col class="c-total"><col class="c-total"><col class="c-total">
+        </colgroup>
+        <tr class="total-labels">
+            <th>{{ _("Closing Debit") }}</th>
+            <th>{{ _("Closing Credit") }}</th>
+            <th>{{ _("Closing Balance") }}</th>
+        </tr>
+        <tr class="total-values">
+            <td>{{ frappe.utils.fmt_money(statement.closing_debit) }}</td>
+            <td>{{ frappe.utils.fmt_money(statement.closing_credit) }}</td>
+            <td>{{ balance_text(statement.closing) }}</td>
+        </tr>
+    </table>
+
     <table class="statement-table" width="100%">
         <colgroup>
             <col class="c-date"><col class="c-type"><col class="c-voucher">
@@ -66,21 +82,5 @@
                 {{ balance_cell(statement.closing) }}
             </tr>
         </tbody>
-    </table>
-
-    <table class="totals-table" width="100%">
-        <colgroup>
-            <col class="c-total"><col class="c-total"><col class="c-total">
-        </colgroup>
-        <tr class="total-labels">
-            <th>{{ label("Total Debit") }}</th>
-            <th>{{ label("Total Credit") }}</th>
-            <th>{{ _("Outstanding Balance") }}</th>
-        </tr>
-        <tr class="total-values">
-            <td>{{ frappe.utils.fmt_money(statement.total_debit) }}</td>
-            <td>{{ frappe.utils.fmt_money(statement.total_credit) }}</td>
-            <td>{{ balance_text(statement.closing) }}</td>
-        </tr>
     </table>
 </div>
