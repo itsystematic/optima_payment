@@ -8,6 +8,7 @@ exist on the site. The wiring through the real ledger is in test_statement_integ
 """
 
 import math
+from dataclasses import replace
 from datetime import date
 
 import frappe
@@ -26,6 +27,7 @@ from optima_payment.party_statement.statement import (
     file_name,
     gl_filters,
     ledger_currency,
+    render_html,
     report_rows,
     report_summary,
     validate_filters,
@@ -347,6 +349,13 @@ class TestBand(FrappeTestCase):
                 f"Currency: {CURRENCY}",
             ],
         )
+
+
+class TestRenderHtml(FrappeTestCase):
+    def test_the_page_names_the_company_in_arabic(self):
+        header = replace(make_header(), company_name_in_arabic="شركة كشف الحساب")
+
+        self.assertIn("شركة كشف الحساب", render_html(build_statement([]), header))
 
 
 class TestExcelRows(FrappeTestCase):

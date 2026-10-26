@@ -7,8 +7,7 @@ The branch matrix is in test_statement.py. These prove what only real vouchers s
 the entries and the Closing row equal the site's own General Ledger for the same party (ERPNext's, or
 the copy an app swaps in, whose Opening keeps debit and credit apart), the report returns its
 summary cards, the API refuses other party types and users who can't open the report, an Accounts
-User gets the print page naming the company, its Arabic name and the party, and the Excel download is
-a real xlsx.
+User gets the print page naming the company and the party, and the Excel download is a real xlsx.
 """
 
 import erpnext
@@ -139,7 +138,6 @@ class TestPartyStatementIntegration(FrappeTestCase):
 
     def test_an_accounts_user_gets_the_page_naming_the_company_and_the_party(self):
         self.make_customer_vouchers()
-        frappe.db.set_value("Company", self.company, "company_name_in_arabic", "شركة كشف الحساب")
         # Sites may take Customer read away from Accounts User; Sales User grants it everywhere, and
         # Accounts User alone opens the report.
         frappe.set_user(
@@ -150,7 +148,6 @@ class TestPartyStatementIntegration(FrappeTestCase):
 
         self.assertIn('class="print-format"', html)
         self.assertIn(self.company, html)
-        self.assertIn("شركة كشف الحساب", html)
         self.assertIn(self.customer, html)
 
     def test_the_excel_download_is_an_xlsx_named_for_the_party(self):
