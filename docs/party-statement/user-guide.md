@@ -13,9 +13,8 @@ For one customer or supplier, one company and one period:
 - **every invoice and payment** in the period, one line per document, with its debit or credit;
 - the **balance after each line**;
 - the **Closing Balance**;
-- totals: on the report, a closing card and a line for the period (see
-  [The report's totals](#the-reports-totals)); on the printed statement, **Total Debit**, **Total
-  Credit** and **Outstanding Balance**.
+- above the lines, a closing card, and on the report a line for the period too (see
+  [The totals](#the-totals)).
 
 The figures come from your **General Ledger** report, so the two always agree. The Opening Balance
 and Closing Balance rows show the same Debit and Credit as the General Ledger's *Opening* and
@@ -26,7 +25,9 @@ within the party's own account.
 ### DR and CR
 
 Every balance is shown as an amount followed by **DR** or **CR**. A zero balance is settled and
-reads **0.00**, with neither.
+reads **0.00**, with neither. The one exception is the printed statement's Balance column, which is
+signed as in the General Ledger: a DR balance reads as a plain amount, a CR balance with a minus,
+such as **-500.00**.
 
 | Shown as | For a customer | For a supplier |
 |----------|----------------|----------------|
@@ -50,23 +51,20 @@ Customer *Al Noor Trading*, period 01-01-2026 to 30-06-2026, owing 1,000.00 at t
 
 | Date | Voucher Type | Voucher No. | Debit | Credit | Balance |
 |------|--------------|-------------|-------|--------|---------|
-| | **Opening Balance** | | **1,000.00** | - | **1,000.00 DR** |
-| 18-01-2026 | Payment Entry | PAY-2026-00012 | - | 1,500.00 | 500.00 CR |
-| 19-01-2026 | Sales Invoice | SINV-2026-00031 | 800.00 | - | 300.00 DR |
+| | **Opening Balance** | | **1,000.00** | | **1,000.00 DR** |
+| 18-01-2026 | Payment Entry | PAY-2026-00012 | | 1,500.00 | 500.00 CR |
+| 19-01-2026 | Sales Invoice | SINV-2026-00031 | 800.00 | | 300.00 DR |
 | | **Closing Balance** | | **1,800.00** | **1,500.00** | **300.00 DR** |
 
-The printed statement shows a zero debit or credit as **-**; the report leaves the cell empty. As in
-the General Ledger, the report names the currency once in each amount's header, such as
-**Debit (SAR)**, and shows the amounts as plain numbers.
+On the printed statement the Balance column reads 1,000.00, -500.00, 300.00 and 300.00. A zero
+debit or credit is left empty, on the report and on the printed statement. As in the General
+Ledger, the report names the currency once in each amount's header, such as **Debit (SAR)**, and
+shows the amounts as plain numbers.
 
-On the printed statement: Total Debit 800.00, Total Credit 1,500.00, Outstanding Balance
-**300.00 DR**. The totals cover the period only; the Closing Balance row adds the opening to them,
-as the General Ledger does.
+### The totals
 
-### The report's totals
-
-Above the lines, the report shows a plain line for the period, just under the filters, and a card
-with the Closing Balance row. For the example:
+Above the lines, the report and the printed statement show a card with the Closing Balance row. The
+report also shows a plain line for the period, just under the filters. For the example:
 
 > For the period 01-01-2026 to 30-06-2026: total debit: 800.00, total credit: 1,500.00, net: 700.00 CR.
 
@@ -75,8 +73,8 @@ with the Closing Balance row. For the example:
 | 1,800.00 | 1,500.00 | **300.00 DR** |
 
 - The **card** adds up: 1,800.00 − 1,500.00 = 300.00 DR. Only its balance is coloured.
-- The **line** holds what happened in the period alone: 800.00 − 1,500.00 = 700.00 CR. Its net is not
-  the outstanding balance, because it leaves out the opening.
+- The report's **line** holds what happened in the period alone: 800.00 − 1,500.00 = 700.00 CR. Its
+  net is not the outstanding balance, because it leaves out the opening.
 
 Closing Debit and Closing Credit are the General Ledger's own Closing row. On sites whose ledger
 shows every earlier debit and credit in its Opening row, they are the totals since the account
@@ -103,9 +101,9 @@ The report shows the lines, with the period line and the closing card above them
 
 Click **Preview** on the report. The preview page shows the statement exactly as the party will
 receive it: your company's name at the top, with the company's **Company Name In Arabic** below it
-when that is filled in, the title *Statement of Account*, the party and the period, the lines, and
-the three totals. The party, company and dates at the top of the page can be changed there too; the
-preview refreshes by itself.
+when that is filled in, the title *Statement of Account*, the closing card, then the lines under the
+party and the period. The party, company and dates at the top of the page can be changed there too;
+the preview refreshes by itself.
 
 | Button | What it does |
 |--------|--------------|
