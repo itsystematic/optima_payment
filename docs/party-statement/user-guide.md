@@ -13,8 +13,9 @@ For one customer or supplier, one company and one period:
 - **every invoice and payment** in the period, one line per document, with its debit or credit;
 - the **balance after each line**;
 - the **Closing Balance**;
-- totals: on the report, two cards (see [The report's cards](#the-reports-cards)); on the printed
-  statement, **Total Debit**, **Total Credit** and **Outstanding Balance**.
+- totals: on the report, a closing card and a line for the period (see
+  [The report's totals](#the-reports-totals)); on the printed statement, **Total Debit**, **Total
+  Credit** and **Outstanding Balance**.
 
 The figures come from your **General Ledger** report, so the two always agree. The Opening Balance
 and Closing Balance rows show the same Debit and Credit as the General Ledger's *Opening* and
@@ -58,20 +59,20 @@ On the printed statement: Total Debit 800.00, Total Credit 1,500.00, Outstanding
 **300.00 DR**. The totals cover the period only; the Closing Balance row adds the opening to them,
 as the General Ledger does.
 
-### The report's cards
+### The report's totals
 
-Above the lines, the report shows two cards, and each one adds up on its own. For the example:
+Above the lines, the report shows a plain line for the period, just under the filters, and a card
+with the Closing Balance row. For the example:
 
-| Card | Debit | Credit | Balance |
-|------|-------|--------|---------|
-| **Closing** | Closing Debit 1,800.00 | Closing Credit 1,500.00 | Closing Balance **300.00 DR** |
-| **For the period** 01-01-2026 to 30-06-2026 | Debit 800.00 | Credit 1,500.00 | Net for the Period **700.00 CR** |
+> For the period 01-01-2026 to 30-06-2026: total debit: 800.00, total credit: 1,500.00, net: 700.00 CR.
 
-- The **closing card** repeats the Closing Balance row: 1,800.00 − 1,500.00 = 300.00 DR. Only its
-  balance is coloured.
-- The **period card**, under a line naming the period, holds what happened in the period alone:
-  800.00 − 1,500.00 = 700.00 CR. Its net is not the outstanding balance, because it leaves out the
-  opening.
+| Closing Debit | Closing Credit | Closing Balance |
+|---------------|----------------|-----------------|
+| 1,800.00 | 1,500.00 | **300.00 DR** |
+
+- The **card** adds up: 1,800.00 − 1,500.00 = 300.00 DR. Only its balance is coloured.
+- The **line** holds what happened in the period alone: 800.00 − 1,500.00 = 700.00 CR. Its net is not
+  the outstanding balance, because it leaves out the opening.
 
 Closing Debit and Closing Credit are the General Ledger's own Closing row. On sites whose ledger
 shows every earlier debit and credit in its Opening row, they are the totals since the account
@@ -89,7 +90,7 @@ opened, so they can be much larger than the period's.
    - **From Date** — defaults to the start of the current fiscal year.
    - **To Date** — defaults to today.
 
-The report shows the lines, with the closing and period cards above them. You can also open
+The report shows the lines, with the period line and the closing card above them. You can also open
 **Customer Statement** or **Supplier Statement** from the search bar and pick the party there.
 
 ---

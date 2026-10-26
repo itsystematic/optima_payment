@@ -57,12 +57,8 @@ optima_payment/optima_payment/page/party_statement/
 ├── party_statement.js    # filter fields, the iframe, the five buttons
 └── party_statement.css   # the iframe and the empty-state message
 
-optima_payment/public/css/
-└── party_statement.css   # app_include_css: the report's balance colours and the summary's divider
-
 optima_payment/public/js/
-├── party_statement.js    # app_include_js: report settings, column fitting, balance formatter,
-│                         # the summary's split, form button
+├── party_statement.js    # app_include_js: report settings, column fitting, balance formatter, form button
 ├── customer.js           # doctype_js: View ▸ Statement of Account
 └── supplier.js           # doctype_js: View ▸ Statement of Account
 ```
@@ -167,7 +163,7 @@ the others show. The `entries` list itself is not frozen.
 ## Report
 
 `api.run_report(party_type, filters)` is the `execute` of both reports. It returns
-`columns, rows, None, None, summary`:
+`columns, rows, message, None, summary`:
 
 - **Columns** — Date, Voucher Type, Voucher No. (Dynamic Link on `voucher_type`), Debit, Credit,
   Balance; the amounts are Currency with `options: "currency"`, and every row carries `currency`.
@@ -175,19 +171,18 @@ the others show. The `entries` list itself is not frozen.
   in `voucher_type`; `bold: 1` marks the label rows, which carry the ledger's Opening and Closing
   debit and credit. The **balance stays signed**, so Frappe's own report export keeps the side.
   Every row also carries `indicator`, the colour of its balance (see below).
-- **Summary** — two cards in Frappe's one summary strip, each adding up on its own:
-
-  | Card | Items | Adds up as |
-  |------|-------|------------|
-  | Closing | *Closing Debit*, *Closing Credit* (Currency), *Closing Balance* (Data, such as `SAR 300.00 DR`, with its indicator) | The *Closing Balance* row: debit − credit = balance |
-  | Period | after a separator reading *For the period 01-01-2026 to 30-06-2026*: *Debit*, *Credit* (Currency), *Net for the Period* (Data, no indicator) | The period's own debit − credit |
-
-  The period card's last item is the period's net, not the outstanding balance: the old cards set the
-  period's totals beside the closing balance, which also carries the opening, and readers couldn't
-  make them add up. The net is a movement rather than a balance, so it takes no colour: a customer
-  paying off their debt would otherwise read red. *Closing Debit* and *Closing Credit* are whatever
-  the site's ledger shows in its Closing row: the net opening plus the period on ERPNext's copy,
-  every debit and credit since the account opened on the `wts` and `property_management` copies.
+- **Summary** — one card holding the *Closing Balance* row: *Closing Debit*, *Closing Credit*
+  (Currency) and *Closing Balance* (Data, such as `SAR 300.00 DR`, with its indicator), so
+  closing debit − closing credit = balance. They are whatever the site's ledger shows in its Closing
+  row: the net opening plus the period on ERPNext's copy, every debit and credit since the account
+  opened on the `wts` and `property_management` copies.
+- **Message** — `report_message`, one plain sentence for the period alone: *For the period
+  01-01-2026 to 30-06-2026: total debit: SAR 800.00, total credit: SAR 1,500.00, net: SAR 700.00 CR.*
+  Frappe shows a report's message natively, as a small muted line between the filters and the card,
+  and inserts it as HTML, so each date sits in a `<span dir="ltr">`. The net leaves out the
+  opening, so it is not the closing balance. The old cards set the period's totals beside the
+  closing balance, and readers couldn't make them add up. The net is a movement rather than a
+  balance, so it takes no colour: a customer paying off their debt would otherwise read red.
 
 **Colours.** `balance_indicator(party_type, amount)` decides them, on the report only:
 
@@ -203,17 +198,9 @@ no colour on any amount.
 
 The client formatter (`report_settings` in `public/js/party_statement.js`) shows the balance as
 `abs DR`, `abs CR` or `abs` alone when settled, in the colour of the row's `indicator`
-(`.party-statement-balance.green / .red / .blue`, the summary cards' own shades). It also puts a
+(`var(--green-500)`, `--red-500` or `--blue-500`, the summary card's own shades). It also puts a
 centred `-` for a zero debit or credit, translates the voucher type, and bolds the label rows.
-`add_total_row` is 0: the summary cards carry the totals.
-
-Frappe renders every summary item into one flex strip and has no notion of two cards.
-`split_summary` (run from `after_datatable_render`, which follows the summary's render) adds
-`party-statement-divider` to the separator, and `public/css/party_statement.css` (`app_include_css`)
-stretches it across the strip as a line with the period under it, so the period card starts a row of
-its own. Frappe empties the strip before any report renders its summary, so the class never reaches
-another report. Without the stylesheet the separator shows as Frappe's small framed box between the
-cards, and every figure stays correct.
+`add_total_row` is 0: the card and the message carry the totals.
 
 The columns fill the page. Frappe draws report columns at exactly their declared widths, so
 `fit_columns` (run from `after_datatable_render`) widens them in proportion to fill the table's
@@ -325,9 +312,8 @@ and the debit and credit totals already carry translations from other apps that 
 statement ("Balance" as a budget, "Total Debit" as a discount), so the statement's own labels are
 looked up under the translation context **Party Statement** (`statement_label` in Python,
 `__(text, null, "Party Statement")` in JS): *Balance*, *Total Debit*, *Total Credit*, *DR*, *CR* and
-the Excel column *DR / CR*. The report's card labels *Closing Debit*, *Closing Credit*, *Net for the
-Period* and the separator's *For the period {0} to {1}* carry no other app's translation and use no
-context.
+the Excel column *DR / CR*. The card labels *Closing Debit* and *Closing Credit* and the message's
+sentence carry no other app's translation and use no context.
 
 ---
 
@@ -338,8 +324,8 @@ See [testing.md](../development/testing.md). The tests come as a pair in
 
 | File | Layer | What it proves |
 |------|-------|----------------|
-| `test_statement.py` | Matrix: plain rows, nothing written | GL filters, opening from the leading row (debit, credit, absent, one-sided or both sides), the Closing row as opening plus totals, the ledger currency fallbacks, an empty period, a running balance crossing zero, totals and closing, the ledger's own trailing rows ignored, float noise rounding to a positive zero, precision, DR / CR with a settled zero, the balance text, the colour per party type and side, input checks and their messages, report rows with their indicators, the closing and period cards (each adding up, the closing card equal to the Closing Balance row, only the closing balance coloured), the band, the company's Arabic name on the print page, the Excel layout, file names |
-| `test_statement_integration.py` | Integration: real Journal Entries | The Opening row, entries and Closing row equal to the site's own General Ledger for the same party, with a debit and a credit before the period so either Opening style shows, a supplier reading CR, the report's rows and their colours, its closing card equal to the Closing Balance row whichever ledger copy runs, its period card, the API refusing another party type and a user without the report's roles, an Accounts User getting the print page with the company and the party, the Excel download |
+| `test_statement.py` | Matrix: plain rows, nothing written | GL filters, opening from the leading row (debit, credit, absent, one-sided or both sides), the Closing row as opening plus totals, the ledger currency fallbacks, an empty period, a running balance crossing zero, totals and closing, the ledger's own trailing rows ignored, float noise rounding to a positive zero, precision, DR / CR with a settled zero, the balance text, the colour per party type and side, input checks and their messages, report rows with their indicators, the card equal to the Closing Balance row and coloured for the party type, the period message with its net, the band, the company's Arabic name on the print page, the Excel layout, file names |
+| `test_statement_integration.py` | Integration: real Journal Entries | The Opening row, entries and Closing row equal to the site's own General Ledger for the same party, with a debit and a credit before the period so either Opening style shows, a supplier reading CR, the report's rows and their colours, its card equal to the Closing Balance row whichever ledger copy runs, its period message, the API refusing another party type and a user without the report's roles, an Accounts User getting the print page with the company and the party, the Excel download |
 
 The integration fixtures come from `optima_payment/tests/utils.py` (`make_party_journal_entry`,
 `get_or_create_user`, and the shared party factories). A Journal Entry is the shortest voucher that
