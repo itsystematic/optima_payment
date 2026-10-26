@@ -451,6 +451,11 @@ class TestRenderHtml(FrappeTestCase):
 
         self.assertIn("شركة كشف الحساب", render_html(build_statement([]), header))
 
+    def test_the_balance_column_is_signed_without_a_side(self):
+        html = render_html(build_statement([entry_row("PE-1", credit=50)]), make_header())
+
+        self.assertIn(f'<td class="balance">{fmt_money(-50.0)}</td>', html)
+
     def test_the_closing_card_comes_before_the_lines(self):
         html = render_html(build_statement([entry_row("SINV-1", debit=300)]), make_header())
 

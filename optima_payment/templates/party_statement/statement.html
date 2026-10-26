@@ -3,7 +3,7 @@
 {%- endmacro -%}
 
 {%- macro balance_cell(value) -%}
-<td class="balance">{{ balance_text(value) }}</td>
+<td class="balance">{{ frappe.utils.fmt_money(value) }}</td>
 {%- endmacro -%}
 
 <div class="party-statement">
