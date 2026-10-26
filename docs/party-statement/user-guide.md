@@ -55,6 +55,10 @@ Customer *Al Noor Trading*, period 01-01-2026 to 30-06-2026, owing 1,000.00 at t
 | 19-01-2026 | Sales Invoice | SINV-2026-00031 | 800.00 | - | 300.00 DR |
 | | **Closing Balance** | | **1,800.00** | **1,500.00** | **300.00 DR** |
 
+The printed statement shows a zero debit or credit as **-**; the report leaves the cell empty. As in
+the General Ledger, the report names the currency once in each amount's header, such as
+**Debit (SAR)**, and shows the amounts as plain numbers.
+
 On the printed statement: Total Debit 800.00, Total Credit 1,500.00, Outstanding Balance
 **300.00 DR**. The totals cover the period only; the Closing Balance row adds the opening to them,
 as the General Ledger does.

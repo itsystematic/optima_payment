@@ -166,7 +166,9 @@ the others show. The `entries` list itself is not frozen.
 `columns, rows, message, None, summary`:
 
 - **Columns** — Date, Voucher Type, Voucher No. (Dynamic Link on `voucher_type`), Debit, Credit,
-  Balance; the amounts are Currency with `options: "currency"`, and every row carries `currency`.
+  Balance. As in the site's General Ledger, each amount's header names the currency once, such as
+  *Debit (SAR)*, and the amounts are plain Float numbers with no symbol. Frappe aligns the columns
+  itself. The summary card and the period line keep the currency on every amount.
 - **Rows** — a bold *Opening Balance* row, the entries, a bold *Closing Balance* row. The label sits
   in `voucher_type`; `bold: 1` marks the label rows, which carry the ledger's Opening and Closing
   debit and credit. The **balance stays signed**, so Frappe's own report export keeps the side.
@@ -198,8 +200,10 @@ no colour on any amount.
 
 The client formatter (`report_settings` in `public/js/party_statement.js`) shows the balance as
 `abs DR`, `abs CR` or `abs` alone when settled, in the colour of the row's `indicator`
-(`var(--green-500)`, `--red-500` or `--blue-500`, the summary card's own shades). It also puts a
-centred `-` for a zero debit or credit, translates the voucher type, and bolds the label rows.
+(`var(--green-500)`, `--red-500` or `--blue-500`, the summary card's own shades). The amount is
+formatted as Frappe formats the report's other numbers. A zero debit or credit is left empty, so a
+line's one amount stands out (the printed statement keeps a `-`). The formatter also translates the
+voucher type and bolds the label rows.
 `add_total_row` is 0: the card and the message carry the totals.
 
 The columns fill the page. Frappe draws report columns at exactly their declared widths, so
@@ -311,9 +315,10 @@ All labels go through `_()` / `__()`. `translations/ar.csv` adds the statement's
 and the debit and credit totals already carry translations from other apps that read wrong on a
 statement ("Balance" as a budget, "Total Debit" as a discount), so the statement's own labels are
 looked up under the translation context **Party Statement** (`statement_label` in Python,
-`__(text, null, "Party Statement")` in JS): *Balance*, *Total Debit*, *Total Credit*, *DR*, *CR* and
-the Excel column *DR / CR*. The card labels *Closing Debit* and *Closing Credit* and the message's
-sentence carry no other app's translation and use no context.
+`__(text, null, "Party Statement")` in JS): *Balance*, *Total Debit*, *Total Credit*, *DR*, *CR*, the
+Excel column *DR / CR* and the report's headers *Debit ({0})*, *Credit ({0})* and *Balance ({0})*
+(ERPNext translates *Credit ({0})* as a loan's credit). The card labels *Closing Debit* and *Closing
+Credit* and the message's sentence carry no other app's translation and use no context.
 
 ---
 
@@ -324,7 +329,7 @@ See [testing.md](../development/testing.md). The tests come as a pair in
 
 | File | Layer | What it proves |
 |------|-------|----------------|
-| `test_statement.py` | Matrix: plain rows, nothing written | GL filters, opening from the leading row (debit, credit, absent, one-sided or both sides), the Closing row as opening plus totals, the ledger currency fallbacks, an empty period, a running balance crossing zero, totals and closing, the ledger's own trailing rows ignored, float noise rounding to a positive zero, precision, DR / CR with a settled zero, the balance text, the colour per party type and side, input checks and their messages, report rows with their indicators, the card equal to the Closing Balance row and coloured for the party type, the period message with its net, the band, the company's Arabic name on the print page, the Excel layout, file names |
+| `test_statement.py` | Matrix: plain rows, nothing written | GL filters, opening from the leading row (debit, credit, absent, one-sided or both sides), the Closing row as opening plus totals, the ledger currency fallbacks, an empty period, a running balance crossing zero, totals and closing, the ledger's own trailing rows ignored, float noise rounding to a positive zero, precision, DR / CR with a settled zero, the balance text, the colour per party type and side, input checks and their messages, the report's amount headers naming the currency, report rows with their indicators, the card equal to the Closing Balance row and coloured for the party type, the period message with its net, the band, the company's Arabic name on the print page, the Excel layout, file names |
 | `test_statement_integration.py` | Integration: real Journal Entries | The Opening row, entries and Closing row equal to the site's own General Ledger for the same party, with a debit and a credit before the period so either Opening style shows, a supplier reading CR, the report's rows and their colours, its card equal to the Closing Balance row whichever ledger copy runs, its period message, the API refusing another party type and a user without the report's roles, an Accounts User getting the print page with the company and the party, the Excel download |
 
 The integration fixtures come from `optima_payment/tests/utils.py` (`make_party_journal_entry`,
