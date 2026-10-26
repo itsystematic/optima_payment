@@ -55,13 +55,6 @@ def get_preview_html(party_type: str, party: str, company: str, from_date: str, 
 
 
 @frappe.whitelist()
-def download_pdf(party_type: str, party: str, company: str, from_date: str, to_date: str) -> None:
-    check_access(party_type, party)
-    pdf = render_pdf(*get_statement(party_type, party, company, from_date, to_date))
-    send_file(file_name(party, to_date, "pdf"), pdf)
-
-
-@frappe.whitelist()
 def download_excel(party_type: str, party: str, company: str, from_date: str, to_date: str) -> None:
     check_access(party_type, party)
     rows = excel_rows(*get_statement(party_type, party, company, from_date, to_date))

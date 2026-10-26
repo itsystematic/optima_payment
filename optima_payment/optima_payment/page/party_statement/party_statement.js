@@ -16,8 +16,8 @@ frappe.pages["party-statement"].on_page_show = function (wrapper) {
 	wrapper.statement_preview.apply_route_options();
 };
 
-// The statement exactly as the PDF and the email attachment show it: the server renders one HTML page
-// for all three, and the iframe keeps the desk's CSS out of it.
+// The statement exactly as the email attachment shows it: the server renders one HTML page for both,
+// and the iframe keeps the desk's CSS out of it.
 optima_payment.party_statement.Preview = class {
 	constructor(page) {
 		this.page = page;
@@ -75,13 +75,8 @@ optima_payment.party_statement.Preview = class {
 
 	make_actions() {
 		this.page.set_primary_action(__("Send Email"), () => this.send_email(), "mail");
-		this.page.add_button(__("Download PDF"), () => this.download("download_pdf"), {
-			icon: "small-file",
-		});
 		this.page.add_button(__("Print"), () => this.print(), { icon: "printer" });
-		this.page.add_button(__("Export to Excel"), () => this.download("download_excel"), {
-			icon: "file",
-		});
+		this.page.add_button(__("Export to Excel"), () => this.download_excel(), { icon: "file" });
 		this.page.add_button(__("Open Report"), () => this.open_report(), { icon: "list" });
 	}
 
@@ -162,11 +157,11 @@ optima_payment.party_statement.Preview = class {
 		this.frame.contentWindow.print();
 	}
 
-	download(method) {
+	download_excel() {
 		const args = this.require_args();
 		window.open(
 			frappe.urllib.get_full_url(
-				`/api/method/${this.method}.${method}?${new URLSearchParams(args).toString()}`
+				`/api/method/${this.method}.download_excel?${new URLSearchParams(args).toString()}`
 			)
 		);
 	}

@@ -7,8 +7,8 @@ running and closing balance.
 The rows come from the site's General Ledger report filtered to the party, as in Process Statement
 of Accounts. That is whichever copy the Report record points at: ERPNext's, or one an app swaps in
 (wts and property_management ship their own). So the statement's rows, and its Opening and Closing
-rows, always equal the General Ledger the users see. The report, the preview page, the PDF, the
-email attachment and the Excel file are all built from the same Statement.
+rows, always equal the General Ledger the users see. The report, the preview page, the email
+attachment and the Excel file are all built from the same Statement.
 
 A positive balance is a debit (DR). Branching lives in the functions under DECISIONS, which take plain
 rows and return values.
@@ -400,7 +400,7 @@ def general_ledger(filters: frappe._dict) -> tuple[list, list]:
 
 
 def render_html(statement: Statement, header: StatementHeader) -> str:
-    """The statement as a standalone print page, for the preview's iframe, the PDF and the attachment."""
+    """The statement as a standalone print page, for the preview's iframe and the email attachment."""
     body = frappe.render_template(
         TEMPLATE,
         {
