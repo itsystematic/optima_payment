@@ -109,6 +109,9 @@ Total Credit,إجمالي الدائن,Party Statement
 DR,مدين,Party Statement
 CR,دائن,Party Statement
 DR / CR,مدين / دائن,Party Statement
+Debit ({0}),مدين ({0}),Party Statement
+Credit ({0}),دائن ({0}),Party Statement
+Balance ({0}),الرصيد ({0}),Party Statement
 Closing Debit,المدين الختامي
 Closing Credit,الدائن الختامي
 "For the period {0} to {1}: total debit: {2}, total credit: {3}, net: {4}.","خلال الفترة من {0} إلى {1}: إجمالي المدين: {2}، إجمالي الدائن: {3}، الصافي: {4}."

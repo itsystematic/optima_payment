@@ -130,8 +130,9 @@ class TestPartyStatementIntegration(FrappeTestCase):
             (closing_debit["value"], closing_credit["value"]), (closing_row["debit"], closing_row["credit"])
         )
         self.assertEqual(closing_balance["indicator"], "Green")
-        self.assertIn(f"total debit: {fmt_money(50, currency=closing_row['currency'])},", message)
-        self.assertIn(f"total credit: {fmt_money(30, currency=closing_row['currency'])},", message)
+        currency = frappe.get_cached_value("Company", self.company, "default_currency")
+        self.assertIn(f"total debit: {fmt_money(50, currency=currency)},", message)
+        self.assertIn(f"total credit: {fmt_money(30, currency=currency)},", message)
 
     def test_the_api_refuses_a_party_type_other_than_customer_or_supplier(self):
         with self.assertRaises(frappe.ValidationError):

@@ -114,12 +114,15 @@ optima_payment.party_statement.keep_columns_fitted = function (report) {
 	$(report.parent).off("show.party_statement").on("show.party_statement", fit);
 };
 
-// A balance reads as its amount and side, as on the printed statement, or its amount alone when
-// settled. The row's indicator (Green, Red or Blue, decided with the party type) picks the same shade
-// as the Closing Balance card.
+// "300.00 DR", "50.00 CR" or "0.00", formatted like the report's other numbers, in the shade of the
+// row's indicator.
 optima_payment.party_statement.format_balance = function (data) {
 	const balance = flt(data.balance);
-	const amount = format_currency(Math.abs(balance), data.currency);
+	const amount = frappe.format(
+		Math.abs(balance),
+		{ fieldtype: "Float" },
+		{ always_show_decimals: true, inline: true }
+	);
 	const side = balance > 0 ? "DR" : balance < 0 ? "CR" : null;
 	const text = side ? `${amount} ${__(side, null, "Party Statement")}` : amount;
 	return `<span style="color: var(--${data.indicator.toLowerCase()}-500)">${text}</span>`;

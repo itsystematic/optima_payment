@@ -30,6 +30,7 @@ from optima_payment.party_statement.statement import (
     gl_filters,
     ledger_currency,
     render_html,
+    report_columns,
     report_message,
     report_rows,
     report_summary,
@@ -304,6 +305,17 @@ class TestValidation(FrappeTestCase):
             validate_filters("Customer", CUSTOMER, COMPANY, TO_DATE, FROM_DATE)
 
 
+class TestReportColumns(FrappeTestCase):
+    def test_amount_headers_name_the_currency_over_plain_numbers(self):
+        amounts = report_columns(CURRENCY)[3:]
+
+        self.assertEqual(
+            [(column["label"], column["fieldtype"]) for column in amounts],
+            [(f"Debit ({CURRENCY})", "Float"), (f"Credit ({CURRENCY})", "Float"), (f"Balance ({CURRENCY})", "Float")],
+        )
+        self.assertFalse(any("options" in column for column in amounts))
+
+
 class TestReportRows(FrappeTestCase):
     def setUp(self):
         self.statement = build_statement(
@@ -320,7 +332,6 @@ class TestReportRows(FrappeTestCase):
                 "debit": 100.0,
                 "credit": 0.0,
                 "balance": 100.0,
-                "currency": CURRENCY,
                 "indicator": "Green",
                 "bold": 1,
             },
@@ -332,17 +343,16 @@ class TestReportRows(FrappeTestCase):
                 "debit": 100.0,
                 "credit": 150.0,
                 "balance": -50.0,
-                "currency": CURRENCY,
                 "indicator": "Red",
                 "bold": 1,
             },
         )
         self.assertEqual([row["voucher_no"] for row in rows[1:-1]], ["PE-1"])
 
-    def test_entries_keep_a_signed_balance_and_carry_the_currency(self):
+    def test_entries_keep_a_signed_balance(self):
         entry = report_rows(self.statement, make_header())[1]
 
-        self.assertEqual((entry["balance"], entry["currency"]), (-50.0, CURRENCY))
+        self.assertEqual(entry["balance"], -50.0)
         self.assertNotIn("bold", entry)
 
     def test_each_row_is_coloured_for_its_party_type(self):

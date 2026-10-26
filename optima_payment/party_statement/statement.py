@@ -226,7 +226,17 @@ def band(header: StatementHeader) -> list[str]:
     ]
 
 
-def report_columns() -> list[dict]:
+def report_columns(currency: str) -> list[dict]:
+    """Like the General Ledger: the currency in each amount's header, plain numbers below."""
+
+    def amount_column(fieldname: str, label: str, width: int) -> dict:
+        return {
+            "fieldname": fieldname,
+            "label": statement_label(label).format(currency),
+            "fieldtype": "Float",
+            "width": width,
+        }
+
     return [
         {"fieldname": "posting_date", "label": _("Date"), "fieldtype": "Date", "width": 110},
         {"fieldname": "voucher_type", "label": _("Voucher Type"), "fieldtype": "Data", "width": 180},
@@ -237,15 +247,9 @@ def report_columns() -> list[dict]:
             "options": "voucher_type",
             "width": 180,
         },
-        {"fieldname": "debit", "label": _("Debit"), "fieldtype": "Currency", "options": "currency", "width": 140},
-        {"fieldname": "credit", "label": _("Credit"), "fieldtype": "Currency", "options": "currency", "width": 140},
-        {
-            "fieldname": "balance",
-            "label": statement_label("Balance"),
-            "fieldtype": "Currency",
-            "options": "currency",
-            "width": 160,
-        },
+        amount_column("debit", "Debit ({0})", 140),
+        amount_column("credit", "Credit ({0})", 140),
+        amount_column("balance", "Balance ({0})", 160),
     ]
 
 
@@ -258,11 +262,7 @@ def report_rows(statement: Statement, header: StatementHeader) -> list[dict]:
     """
 
     def report_row(**fields) -> dict:
-        return {
-            **fields,
-            "currency": header.currency,
-            "indicator": balance_indicator(header.party_type, fields["balance"]),
-        }
+        return {**fields, "indicator": balance_indicator(header.party_type, fields["balance"])}
 
     def label_row(label: str, debit: float, credit: float, balance: float) -> dict:
         return report_row(voucher_type=label, debit=debit, credit=credit, balance=balance, bold=1)
