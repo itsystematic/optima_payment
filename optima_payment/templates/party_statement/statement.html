@@ -1,5 +1,5 @@
 {%- macro amount(value) -%}
-{{ frappe.utils.fmt_money(value) if value else "-" }}
+{{ frappe.utils.fmt_money(value) if value else "" }}
 {%- endmacro -%}
 
 {%- macro balance_cell(value) -%}
