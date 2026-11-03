@@ -107,12 +107,16 @@ Al Noor Trading (no rule) → Retail (no rule) → Commercial: Block on Save, 30
 
 ## How the days are counted
 
-- Only **submitted Sales Invoices** of the customer, in the document's **company**, with an
-  **outstanding amount** and a **due date before today** are counted. Credit notes are not.
+- Only the customer's **Sales Invoices** in the document's **company** that ERPNext shows as
+  **Overdue** (or **Overdue and Discounted**, under Invoice Discounting) are counted. Paid
+  invoices, drafts and credit notes never are.
 - The **oldest** due date among them decides. Newer overdue invoices don't change the count.
 - The day count is today minus that due date.
-- On an invoice paid in installments, the due date is that of the **last** installment, so an
-  earlier installment that is already late is not counted yet.
+- ERPNext marks invoices Overdue once a day, so an invoice that fell due yesterday can still show
+  **Unpaid** for a few hours. If the site's **scheduler** is switched off, invoices stay Unpaid and
+  no rule fires.
+- On an invoice paid in installments, ERPNext shows **Overdue** as soon as one installment is late,
+  but the days are counted from the **last** installment's due date, so the rule waits for that one.
 
 ---
 
@@ -151,4 +155,5 @@ Al Noor Trading (no rule) → Retail (no rule) → Commercial: Block on Save, 30
 | A customer is blocked though they have paid | The payment or credit note is recorded but not allocated to the overdue invoice | Allocate it with **Payment Reconciliation** |
 | *Threshold Days must be greater than 0* | Threshold Days is 0 or empty | Enter a number of days above 0 |
 | *Enabled rule … already has the same Applies To, Party, Company and Action* | A second rule repeats an enabled one | Change the existing rule instead, or disable it first |
+| A rule never fires though the invoice is long past due | The invoice still shows **Unpaid**: the site's scheduler is switched off | Ask the administrator to enable the scheduler |
 | A rule never fires in one company | It names a different company | Clear **Company**, or set the right one |

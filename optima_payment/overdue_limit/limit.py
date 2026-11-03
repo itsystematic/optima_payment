@@ -34,6 +34,7 @@ WARN = "warn"
 BLOCK = "block"
 
 SKIP_FLAGS = ("in_migrate", "in_patch", "in_install", "in_import")
+OVERDUE_STATUSES = ("Overdue", "Overdue and Discounted")
 
 Hit = namedtuple("Hit", ["rule", "exempt"])
 Verdict = namedtuple("Verdict", ["outcome", "hits"])
@@ -154,12 +155,11 @@ def check(doc: Document, stage: str) -> None:
     if not rules:
         return
 
-    today = getdate()
-    invoice = get_oldest_overdue_invoice(doc.customer, doc.company, today)
+    invoice = get_oldest_overdue_invoice(doc.customer, doc.company)
     if not invoice:
         return
 
-    days = days_overdue(invoice.due_date, today)
+    days = days_overdue(invoice.due_date, getdate())
     verdict = decide(rules, days, frappe.get_roles(), stage)
     if not verdict.outcome:
         return
@@ -218,18 +218,15 @@ def get_enabled_rules(parties: list[str]) -> list:
     return rules
 
 
-def get_oldest_overdue_invoice(customer: str, company: str, today):
-    """The submitted, unpaid Sales Invoice whose due date is furthest past, or None."""
+def get_oldest_overdue_invoice(customer: str, company: str):
+    """The Sales Invoice ERPNext marks Overdue whose due date is furthest past, or None.
+
+    ERPNext's daily ``update_invoice_status`` job is what turns an Unpaid invoice Overdue, so on a
+    site whose scheduler is off, no invoice counts.
+    """
     invoices = frappe.get_all(
         "Sales Invoice",
-        filters={
-            "customer": customer,
-            "company": company,
-            "docstatus": 1,
-            "is_return": 0,
-            "outstanding_amount": (">", 0),
-            "due_date": ("<", today),
-        },
+        filters={"customer": customer, "company": company, "status": ("in", OVERDUE_STATUSES)},
         fields=["name", "due_date"],
         order_by="due_date asc, name asc",
         limit=1,

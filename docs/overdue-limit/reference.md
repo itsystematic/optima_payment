@@ -132,16 +132,30 @@ customer rule for another company does not hide the group's rules. `applies_to` 
 `get_oldest_overdue_invoice` returns the Sales Invoice with the earliest `due_date` among:
 
 ```
-customer = doc.customer, company = doc.company, docstatus = 1, is_return = 0,
-outstanding_amount > 0, due_date < today
+customer = doc.customer, company = doc.company, status in ('Overdue', 'Overdue and Discounted')
 ```
 
 ordered `due_date, name` and limited to one, so the message can name it. `days_overdue` is
 `today − due_date`, and a rule triggers when `days >= threshold_days`.
 
-`Sales Invoice.due_date` is the **latest** due date of the payment schedule
-(`erpnext/controllers/accounts_controller.py`, `self.due_date = max(due_dates)`). An installment
-invoice therefore counts as overdue only after its last installment falls due: the check
+What counts as overdue is ERPNext's decision, read from the invoice's `status`. ERPNext gives
+`Overdue` only to a submitted invoice with an outstanding amount, so drafts, cancelled and paid
+invoices and credit notes never count. An Unpaid invoice becomes Overdue in two ways:
+
+- `update_invoice_status` (`erpnext/controllers/accounts_controller.py`), in ERPNext's
+  `daily_maintenance` scheduler events. It is the only thing that flips an invoice nobody touches.
+- `set_status`, whenever something else updates the invoice, such as a payment against it.
+
+So the status trails the calendar by up to a day: only a 1-day threshold can fire late. On a site
+whose **scheduler is disabled**, untouched invoices stay Unpaid and the rules stop firing.
+
+`Overdue and Discounted` is the same status for an invoice under Invoice Discounting: the bank has
+advanced the money, but the customer still owes it.
+
+`Sales Invoice.due_date` is the **latest** due date of the payment schedule (`self.due_date =
+max(due_dates)`). ERPNext marks an installment invoice Overdue as soon as any installment is late,
+but the day count runs from that last due date, which may still be ahead: the days then come out
+negative and no rule triggers until the last installment is `threshold_days` late. The check
 under-counts, but never blocks wrongly. Per-installment ageing from `Payment Schedule` is a possible
 follow-up.
 
@@ -193,6 +207,7 @@ The form still pre-fills the user's default company on a new rule (the client-si
 | Limit | Effect | Possible follow-up |
 |-------|--------|--------------------|
 | Installment invoices age from their last due date | Overdue installments count late | Age from `Payment Schedule` rows |
+| Overdue comes from ERPNext's daily job | A site with the scheduler disabled never blocks; elsewhere a 1-day threshold can fire up to a day late | Keep the scheduler enabled |
 | Residual balances count | 0.01 outstanding can block | An "ignore outstanding below" amount |
 | Unallocated payments and credit notes | The invoice stays outstanding and still counts, even when the customer owes nothing overall | None; reconcile them with Payment Reconciliation |
 | A submitted Sales Order does not pass its Sales Invoice | The invoice is checked on its own | Intended |
@@ -211,5 +226,5 @@ See [testing.md](../development/testing.md). The check's tests come as a pair in
 | `test_limit_integration.py` | Integration: real saves | Each action on Sales Invoice and Sales Order at save and submit, Block on Save refusing an earlier draft's submit, the acting user's roles deciding the exemption, a credit note submitting under a block, an ancestor group's rule applying, another company's rule not applying, an allocated payment lifting the block and an unallocated one not, a disabled rule |
 | `doctype/time_based_overdue_limit/test_time_based_overdue_limit.py` | Integration | Threshold above 0, the duplicate rule, what is not a duplicate, a blank company staying blank, re-saving a rule |
 
-Every integration test starts from a customer whose Sales Invoice fell due 25 days ago and is
-unpaid. The fixtures come from `optima_payment/tests/utils.py`.
+Every integration test starts from a customer whose Sales Invoice fell due 25 days ago and that
+ERPNext's own `update_invoice_status` has marked Overdue (`make_invoice_overdue`). The fixtures come from `optima_payment/tests/utils.py`.

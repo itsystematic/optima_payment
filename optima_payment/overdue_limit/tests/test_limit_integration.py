@@ -8,19 +8,20 @@ shows: the hooks fire on both doctypes at both stages, an earlier draft cannot b
 Block on Save rule, the acting user's roles decide the exemption, credit notes pass, the group tree is
 read from the database, and only a payment allocated to the invoice lifts the block.
 
-Each test starts from a customer whose Sales Invoice fell due 25 days ago and is unpaid.
+Each test starts from a customer whose Sales Invoice fell due 25 days ago and that ERPNext's daily
+status job has marked Overdue.
 """
 
 import erpnext
 import frappe
 from frappe.tests.utils import FrappeTestCase
-from frappe.utils import add_days, nowdate
 
 from optima_payment.overdue_limit.limit import BLOCK_ON_SAVE, BLOCK_ON_SUBMIT, WARN_ON_SAVE, OverdueLimitError
 from optima_payment.tests.utils import (
     get_or_create_customer,
     get_or_create_user,
     make_credit_note,
+    make_invoice_overdue,
     make_invoice_payment,
     make_overdue_limit,
     make_sales_invoice,
@@ -38,9 +39,7 @@ class TestOverdueLimitIntegration(FrappeTestCase):
         self.company = erpnext.get_default_company()
         self.customer = get_or_create_customer(CUSTOMER)
         self.overdue_invoice = make_sales_invoice(customer=self.customer)
-        # Posted today rather than backdated, so it stays in the fiscal year even in January (CI's is
-        # the calendar year). The check reads only the due date.
-        self.overdue_invoice.db_set("due_date", add_days(nowdate(), -25))
+        make_invoice_overdue(self.overdue_invoice.name, days=25)
         frappe.clear_messages()
 
     def tearDown(self):

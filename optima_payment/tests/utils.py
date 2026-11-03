@@ -17,6 +17,7 @@ import erpnext
 from erpnext.accounts.doctype.payment_entry.payment_entry import get_payment_entry
 from erpnext.accounts.doctype.sales_invoice.sales_invoice import make_sales_return
 from erpnext.accounts.party import get_party_account
+from erpnext.controllers.accounts_controller import update_invoice_status
 from frappe.utils import add_days, nowdate
 
 from optima_payment.override.doctype_class.payment_entry import CustomPaymentEntry
@@ -867,6 +868,20 @@ def make_sales_invoice(
     if not do_not_submit:
         si.submit()
     return si
+
+
+def make_invoice_overdue(invoice: str, days: int) -> None:
+    """Move the due date of ``invoice`` and of its payment schedule ``days`` into the past, then run
+    ERPNext's daily status job, which marks it Overdue as it would on a live site.
+
+    Only the due dates move, not the posting date, so the invoice stays in the fiscal year even in
+    January (CI's is the calendar year). Validate refuses a due date before the posting date, hence
+    the direct writes.
+    """
+    due_date = add_days(nowdate(), -days)
+    frappe.db.set_value("Sales Invoice", invoice, "due_date", due_date)
+    frappe.db.set_value("Payment Schedule", {"parenttype": "Sales Invoice", "parent": invoice}, "due_date", due_date)
+    update_invoice_status()
 
 
 def make_credit_note(invoice: str) -> frappe.model.document.Document:
