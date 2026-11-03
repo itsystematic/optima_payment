@@ -1,0 +1,137 @@
+{
+ "actions": [],
+ "autoname": "TBOL-.#####",
+ "creation": "2026-11-02 10:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_rule",
+  "enabled",
+  "applies_to",
+  "party",
+  "company",
+  "column_break_action",
+  "action",
+  "threshold_days",
+  "exempt_roles"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_rule",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Enabled"
+  },
+  {
+   "default": "Customer",
+   "fieldname": "applies_to",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Applies To",
+   "options": "Customer\nCustomer Group",
+   "reqd": 1
+  },
+  {
+   "fieldname": "party",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Party",
+   "options": "applies_to",
+   "reqd": 1
+  },
+  {
+   "description": "Leave blank to apply the rule in every company.",
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Company",
+   "options": "Company"
+  },
+  {
+   "fieldname": "column_break_action",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "action",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Action",
+   "options": "Warn on Save\nBlock on Save\nBlock on Submit",
+   "reqd": 1
+  },
+  {
+   "description": "The rule applies once the customer's oldest overdue Sales Invoice is at least this many days past its due date.",
+   "fieldname": "threshold_days",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Threshold Days",
+   "non_negative": 1,
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.action != \"Warn on Save\"",
+   "description": "Users with any of these roles get a warning instead of being blocked.",
+   "fieldname": "exempt_roles",
+   "fieldtype": "Table MultiSelect",
+   "label": "Exempt Roles",
+   "options": "Time Based Overdue Limit Exempt Role"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-11-02 10:00:00",
+ "modified_by": "Administrator",
+ "module": "Optima Payment",
+ "name": "Time Based Overdue Limit",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Accounts User"
+  },
+  {
+   "read": 1,
+   "role": "Sales User"
+  }
+ ],
+ "row_format": "Dynamic",
+ "search_fields": "party",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "party"
+}
