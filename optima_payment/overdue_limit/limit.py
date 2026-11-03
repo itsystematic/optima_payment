@@ -6,7 +6,8 @@ a Sales Invoice unpaid too long past its due date.
 
 The age that counts is that of the customer's oldest overdue invoice in the document's company. Only
 the most specific tier of rules applies: the customer's own, else its group's, else the nearest
-ancestor group's. Every rule in that tier counts.
+ancestor group's. Each action is checked at its own hook: Warn on Save at validate, Block on Save at
+before_save, Block on Submit at before_submit.
 
 Branching lives in the DECISIONS functions, which take plain rows and return values.
 """
@@ -26,9 +27,6 @@ CUSTOMER_GROUP = "Customer Group"
 WARN_ON_SAVE = "Warn on Save"
 BLOCK_ON_SAVE = "Block on Save"
 BLOCK_ON_SUBMIT = "Block on Submit"
-
-SAVE = "save"
-SUBMIT = "submit"
 
 WARN = "warn"
 BLOCK = "block"
@@ -55,18 +53,20 @@ def is_exempt_document(is_return, is_consolidated, flags) -> bool:
     return bool(is_return or is_consolidated or any(flags.get(flag) for flag in SKIP_FLAGS))
 
 
-def select_rules(rules: list, customer: str, group_chain: list[str], company: str) -> list:
-    """The rules governing ``customer`` in ``company``: those of the first tier that has any.
+def select_rules(rules: list, customer: str, group_chain: list[str], company: str, action: str) -> list:
+    """The ``action`` rules governing ``customer`` in ``company``.
 
-    ``group_chain`` is the customer's group followed by its ancestors, nearest first. A rule with no
-    company applies in every company, and a rule for another company does not shadow a wider tier.
+    The tier is the first that has any rule, whatever its action, so a customer's Warn on Save rule
+    still shadows its group's Block on Save rule. ``group_chain`` is the customer's group followed by
+    its ancestors, nearest first. A rule with no company applies in every company, and a rule for
+    another company does not shadow a wider tier.
     """
     in_company = [rule for rule in rules if not rule.company or rule.company == company]
     tiers = [(CUSTOMER, customer)] + [(CUSTOMER_GROUP, group) for group in group_chain]
     for applies_to, party in tiers:
         tier = [rule for rule in in_company if rule.applies_to == applies_to and rule.party == party]
         if tier:
-            return tier
+            return [rule for rule in tier if rule.action == action]
     return []
 
 
@@ -79,31 +79,21 @@ def is_exempt_user(rule, user_roles: set) -> bool:
     return rule.action != WARN_ON_SAVE and bool(user_roles & set(rule.exempt_roles))
 
 
-def rule_outcome(action: str, stage: str, exempt: bool) -> str | None:
-    """What one triggered rule does at ``stage``.
+def decide(rules: list, days: int, user_roles) -> Verdict:
+    """What ``rules``, all of one action, do once the customer is ``days`` overdue.
 
-    Block on Save blocks at submit too, because submitting skips before_save: a draft saved before
-    the customer went overdue would otherwise get through. Block on Submit warns at save, so the user
-    hears of the block before reaching it.
+    A rule triggers once ``days`` reaches its ``threshold_days``. Warn on Save warns. A block rule
+    blocks, but only warns a user holding one of its exempt roles. A block outranks warnings, which its
+    message then leaves out.
     """
-    if action == WARN_ON_SAVE:
-        return WARN if stage == SAVE else None
-    blocks_now = action == BLOCK_ON_SAVE or stage == SUBMIT
-    return BLOCK if blocks_now and not exempt else WARN
-
-
-def decide(rules: list, days: int, user_roles, stage: str) -> Verdict:
-    """The document's outcome when its customer is ``days`` overdue. A rule triggers once ``days``
-    reaches its ``threshold_days``. A block outranks warnings, which its message then leaves out."""
     roles = set(user_roles)
     hits = {BLOCK: [], WARN: []}
     for rule in rules:
         if days < rule.threshold_days:
             continue
         exempt = is_exempt_user(rule, roles)
-        outcome = rule_outcome(rule.action, stage, exempt)
-        if outcome:
-            hits[outcome].append(Hit(rule, exempt))
+        outcome = WARN if rule.action == WARN_ON_SAVE or exempt else BLOCK
+        hits[outcome].append(Hit(rule, exempt))
 
     for outcome in (BLOCK, WARN):
         if hits[outcome]:
@@ -125,7 +115,9 @@ def message(verdict: Verdict, customer: str, invoice, days: int) -> str:
 
 def _hit_line(hit: Hit) -> str:
     rule = hit.rule
-    line = _rule_text(rule.action).format(frappe.bold(rule.name), rule.threshold_days)
+    line = _("Rule {0} ({1}) applies from {2} days overdue.").format(
+        frappe.bold(rule.name), _(rule.action), rule.threshold_days
+    )
     if hit.exempt:
         return f"{line} {_('Your role lets you continue.')}"
     if rule.action != WARN_ON_SAVE and rule.exempt_roles:
@@ -134,24 +126,16 @@ def _hit_line(hit: Hit) -> str:
     return line
 
 
-def _rule_text(action: str) -> str:
-    if action == WARN_ON_SAVE:
-        return _("Rule {0} warns from {1} days overdue.")
-    if action == BLOCK_ON_SAVE:
-        return _("Rule {0} blocks saving and submitting from {1} days overdue.")
-    return _("Rule {0} blocks submitting from {1} days overdue.")
-
-
 # ====================================================================================================
 # CHECK
 
 
-def check(doc: Document, stage: str) -> None:
-    """Warns about or blocks a Sales Invoice or Sales Order at ``stage``, as its customer's rules say."""
+def check(doc: Document, action: str) -> None:
+    """Warns about or blocks a Sales Invoice or Sales Order as its customer's ``action`` rules say."""
     if not doc.customer or is_exempt_document(doc.get("is_return"), doc.get("is_consolidated"), frappe.flags):
         return
 
-    rules = get_rules(doc.customer, doc.company)
+    rules = get_rules(doc.customer, doc.company, action)
     if not rules:
         return
 
@@ -160,7 +144,7 @@ def check(doc: Document, stage: str) -> None:
         return
 
     days = days_overdue(invoice.due_date, getdate())
-    verdict = decide(rules, days, frappe.get_roles(), stage)
+    verdict = decide(rules, days, frappe.get_roles())
     if not verdict.outcome:
         return
 
@@ -174,9 +158,9 @@ def check(doc: Document, stage: str) -> None:
 # QUERIES
 
 
-def get_rules(customer: str, company: str) -> list:
+def get_rules(customer: str, company: str, action: str) -> list:
     group_chain = get_group_chain(frappe.db.get_value(CUSTOMER, customer, "customer_group"))
-    return select_rules(get_enabled_rules([customer, *group_chain]), customer, group_chain, company)
+    return select_rules(get_enabled_rules([customer, *group_chain]), customer, group_chain, company, action)
 
 
 def get_group_chain(customer_group: str | None) -> list[str]:

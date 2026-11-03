@@ -3,10 +3,10 @@
 
 """The Time Based Overdue Limit's decisions, on plain rows. Nothing here writes to the database.
 
-Only what a plausible edit could break is here: which tier of rules applies, the action table, how
-several triggered rules combine, the day a rule starts, what the message tells the user about
-exemption, and the documents never checked, which no integration test reaches for POS. The wiring is
-in test_limit_integration.py.
+Only what a plausible edit could break is here: which tier of rules applies and which of its rules
+each action picks, how several triggered rules combine, the day a rule starts, what the message tells
+the user about exemption, and the documents never checked, which no integration test reaches for POS.
+Which hook checks which action is wiring, in test_limit_integration.py.
 """
 
 import frappe
@@ -15,18 +15,14 @@ from frappe.tests.utils import FrappeTestCase
 from optima_payment.overdue_limit.limit import (
     BLOCK,
     BLOCK_ON_SAVE,
-    BLOCK_ON_SUBMIT,
     CUSTOMER,
     CUSTOMER_GROUP,
-    SAVE,
-    SUBMIT,
     WARN,
     WARN_ON_SAVE,
     days_overdue,
     decide,
     is_exempt_document,
     message,
-    rule_outcome,
     select_rules,
 )
 
@@ -84,8 +80,8 @@ class TestIsExemptDocument(FrappeTestCase):
 
 
 class TestSelectRules(FrappeTestCase):
-    def select(self, rules, company=COMPANY):
-        return [rule.name for rule in select_rules(rules, CUSTOMER_NAME, GROUP_CHAIN, company)]
+    def select(self, rules, company=COMPANY, action=WARN_ON_SAVE):
+        return [rule.name for rule in select_rules(rules, CUSTOMER_NAME, GROUP_CHAIN, company, action)]
 
     def test_the_nearest_tier_with_a_rule_wins(self):
         customer, group, parent, root = (
@@ -104,9 +100,20 @@ class TestSelectRules(FrappeTestCase):
             with self.subTest(winner):
                 self.assertEqual(self.select(rules), [winner])
 
-    def test_every_rule_of_the_winning_tier_applies(self):
-        rules = [rule("WARN"), rule("BLOCK", action=BLOCK_ON_SAVE), group_rule("GROUP", GROUP)]
-        self.assertEqual(self.select(rules), ["WARN", "BLOCK"])
+    def test_every_rule_of_the_winning_tier_with_the_action_applies(self):
+        rules = [
+            rule("EVERYWHERE", action=BLOCK_ON_SAVE),
+            rule("HERE", company=COMPANY, action=BLOCK_ON_SAVE),
+            rule("WARN"),
+            group_rule("GROUP", GROUP, action=BLOCK_ON_SAVE),
+        ]
+        self.assertEqual(self.select(rules, action=BLOCK_ON_SAVE), ["EVERYWHERE", "HERE"])
+
+    def test_the_tier_is_chosen_before_the_action(self):
+        """Filtering by action first would let the group's block through a customer that has only a
+        warning."""
+        rules = [rule("WARN"), group_rule("GROUP", GROUP, action=BLOCK_ON_SAVE)]
+        self.assertEqual(self.select(rules, action=BLOCK_ON_SAVE), [])
 
     def test_a_company_rule_neither_applies_nor_shadows_in_another_company(self):
         rules = [rule("ELSEWHERE", company=OTHER_COMPANY), group_rule("EVERYWHERE", GROUP)]
@@ -117,24 +124,9 @@ class TestSelectRules(FrappeTestCase):
         self.assertEqual(self.select([group_rule("GROUP", CUSTOMER_NAME)]), [])
 
 
-class TestRuleOutcome(FrappeTestCase):
-    def test_the_action_table(self):
-        """The table in docs/overdue-limit/reference.md."""
-        columns = [(SAVE, False), (SAVE, True), (SUBMIT, False), (SUBMIT, True)]
-        table = {
-            WARN_ON_SAVE: [WARN, WARN, None, None],
-            BLOCK_ON_SAVE: [BLOCK, WARN, BLOCK, WARN],
-            BLOCK_ON_SUBMIT: [WARN, WARN, BLOCK, WARN],
-        }
-        for action, row in table.items():
-            for (stage, exempt), expected in zip(columns, row):
-                with self.subTest(action=action, stage=stage, exempt=exempt):
-                    self.assertEqual(rule_outcome(action, stage, exempt), expected)
-
-
 class TestDecide(FrappeTestCase):
     def outcome_on(self, today, rules):
-        return decide(rules, days_overdue(INVOICE.due_date, today), SALES_ROLES, SAVE).outcome
+        return decide(rules, days_overdue(INVOICE.due_date, today), SALES_ROLES).outcome
 
     def test_a_rule_starts_on_its_threshold_day(self):
         rules = [rule(action=BLOCK_ON_SAVE, threshold_days=20)]
@@ -143,26 +135,21 @@ class TestDecide(FrappeTestCase):
 
     def test_the_refusal_lists_only_the_rules_that_block_this_user(self):
         rules = [
-            rule("WARN"),
             rule("EXEMPTED", action=BLOCK_ON_SAVE, exempt_roles=[EXEMPT_ROLE]),
-            rule("BLOCK", action=BLOCK_ON_SAVE),
+            rule("BLOCK", company=COMPANY, action=BLOCK_ON_SAVE),
         ]
-        verdict = decide(rules, 30, [EXEMPT_ROLE], SAVE)
+        verdict = decide(rules, 30, [EXEMPT_ROLE])
         self.assertEqual((verdict.outcome, hit_names(verdict)), (BLOCK, ["BLOCK"]))
 
-    def test_the_warning_lists_every_triggered_rule_and_no_other(self):
-        rules = [
-            rule("WARN", threshold_days=20),
-            rule("NOTICE", action=BLOCK_ON_SUBMIT, threshold_days=25),
-            rule("NOT YET", action=BLOCK_ON_SAVE, threshold_days=40),
-        ]
-        verdict = decide(rules, 30, SALES_ROLES, SAVE)
-        self.assertEqual((verdict.outcome, hit_names(verdict)), (WARN, ["WARN", "NOTICE"]))
+    def test_the_warning_lists_only_the_triggered_rules(self):
+        rules = [rule("WARN", threshold_days=20), rule("NOT YET", company=COMPANY, threshold_days=40)]
+        verdict = decide(rules, 30, SALES_ROLES)
+        self.assertEqual((verdict.outcome, hit_names(verdict)), (WARN, ["WARN"]))
 
 
 class TestMessage(FrappeTestCase):
     def render(self, action, user_roles):
-        verdict = decide([rule(action=action, exempt_roles=[EXEMPT_ROLE])], 30, user_roles, SAVE)
+        verdict = decide([rule(action=action, exempt_roles=[EXEMPT_ROLE])], 30, user_roles)
         return message(verdict, CUSTOMER_NAME, INVOICE, 30)
 
     def test_a_blocked_user_is_told_which_roles_can_continue(self):

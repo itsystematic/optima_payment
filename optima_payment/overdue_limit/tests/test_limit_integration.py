@@ -4,9 +4,10 @@
 """The Time Based Overdue Limit through real saves and submits of Sales Invoices and Sales Orders.
 
 The branch matrix and the message text are in test_limit.py. These prove what only a real document
-shows: the hooks fire on both doctypes at both stages, an earlier draft cannot be submitted past a
-Block on Save rule, the acting user's roles decide the exemption, credit notes pass, the group tree is
-read from the database, and only a payment allocated to the invoice lifts the block.
+shows: each action is checked at its own hook on both doctypes (Warn on Save at validate, so at
+submit too; Block on Save at before_save only; Block on Submit at before_submit only), the acting
+user's roles decide the exemption, credit notes pass, the group tree is read from the database, and
+only a payment allocated to the invoice lifts the block.
 
 Each test starts from a customer whose Sales Invoice fell due 25 days ago and that ERPNext's daily
 status job has marked Overdue.
@@ -71,13 +72,14 @@ class TestOverdueLimitIntegration(FrappeTestCase):
                 self.assertFalse(draft.is_new())
                 self.assertTrue(self.overdue_messages())
 
-    def test_warn_on_save_lets_the_submit_through_silently(self):
+    def test_warn_on_save_warns_again_at_submit(self):
+        """Frappe runs validate at submit too."""
         make_overdue_limit(party=self.customer, action=WARN_ON_SAVE)
         draft = self.make_draft()
         frappe.clear_messages()
         self.submit(draft)
         self.assertEqual(draft.docstatus, 1)
-        self.assertFalse(self.overdue_messages())
+        self.assertTrue(self.overdue_messages())
 
     def test_block_on_save_refuses_the_draft(self):
         make_overdue_limit(party=self.customer, action=BLOCK_ON_SAVE)
@@ -85,19 +87,19 @@ class TestOverdueLimitIntegration(FrappeTestCase):
             with self.subTest(doctype), self.assertRaises(OverdueLimitError):
                 self.make_draft(doctype)
 
-    def test_block_on_save_refuses_to_submit_a_draft_saved_before_the_rule(self):
+    def test_block_on_save_lets_a_draft_saved_before_the_rule_submit(self):
         draft = self.make_draft()
         make_overdue_limit(party=self.customer, action=BLOCK_ON_SAVE)
-        with self.assertRaises(OverdueLimitError):
-            self.submit(draft)
+        self.submit(draft)
+        self.assertEqual(draft.docstatus, 1)
 
-    def test_block_on_submit_saves_the_draft_with_a_warning_and_refuses_the_submit(self):
+    def test_block_on_submit_saves_the_draft_silently_and_refuses_the_submit(self):
         make_overdue_limit(party=self.customer, action=BLOCK_ON_SUBMIT)
         for doctype in SALES_DOCUMENTS:
             with self.subTest(doctype):
                 frappe.clear_messages()
                 draft = self.make_draft(doctype)
-                self.assertTrue(self.overdue_messages())
+                self.assertFalse(self.overdue_messages())
                 with self.assertRaises(OverdueLimitError):
                     self.submit(draft)
 
@@ -116,8 +118,9 @@ class TestOverdueLimitIntegration(FrappeTestCase):
         self.submit(draft)
         self.assertEqual(draft.docstatus, 1)
 
-    def test_a_credit_note_submits_under_a_block(self):
+    def test_a_credit_note_saves_and_submits_under_both_blocks(self):
         make_overdue_limit(party=self.customer, action=BLOCK_ON_SAVE)
+        make_overdue_limit(party=self.customer, action=BLOCK_ON_SUBMIT)
         credit_note = make_credit_note(self.overdue_invoice.name)
         credit_note.insert(ignore_permissions=True)
         self.submit(credit_note)

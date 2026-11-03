@@ -1,8 +1,8 @@
 # Time Based Overdue Limit
 
 Developer + power-user reference for the **Time Based Overdue Limit** doctype: when its check runs
-on Sales Invoices and Sales Orders, which rules apply, how the overdue days are counted, and what
-each action does at each stage. For a click-by-click guide aimed at accountants, see
+on Sales Invoices and Sales Orders, which rules apply, how the overdue days are counted, and which
+hook checks each action. For a click-by-click guide aimed at accountants, see
 [user-guide.md](user-guide.md).
 
 ---
@@ -13,9 +13,9 @@ A credit-control rule keyed on the **age** of a customer's debt rather than its 
 ERPNext's Credit Limit (`erpnext/selling/doctype/customer/customer.py`, `check_credit_limit`) with
 the same shape: rules on Customer and Customer Group, a customer rule overriding its group's, and
 a role that is let through. A rule names one party, an optional company, a day threshold and one
-of three actions. The check runs from `doc_events` on **Sales Invoice** and **Sales Order** at
-`before_save` and `before_submit`, warns with `frappe.msgprint` or blocks with `frappe.throw`, and
-needs no client script.
+of three actions, and each action is checked at one hook of **Sales Invoice** and **Sales Order**:
+Warn on Save at `validate`, Block on Save at `before_save`, Block on Submit at `before_submit`. It
+warns with `frappe.msgprint` or blocks with `frappe.throw`, and needs no client script.
 
 The doctype is wholly owned by this app and adds no field to another app's doctype, so the
 [setup framework](../setup/architecture.md) and its `sync()` patches are not involved.
@@ -30,13 +30,13 @@ return values, with no database access. Everything that reads calls them.
 ```
 optima_payment/overdue_limit/
 └── limit.py
-    ├── DECISIONS   # pure: skipped documents, rule selection by tier, day count, exemption,
-    │               #       one rule's outcome, the document's verdict
+    ├── DECISIONS   # pure: skipped documents, rule selection by tier and action, day count,
+    │               #       exemption, the document's verdict
     ├── MESSAGES    # the warning / refusal text, one line per rule
-    ├── CHECK       # check(doc, stage): loads, decides, then msgprint or throw
+    ├── CHECK       # check(doc, action): loads, decides, then msgprint or throw
     └── QUERIES     # group chain, enabled rules + exempt roles, oldest overdue invoice
 
-optima_payment/doc_events/overdue_limit.py   # before_save / before_submit → limit.check
+optima_payment/doc_events/overdue_limit.py   # validate / before_save / before_submit → limit.check, one action each
 optima_payment/hooks.py                      # doc_events for Sales Invoice and Sales Order
 
 optima_payment/optima_payment/doctype/
@@ -77,15 +77,29 @@ be worthless.
 
 ## When the check runs
 
+Each hook checks the rules of one action only, so a rule does what its name says and nothing more:
+
+| Hook | Action checked | Runs on |
+|------|----------------|---------|
+| `validate` | **Warn on Save** | save and submit |
+| `before_save` | **Block on Save** | save |
+| `before_submit` | **Block on Submit** | submit |
+
 Frappe runs `validate → before_save` on a save and `validate → before_submit` on a submit
-(`frappe/model/document.py`, `run_before_save_methods`). Submitting from the form does **not** run
-`before_save`, which is why a Block on Save rule is checked at submit too.
+(`frappe/model/document.py`, `run_before_save_methods`). Three consequences:
+
+- A Warn on Save rule warns again at submit, because `validate` runs there too.
+- Submitting does **not** run `before_save`, so a draft saved before the customer went overdue (or
+  before the rule existed) submits past a Block on Save rule. A Block on Submit rule is what stops a
+  submit.
+- When a Warn on Save and a Block on Save rule both trigger, `validate` shows the warning and
+  `before_save` then refuses; the user sees both messages.
 
 ```mermaid
 flowchart LR
-    A[before_save / before_submit] --> B{credit note, POS consolidated,<br>migrate, patch, install, import?}
+    A["validate / before_save / before_submit<br>(one action each)"] --> B{credit note, POS consolidated,<br>migrate, patch, install, import?}
     B -- yes --> Z[nothing]
-    B -- no --> C{rules in the most<br>specific tier?}
+    B -- no --> C{rules of that action in<br>the most specific tier?}
     C -- none --> Z
     C -- some --> D{oldest overdue<br>Sales Invoice?}
     D -- none --> Z
@@ -114,14 +128,15 @@ fetched copy) and its ancestors, nearest first, with one `lft <= … and rgt >= 
 leaves cached documents stale. `get_enabled_rules` loads every enabled rule naming the customer or
 any group in the chain, with their exempt roles.
 
-`select_rules` then keeps the rules whose company is blank or equals the document's, and returns
-the first tier that has any, in this order:
+`select_rules` then keeps the rules whose company is blank or equals the document's, finds the
+first tier that has any, in this order, and returns that tier's rules of the hook's action:
 
 ```
 (Customer, Al Noor Trading) → (Customer Group, Retail) → (Customer Group, Commercial) → (Customer Group, All Customer Groups)
 ```
 
-Every rule of that tier applies. The company filter runs **before** the tier search, so a
+The tier is chosen **before** the action filter: a customer with only a Warn on Save rule is never
+blocked by its group's Block on Save rule. The company filter runs before the tier search, so a
 customer rule for another company does not hide the group's rules. `applies_to` is matched with
 `party`, so a group named like the customer is still a group.
 
@@ -161,26 +176,30 @@ follow-up.
 
 ---
 
-## The action table
+## Outcome
 
-`rule_outcome(action, stage, exempt)` for one triggered rule. "Exempt" means the acting user
-(`frappe.get_roles()`, the session user, not the document owner) holds one of the rule's exempt
-roles, which only counts on the two block actions (`is_exempt_user`).
+`decide(rules, days, user_roles)` takes the rules of one action. A rule triggers when
+`days >= threshold_days`, and then:
 
-| Action | Save | Save, exempt | Submit | Submit, exempt |
-|--------|------|--------------|--------|----------------|
-| **Warn on Save** | warn | warn | — | — |
-| **Block on Save** | **block** | warn | **block** | warn |
-| **Block on Submit** | warn | warn | **block** | warn |
+| Action | User not exempt | User exempt |
+|--------|-----------------|-------------|
+| **Warn on Save** | warn | warn |
+| **Block on Save** | **block** | warn |
+| **Block on Submit** | **block** | warn |
 
-`decide` combines the triggered rules of the tier into a `Verdict(outcome, hits)`:
+"Exempt" means the acting user (`frappe.get_roles()`, the session user, not the document owner)
+holds one of the rule's exempt roles, which only counts on the two block actions (`is_exempt_user`).
+
+One hook can meet two rules of its action: an every-company rule and a one-company rule. `decide`
+combines the triggered ones into a `Verdict(outcome, hits)`:
 
 - Any block wins. Its hits are only the blocking rules, so the refusal lists only what refuses.
-- Otherwise every triggered rule that warns is a hit, and the warning lists them all.
+- Otherwise every triggered rule is a hit, and the warning lists them all.
 - No triggered rule: `Verdict(None, [])`.
 
-Each `Hit` carries the rule and whether the user was exempt from it; the message turns each into
-one line, adding *Your role lets you continue* or the list of exempt roles. A block is raised as
+Each `Hit` carries the rule and whether the user was exempt from it. The message turns each into one
+line naming the rule, its action and its threshold (*Rule TBOL-00002 (Block on Save) applies from 30
+days overdue.*), adding *Your role lets you continue* or the list of exempt roles. A block is raised as
 `OverdueLimitError`, a subclass of `frappe.ValidationError`. A warning is `msgprint` with an orange
 indicator, and the document is saved.
 
@@ -206,6 +225,7 @@ The form still pre-fills the user's default company on a new rule (the client-si
 
 | Limit | Effect | Possible follow-up |
 |-------|--------|--------------------|
+| Block on Save is not checked at submit | A draft saved before the customer went overdue can be submitted | Add a Block on Submit rule for the same party |
 | Installment invoices age from their last due date | Overdue installments count late | Age from `Payment Schedule` rows |
 | Overdue comes from ERPNext's daily job | A site with the scheduler disabled never blocks; elsewhere a 1-day threshold can fire up to a day late | Keep the scheduler enabled |
 | Residual balances count | 0.01 outstanding can block | An "ignore outstanding below" amount |
@@ -222,8 +242,8 @@ See [testing.md](../development/testing.md). The check's tests come as a pair in
 
 | File | Layer | What it proves |
 |------|-------|----------------|
-| `test_limit.py` | Matrix: plain rules, nothing written | The documents never checked, tier precedence, other-company rules, a group named like the customer, the action table, the threshold day, how several triggered rules combine (including an exemption from only one), what the message says about exemption. The message wording is not pinned |
-| `test_limit_integration.py` | Integration: real saves | Each action on Sales Invoice and Sales Order at save and submit, Block on Save refusing an earlier draft's submit, the acting user's roles deciding the exemption, a credit note submitting under a block, an ancestor group's rule applying, another company's rule not applying, an allocated payment lifting the block and an unallocated one not, a disabled rule |
+| `test_limit.py` | Matrix: plain rules, nothing written | The documents never checked, tier precedence, the tier chosen before the action, other-company rules, a group named like the customer, the threshold day, how several triggered rules combine (including an exemption from only one), what the message says about exemption. The message wording is not pinned |
+| `test_limit_integration.py` | Integration: real saves | Each action at its own hook on Sales Invoice and Sales Order: Warn on Save warning at save and again at submit, Block on Save refusing the save but not an earlier draft's submit, Block on Submit saving silently and refusing the submit; the acting user's roles deciding the exemption, a credit note saving and submitting under both blocks, an ancestor group's rule applying, another company's rule not applying, an allocated payment lifting the block and an unallocated one not, a disabled rule |
 | `doctype/time_based_overdue_limit/test_time_based_overdue_limit.py` | Integration | Threshold above 0, the duplicate rule, what is not a duplicate, a blank company staying blank, re-saving a rule |
 
 Every integration test starts from a customer whose Sales Invoice fell due 25 days ago and that

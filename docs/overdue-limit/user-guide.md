@@ -32,10 +32,10 @@ yet TBOL-00002's 30, so the order **saves** and shows:
 
 > Customer **Al Noor Trading** has Sales Invoice **SINV-2026-00041** overdue by **25** days; it was
 > due on 08-10-2026.
-> - Rule **TBOL-00001** warns from 20 days overdue.
+> - Rule **TBOL-00001** (Warn on Save) applies from 20 days overdue.
 
-Five days later the invoice is 30 days overdue, and TBOL-00002 **refuses** the save until the
-invoice is paid.
+Five days later the invoice is 30 days overdue. Saving shows the TBOL-00001 warning, then TBOL-00002
+**refuses** the save, and it keeps refusing until the invoice is paid.
 
 ---
 
@@ -69,17 +69,20 @@ enabled rules with the same customer or group, company and action are not allowe
 
 ## The three actions
 
+Each action does exactly what its name says, and nothing at the other step:
+
 | Action | Saving a draft | Submitting |
 |--------|----------------|------------|
-| **Warn on Save** | Saves, with a warning | Goes through, no message |
-| **Block on Save** | **Refused** | **Refused** |
-| **Block on Submit** | Saves, with a warning that submit will be refused | **Refused** |
+| **Warn on Save** | Saves, with a warning | Goes through, with the same warning |
+| **Block on Save** | **Refused** | Not checked |
+| **Block on Submit** | Not checked | **Refused** |
 
-- **Block on Save** also refuses the submit. Otherwise a draft saved before the customer became
-  overdue could still be submitted afterwards.
-- **Block on Submit** warns at save, so you find out about the block before trying to submit.
-- A user with an **exempt role** sees the warning instead of the refusal, at save and at submit.
-  Exempt roles have no effect on **Warn on Save**: everybody sees that warning.
+- **Warn on Save** shows again when you submit, because submitting saves the document once more.
+- **Block on Save** does not stop a submit: a draft saved before the customer became overdue can
+  still be submitted. To stop submits too, add a **Block on Submit** rule for the same customer.
+- **Block on Submit** says nothing at save; the draft saves normally and only the submit is refused.
+- A user with an **exempt role** sees the warning instead of the refusal. Exempt roles have no
+  effect on **Warn on Save**: everybody sees that warning.
 - The **Administrator** user holds every role, so is exempt from any rule that lists at least one
   exempt role.
 
@@ -150,8 +153,9 @@ Al Noor Trading (no rule) → Retail (no rule) → Commercial: Block on Save, 30
 
 | Message or symptom | Cause | Fix |
 |--------------------|-------|-----|
-| *Customer X has Sales Invoice Y overdue by N days … blocks saving and submitting* | A Block on Save rule applies | Collect and record the payment against invoice Y, or ask a user with an exempt role |
-| *… blocks submitting* when you submit | A Block on Submit rule applies | As above. The draft stays saved |
+| *Customer X has Sales Invoice Y overdue by N days … (Block on Save) applies …* when you save | A Block on Save rule applies | Collect and record the payment against invoice Y, or ask a user with an exempt role |
+| *… (Block on Submit) applies …* when you submit | A Block on Submit rule applies | As above. The draft stays saved |
+| A draft was submitted for an overdue customer | The customer only has a Block on Save rule, and the draft was saved before the rule applied | Add a Block on Submit rule |
 | A customer is blocked though they have paid | The payment or credit note is recorded but not allocated to the overdue invoice | Allocate it with **Payment Reconciliation** |
 | *Threshold Days must be greater than 0* | Threshold Days is 0 or empty | Enter a number of days above 0 |
 | *Enabled rule … already has the same Applies To, Party, Company and Action* | A second rule repeats an enabled one | Change the existing rule instead, or disable it first |

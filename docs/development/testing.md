@@ -21,8 +21,8 @@ creates survives the test.
   milliseconds and needs no data on the site. `test_vouchers_integration.py` asserts on the real
   vouchers (lines, header dates, docstatus) and the row status / reference stamps. See
   [purchases-bulk-tool/reference.md](../purchases-bulk-tool/reference.md).
-- **Time Based Overdue Limit** pairs the same way. `test_limit.py` runs the action table and the
-  rule precedence on plain rules; `test_limit_integration.py` saves and submits real Sales
+- **Time Based Overdue Limit** pairs the same way. `test_limit.py` runs the rule precedence and how
+  triggered rules combine on plain rules; `test_limit_integration.py` saves and submits real Sales
   Invoices and Sales Orders for a customer with an invoice 25 days overdue. See
   [overdue-limit/reference.md](../overdue-limit/reference.md).
 

@@ -6,7 +6,7 @@ long past their due date.
 | Document | For | What it covers |
 |----------|-----|----------------|
 | [user-guide.md](user-guide.md) | Accountants & implementers | Setting up a rule, the three actions, which rule wins, how the days are counted, exempt roles, what is never checked, troubleshooting |
-| [reference.md](reference.md) | Developers | The hooks and when they fire, rule selection by tier, the day-count query, the action table, the blank company, known limits, tests |
+| [reference.md](reference.md) | Developers | Which hook checks each action, rule selection by tier, the day-count query, the outcome table, the blank company, known limits, tests |
 
 The feature is layered on **Time Based Overdue Limit**, with the child table **Time Based Overdue
 Limit Exempt Role**. It checks standard **Sales Invoice** and **Sales Order** documents when they
