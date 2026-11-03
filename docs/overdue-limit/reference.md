@@ -234,7 +234,7 @@ See [testing.md](../development/testing.md). The check's tests come as a pair in
 
 | File | Layer | What it proves |
 |------|-------|----------------|
-| `test_limit.py` | Matrix: plain rules, nothing written | Skipped documents and flags, tier precedence, blank and other company, a group named like the customer, the day count, exemption on block rules only, the whole action table, the threshold boundary (19 / 20 / 21 against 20), block outranking warnings, the message lines |
+| `test_limit.py` | Matrix: plain rules, nothing written | The documents never checked, tier precedence, other-company rules, a group named like the customer, the action table, the threshold day, how several triggered rules combine (including an exemption from only one), what the message says about exemption. The message wording is not pinned |
 | `test_limit_integration.py` | Integration: real saves | Each action on Sales Invoice and Sales Order at save and submit, Block on Save refusing an earlier draft's submit, the acting user's roles deciding the exemption, a credit note submitting under a block, an ancestor group's rule applying, another company's rule not applying, payment and an unallocated payment lifting the block, a disabled rule |
 | `doctype/time_based_overdue_limit/test_time_based_overdue_limit.py` | Integration | Threshold above 0, the duplicate rule, what is not a duplicate, a blank company staying blank, re-saving a rule |
 
