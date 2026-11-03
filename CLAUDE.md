@@ -22,6 +22,7 @@ optima_payment/
   optima_payment/doctype/      # this app's doctypes (bank_guarantee_bg, letter_of_credit, cheque_*)
   cheque/                      # cheque GL + payment entry override logic
   purchases_bulk/              # Purchases Bulk Tool: pure decisions + voucher create/rollback (vouchers.py), form door (api.py)
+  overdue_limit/               # Time Based Overdue Limit: pure decisions + queries + check (limit.py), hooked from doc_events/
   override/                    # Python class / whitelist overrides
   tests/utils.py               # SHARED test factories (import these, don't build docs inline)
 docs/                          # developer + user documentation (start at docs/README.md)

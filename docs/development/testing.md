@@ -21,6 +21,10 @@ creates survives the test.
   milliseconds and needs no data on the site. `test_vouchers_integration.py` asserts on the real
   vouchers (lines, header dates, docstatus) and the row status / reference stamps. See
   [purchases-bulk-tool/reference.md](../purchases-bulk-tool/reference.md).
+- **Time Based Overdue Limit** pairs the same way. `test_limit.py` runs the action table and the
+  rule precedence on plain rules; `test_limit_integration.py` saves and submits real Sales
+  Invoices and Sales Orders for a customer with an invoice 25 days overdue. See
+  [overdue-limit/reference.md](../overdue-limit/reference.md).
 
 ---
 
@@ -40,6 +44,11 @@ factories instead of building documents inline:
 | `get_or_create_purchase_item(company, item_code, is_stock_item=…)` | A purchase Item taxed by the suite's own Item Tax Template, its tax row carrying the test suppliers' tax category so that template applies; pass `is_stock_item=1` for Purchase Receipt tests |
 | `get_or_create_purchase_item_tax_template(company)` | The Item Tax Template behind those items, on the same account and rate |
 | `set_test_cost_center_default(company)` | Makes a leaf cost center the session user's `cost_center` default, so the tool's vouchers carry one on sites that make it mandatory on Purchase Invoice. It lives in the defaults cache: pair it with `frappe.clear_cache(user=frappe.session.user)` after the rollback |
+| `make_sales_order(customer=…, do_not_insert=…, do_not_submit=…, **overrides)` | A one-line Sales Order on the test item, cost center and pre-seeded tax row; `make_reference_sales_order` wraps it |
+| `make_sales_invoice(customer=…, posting_date=…, due_date=…, do_not_insert=…, do_not_submit=…, **overrides)` | A one-line Sales Invoice; a past `posting_date` is kept, and the due date defaults to it. The header has no cost center, as on real invoices, because a payment copies it onto balance sheet lines that some sites refuse one on |
+| `make_credit_note(invoice)` | An unsaved full return of the invoice, with the return reason some sites require |
+| `make_invoice_payment(invoice, allocate=…)` | A submitted Payment Entry for the invoice's outstanding amount; `allocate=False` leaves it unallocated, so the invoice stays outstanding while the customer owes nothing |
+| `make_overdue_limit(party=…, action=…, threshold_days=…, applies_to=…, company=…, exempt_roles=…, enabled=…)` | A Time Based Overdue Limit rule |
 
 The factories are defensive (`get_or_create_*`) and work around this bench's KSA/ZATCA
 customizations (mandatory Arabic name fields, tax category, item tax templates, order-level
@@ -57,6 +66,8 @@ bench --site <site> run-tests --module optima_payment.optima_payment.doctype.let
 bench --site <site> run-tests --module optima_payment.optima_payment.doctype.bank_guarantee_bg.test_bank_guarantee_bg
 bench --site <site> run-tests --module optima_payment.purchases_bulk.tests.test_vouchers
 bench --site <site> run-tests --module optima_payment.purchases_bulk.tests.test_vouchers_integration
+bench --site <site> run-tests --module optima_payment.overdue_limit.tests.test_limit
+bench --site <site> run-tests --module optima_payment.overdue_limit.tests.test_limit_integration
 ```
 
 The site needs `optima_payment` installed and `allow_tests` enabled
