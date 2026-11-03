@@ -26,6 +26,10 @@ class TimeBasedOverdueLimit(Document):
 		threshold_days: DF.Int
 	# end: auto-generated types
 
+	def __setup__(self):
+		# A blank company means every company, so insert must not fill in the default company.
+		self.dont_update_if_missing = ["company"]
+
 	def validate(self):
 		self.validate_threshold_days()
 		self.validate_unique_rule()
