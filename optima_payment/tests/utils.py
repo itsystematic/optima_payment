@@ -158,6 +158,7 @@ def get_or_create_customer(customer_name: str = "Optima Test Customer") -> str:
                 # customer_type=Individual dodges KSA site customizations that make
                 # registration_type / registration_value / tax_id mandatory for Companies.
                 "customer_type": "Individual",
+                "tax_category": get_test_tax_category(),
                 # Site-specific mandatory custom field; the key is ignored where it doesn't exist.
                 "customer_name_in_arabic": customer_name,
             }
@@ -166,9 +167,9 @@ def get_or_create_customer(customer_name: str = "Optima Test Customer") -> str:
 
 
 def get_test_tax_category() -> str | None:
-    """The Tax Category test suppliers carry, and so the category of every voucher made for them.
+    """The Tax Category test parties carry, and so the category of every voucher made for them.
 
-    KSA/ZATCA customizations on this site make tax_category mandatory on Supplier.
+    KSA/ZATCA customizations on some sites make tax_category mandatory on Customer and Supplier.
     """
     return frappe.db.get_value("Tax Category", {}, "name")
 
