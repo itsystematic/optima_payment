@@ -17,7 +17,7 @@ creates survives the test.
   assert on those Payment Entries (`get_lc_payment_entries`, filtered by the `is_lc_*`
   flags). See [letter-of-credit/reference.md](../letter-of-credit/reference.md).
 - **Purchases Bulk Tool** keeps its decisions in plain functions, so its tests come as a pair.
-  `test_vouchers.py` checks every branch with plain rows and writes nothing; it runs in
+  `test_vouchers.py` checks those decisions with plain rows and writes nothing; it runs in
   milliseconds and needs no data on the site. `test_vouchers_integration.py` asserts on the real
   vouchers (lines, header dates, docstatus) and the row status / reference stamps. See
   [purchases-bulk-tool/reference.md](../purchases-bulk-tool/reference.md).
@@ -25,6 +25,11 @@ creates survives the test.
   rule precedence on plain rules; `test_limit_integration.py` saves and submits real Sales
   Invoices and Sales Orders for a customer with an invoice 25 days overdue. See
   [overdue-limit/reference.md](../overdue-limit/reference.md).
+
+A matrix case earns its place by naming the plausible bug it catches: how rules combine, a
+boundary, a reachable edge case, or a spec table from the docs. A one-liner, a loop over the code's
+own constant, and a message's wording get no case; assert which line a branch produces, not the
+sentence. `overdue_limit/tests/test_limit.py` is the worked example.
 
 ---
 

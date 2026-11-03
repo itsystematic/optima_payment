@@ -62,9 +62,10 @@ mandatory before submit. Issue **commission is never reversed** on return/cancel
 
 - `FrappeTestCase` (unittest), isolated by `frappe.db.rollback()` in `tearDown`. No mocking.
 - Most suites are live-DB integration tests. Code that keeps its decisions in plain functions
-  pairs two files instead: `test_<x>.py` checks every branch with plain rows and writes nothing,
-  and `test_<x>_integration.py` covers only what a real save shows. Example:
-  `purchases_bulk/tests/`.
+  pairs two files instead: `test_<x>.py` checks those decisions with plain rows and writes
+  nothing, and `test_<x>_integration.py` covers only what a real save shows. A matrix case must
+  name the plausible bug it catches; one-liners, the code's own constants and message wording get
+  none. Example: `overdue_limit/tests/`.
 - Build fixtures with the factories in `optima_payment/tests/utils.py`
   (`make_optima_payment_setting`, `make_bank_guarantee_bg`, `make_letter_of_credit`). They
   are defensive and work around this bench's KSA/ZATCA mandatory-field customizations.
