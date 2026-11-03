@@ -121,9 +121,6 @@ Al Noor Trading (no rule) → Retail (no rule) → Commercial: Block on Save, 30
 - **Credit notes** (return invoices), so you can always reduce what the customer owes.
 - **POS consolidated invoices**, which POS Closing creates. Blocking them would stop the closing.
 - Documents created by **Data Import**, a migration or an app install.
-- A customer who, on the company's books, **owes nothing at all**, even if an invoice still shows
-  as unpaid. This happens when a payment or credit note was recorded but not allocated to the
-  invoice. To clear the invoice itself, match the payment to it with **Payment Reconciliation**.
 
 ---
 
@@ -135,6 +132,9 @@ Al Noor Trading (no rule) → Retail (no rule) → Commercial: Block on Save, 30
   unless you hold an exempt role.
 - **With Block on Save, a sales user can't even prepare a draft** for an overdue customer. Choose
   **Block on Submit** if drafts should still be allowed.
+- **Only allocated payments count.** A payment or credit note recorded for the customer but not
+  allocated to the overdue invoice leaves that invoice unpaid, so the rule still applies, even
+  when the customer owes nothing overall. Match it to the invoice with **Payment Reconciliation**.
 - **A tiny leftover balance counts.** An invoice with 0.01 outstanding is still unpaid and can
   block. Write such balances off.
 - **Background jobs are checked too.** A Sales Invoice made automatically (for example by Auto
@@ -148,7 +148,7 @@ Al Noor Trading (no rule) → Retail (no rule) → Commercial: Block on Save, 30
 |--------------------|-------|-----|
 | *Customer X has Sales Invoice Y overdue by N days … blocks saving and submitting* | A Block on Save rule applies | Collect and record the payment against invoice Y, or ask a user with an exempt role |
 | *… blocks submitting* when you submit | A Block on Submit rule applies | As above. The draft stays saved |
-| A customer is blocked though they have paid | The payment is recorded but not allocated, and they still owe on another invoice | Allocate the payment with **Payment Reconciliation** |
+| A customer is blocked though they have paid | The payment or credit note is recorded but not allocated to the overdue invoice | Allocate it with **Payment Reconciliation** |
 | *Threshold Days must be greater than 0* | Threshold Days is 0 or empty | Enter a number of days above 0 |
 | *Enabled rule … already has the same Applies To, Party, Company and Action* | A second rule repeats an enabled one | Change the existing rule instead, or disable it first |
 | A rule never fires in one company | It names a different company | Clear **Company**, or set the right one |

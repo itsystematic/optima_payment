@@ -6,7 +6,7 @@
 The branch matrix and the message text are in test_limit.py. These prove what only a real document
 shows: the hooks fire on both doctypes at both stages, an earlier draft cannot be submitted past a
 Block on Save rule, the acting user's roles decide the exemption, credit notes pass, the group tree is
-read from the database, and a payment lifts the block whether or not it is allocated to the invoice.
+read from the database, and only a payment allocated to the invoice lifts the block.
 
 Each test starts from a customer whose Sales Invoice fell due 25 days ago and is unpaid.
 """
@@ -147,12 +147,11 @@ class TestOverdueLimitIntegration(FrappeTestCase):
         make_invoice_payment(self.overdue_invoice.name)
         self.assertFalse(self.make_draft().is_new())
 
-    def test_an_unallocated_payment_covering_the_debt_lifts_the_block(self):
+    def test_an_unallocated_payment_covering_the_debt_keeps_the_block(self):
         make_overdue_limit(party=self.customer, action=BLOCK_ON_SAVE)
         make_invoice_payment(self.overdue_invoice.name, allocate=False)
-        outstanding = frappe.db.get_value("Sales Invoice", self.overdue_invoice.name, "outstanding_amount")
-        self.assertEqual(outstanding, self.overdue_invoice.grand_total)
-        self.assertFalse(self.make_draft().is_new())
+        with self.assertRaises(OverdueLimitError):
+            self.make_draft()
 
     def test_a_disabled_rule_does_nothing(self):
         make_overdue_limit(party=self.customer, action=BLOCK_ON_SAVE, enabled=0)

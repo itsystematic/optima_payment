@@ -34,7 +34,7 @@ optima_payment/overdue_limit/
     │               #       one rule's outcome, the document's verdict
     ├── MESSAGES    # the warning / refusal text, one line per rule
     ├── CHECK       # check(doc, stage): loads, decides, then msgprint or throw
-    └── QUERIES     # group chain, enabled rules + exempt roles, oldest overdue invoice, GL balance
+    └── QUERIES     # group chain, enabled rules + exempt roles, oldest overdue invoice
 
 optima_payment/doc_events/overdue_limit.py   # before_save / before_submit → limit.check
 optima_payment/hooks.py                      # doc_events for Sales Invoice and Sales Order
@@ -91,13 +91,8 @@ flowchart LR
     D -- none --> Z
     D -- found --> E{decide: warn,<br>block or nothing}
     E -- nothing --> Z
-    E -- warn / block --> F{customer GL<br>balance > 0?}
-    F -- no --> Z
-    F -- yes --> G[msgprint warning<br>or throw OverdueLimitError]
+    E -- warn / block --> G[msgprint warning<br>or throw OverdueLimitError]
 ```
-
-The cheap checks run first, and the GL balance query only once a warning or block is already
-decided.
 
 Skipped documents, `is_exempt_document`:
 
@@ -180,28 +175,6 @@ that lists at least one exempt role.
 
 ---
 
-## GL balance guard
-
-A Payment Entry or credit note that is not allocated to the invoice leaves its `outstanding_amount`
-untouched, so the invoice looks unpaid though the customer owes nothing. Before warning or
-blocking, `check` reads the customer's net GL balance for the company:
-
-```
-sum(debit) − sum(credit) from `tabGL Entry`
-where party_type = 'Customer' and party = … and company = … and is_cancelled = 0
-```
-
-and does nothing when it is zero or less. This is the GL half of ERPNext's
-`get_customer_outstanding`. It uses the `(party_type, party)` index on GL Entry; on a site with
-about 256,000 GL rows it took under half a millisecond for the busiest customer. On that site, 39
-of the 90 customer-and-company pairs with an overdue invoice owed nothing overall.
-
-It catches only a customer who owes nothing at all. A customer who paid the old invoice without
-allocating it, and now owes only on a newer invoice that isn't due yet, is still blocked by the old
-one until the payment is reconciled.
-
----
-
 ## Blank company
 
 Frappe fills an empty Link field of a new document from `frappe.defaults` keyed by the
@@ -221,7 +194,7 @@ The form still pre-fills the user's default company on a new rule (the client-si
 |-------|--------|--------------------|
 | Installment invoices age from their last due date | Overdue installments count late | Age from `Payment Schedule` rows |
 | Residual balances count | 0.01 outstanding can block | An "ignore outstanding below" amount |
-| Unallocated payments, when other debt remains | The old invoice still counts | None; reconcile the payment |
+| Unallocated payments and credit notes | The invoice stays outstanding and still counts, even when the customer owes nothing overall | None; reconcile them with Payment Reconciliation |
 | A submitted Sales Order does not pass its Sales Invoice | The invoice is checked on its own | Intended |
 | Cancel + amend, Auto Repeat and other server inserts | Checked like any save | Intended |
 
@@ -235,7 +208,7 @@ See [testing.md](../development/testing.md). The check's tests come as a pair in
 | File | Layer | What it proves |
 |------|-------|----------------|
 | `test_limit.py` | Matrix: plain rules, nothing written | The documents never checked, tier precedence, other-company rules, a group named like the customer, the action table, the threshold day, how several triggered rules combine (including an exemption from only one), what the message says about exemption. The message wording is not pinned |
-| `test_limit_integration.py` | Integration: real saves | Each action on Sales Invoice and Sales Order at save and submit, Block on Save refusing an earlier draft's submit, the acting user's roles deciding the exemption, a credit note submitting under a block, an ancestor group's rule applying, another company's rule not applying, payment and an unallocated payment lifting the block, a disabled rule |
+| `test_limit_integration.py` | Integration: real saves | Each action on Sales Invoice and Sales Order at save and submit, Block on Save refusing an earlier draft's submit, the acting user's roles deciding the exemption, a credit note submitting under a block, an ancestor group's rule applying, another company's rule not applying, an allocated payment lifting the block and an unallocated one not, a disabled rule |
 | `doctype/time_based_overdue_limit/test_time_based_overdue_limit.py` | Integration | Threshold above 0, the duplicate rule, what is not a duplicate, a blank company staying blank, re-saving a rule |
 
 Every integration test starts from a customer whose Sales Invoice fell due 25 days ago and is

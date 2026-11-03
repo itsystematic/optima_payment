@@ -16,8 +16,7 @@ from collections import namedtuple
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.query_builder.functions import Sum
-from frappe.utils import flt, formatdate, getdate
+from frappe.utils import formatdate, getdate
 
 RULE = "Time Based Overdue Limit"
 EXEMPT_ROLE = "Time Based Overdue Limit Exempt Role"
@@ -162,9 +161,7 @@ def check(doc: Document, stage: str) -> None:
 
     days = days_overdue(invoice.due_date, today)
     verdict = decide(rules, days, frappe.get_roles(), stage)
-    # A payment or credit note not yet allocated to the invoice leaves it outstanding, though the
-    # customer owes nothing.
-    if not verdict.outcome or get_customer_gl_balance(doc.customer, doc.company) <= 0:
+    if not verdict.outcome:
         return
 
     text = message(verdict, doc.customer, invoice, days)
@@ -238,18 +235,3 @@ def get_oldest_overdue_invoice(customer: str, company: str, today):
         limit=1,
     )
     return invoices[0] if invoices else None
-
-
-def get_customer_gl_balance(customer: str, company: str) -> float:
-    gle = frappe.qb.DocType("GL Entry")
-    balance = (
-        frappe.qb.from_(gle)
-        .select(Sum(gle.debit) - Sum(gle.credit))
-        .where(
-            (gle.party_type == CUSTOMER)
-            & (gle.party == customer)
-            & (gle.company == company)
-            & (gle.is_cancelled == 0)
-        )
-    ).run()
-    return flt(balance[0][0])
