@@ -34,8 +34,10 @@ yet TBOL-00002's 30, so the order **saves** and shows:
 > due on 08-10-2026.
 > - Rule **TBOL-00001** (Warn on Save) applies from 20 days overdue.
 
-Five days later the invoice is 30 days overdue. Saving shows the TBOL-00001 warning, then TBOL-00002
-**refuses** the save, and it keeps refusing until the invoice is paid.
+Five days later the invoice is 30 days overdue, and TBOL-00002 **refuses** the save until the
+invoice is paid. Only the refusal shows: when a save is refused, the TBOL-00001 warning is not
+displayed with it. A user with an exempt role on TBOL-00002 would instead see two messages, one
+under the other: the TBOL-00001 warning, then TBOL-00002 with *Your role lets you continue*.
 
 ---
 
@@ -83,8 +85,10 @@ Each action does exactly what its name says, and nothing at the other step:
 - **Block on Submit** says nothing at save; the draft saves normally and only the submit is refused.
 - A user with an **exempt role** sees the warning instead of the refusal. Exempt roles have no
   effect on **Warn on Save**: everybody sees that warning.
-- The **Administrator** user holds every role, so is exempt from any rule that lists at least one
-  exempt role.
+- Exemption is **per rule**. Being exempt from one block rule does not help against another block
+  rule that lists different roles, or none.
+- The **Administrator** user holds every role, so is exempt from any block rule that lists at least
+  one exempt role. A block rule with no exempt roles blocks everyone, Administrator included.
 
 ---
 
@@ -97,8 +101,9 @@ The most specific rules win, and only those:
 3. If that group has none, the rules of the **parent group**, then its parent, and so on up the
    tree.
 
-All the rules at that first level apply together. A rule for a different company is ignored and
-does not hide the rules above it.
+All the rules at that first level apply together. A level counts as soon as it has any rule,
+whatever its action: a customer with only its own Warn on Save rule is never blocked by its group's
+Block on Save rule. A rule for a different company is ignored and does not hide the rules above it.
 
 ```
 Al Noor Trading (no rule) → Retail (no rule) → Commercial: Block on Save, 30 days ← applies

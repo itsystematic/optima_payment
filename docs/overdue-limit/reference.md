@@ -92,8 +92,12 @@ Frappe runs `validate → before_save` on a save and `validate → before_submit
 - Submitting does **not** run `before_save`, so a draft saved before the customer went overdue (or
   before the rule existed) submits past a Block on Save rule. A Block on Submit rule is what stops a
   submit.
-- When a Warn on Save and a Block on Save rule both trigger, `validate` shows the warning and
-  `before_save` then refuses; the user sees both messages.
+- Each hook sends its own message. When a Warn on Save and a Block on Save rule both trigger,
+  `validate` queues the warning and `before_save` then refuses. Both reach the browser in
+  `_server_messages`, but the desk shows only the refusal: given a list in which any message
+  raised, `frappe.msgprint` drops the others (`frappe/public/js/frappe/ui/messages.js`). A client
+  reading the API response gets both. When the user is exempt from the block, nothing raises, and
+  the desk stacks the two warnings in one dialog, each with its own header line.
 
 ```mermaid
 flowchart LR
@@ -151,7 +155,7 @@ customer = doc.customer, company = doc.company, status in ('Overdue', 'Overdue a
 ```
 
 ordered `due_date, name` and limited to one, so the message can name it. `days_overdue` is
-`today − due_date`, and a rule triggers when `days >= threshold_days`.
+`today − due_date`, and a rule triggers when `overdue_days >= threshold_days`.
 
 What counts as overdue is ERPNext's decision, read from the invoice's `status`. ERPNext gives
 `Overdue` only to a submitted invoice with an outstanding amount, so drafts, cancelled and paid
@@ -178,8 +182,8 @@ follow-up.
 
 ## Outcome
 
-`decide(rules, days, user_roles)` takes the rules of one action. A rule triggers when
-`days >= threshold_days`, and then:
+`decide(rules, overdue_days, user_roles)` takes the rules of one action. A rule triggers when
+`overdue_days >= threshold_days`, and then:
 
 | Action | User not exempt | User exempt |
 |--------|-----------------|-------------|
@@ -201,10 +205,10 @@ Each `Hit` carries the rule and whether the user was exempt from it. The message
 line naming the rule, its action and its threshold (*Rule TBOL-00002 (Block on Save) applies from 30
 days overdue.*), adding *Your role lets you continue* or the list of exempt roles. A block is raised as
 `OverdueLimitError`, a subclass of `frappe.ValidationError`. A warning is `msgprint` with an orange
-indicator, and the document is saved.
+indicator, and the save or submit goes on.
 
-`frappe.get_roles("Administrator")` returns every role, so Administrator is exempt from any rule
-that lists at least one exempt role.
+`frappe.get_roles("Administrator")` returns every role, so Administrator is exempt from any block
+rule that lists at least one exempt role. A block rule with no exempt roles blocks everyone.
 
 ---
 
