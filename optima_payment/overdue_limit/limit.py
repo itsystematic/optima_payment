@@ -79,19 +79,19 @@ def is_exempt_user(rule, user_roles: set) -> bool:
     return rule.action != WARN_ON_SAVE and bool(user_roles & set(rule.exempt_roles))
 
 
-def decide(rules: list, days: int, user_roles) -> Verdict:
-    """What ``rules``, all of one action, do once the customer is ``days`` overdue.
+def decide(rules: list, overdue_days: int, user_roles) -> Verdict:
+    """What ``rules``, all of one action, do once the customer is ``overdue_days`` overdue.
 
-    A rule triggers once ``days`` reaches its ``threshold_days``. Warn on Save warns. A block rule
-    blocks, but only warns a user holding one of its exempt roles. A block outranks warnings, which its
-    message then leaves out.
+    A rule triggers once ``overdue_days`` reaches its ``threshold_days``. Warn on Save warns. A block
+    rule blocks, but only warns a user holding one of its exempt roles. A block outranks warnings, which
+    its message then leaves out.
     """
-    roles = set(user_roles)
+    user_roles = set(user_roles)
     hits = {BLOCK: [], WARN: []}
     for rule in rules:
-        if days < rule.threshold_days:
+        if overdue_days < rule.threshold_days:
             continue
-        exempt = is_exempt_user(rule, roles)
+        exempt = is_exempt_user(rule, user_roles)
         outcome = WARN if rule.action == WARN_ON_SAVE or exempt else BLOCK
         hits[outcome].append(Hit(rule, exempt))
 
