@@ -6,14 +6,18 @@ and the full chain required to submit a Bank Guarantee-BG (Optima Payment
 Setting, Bank, Account, Cost Center, Project, Customer/Supplier, and a
 reference Sales/Purchase Order with its own taxes table pre-populated to dodge
 this site's KSA/ZATCA mandatory-field customizations), plus Purchases Bulk Tool
-documents with their purchase taxes template, and the party Journal Entries
-and users the statement of account needs. Tests import these factories
+documents with their purchase taxes template, the party Journal Entries
+and users the statement of account needs, and the Sales Invoices, payments
+and rules the Time Based Overdue Limit needs. Tests import these factories
 instead of constructing documents inline.
 """
 
 import frappe
 import erpnext
+from erpnext.accounts.doctype.payment_entry.payment_entry import get_payment_entry
+from erpnext.accounts.doctype.sales_invoice.sales_invoice import make_sales_return
 from erpnext.accounts.party import get_party_account
+from erpnext.controllers.accounts_controller import update_invoice_status
 from frappe.utils import add_days, nowdate
 
 from optima_payment.override.doctype_class.payment_entry import CustomPaymentEntry
@@ -158,6 +162,7 @@ def get_or_create_customer(customer_name: str = "Optima Test Customer") -> str:
                 # customer_type=Individual dodges KSA site customizations that make
                 # registration_type / registration_value / tax_id mandatory for Companies.
                 "customer_type": "Individual",
+                "tax_category": get_test_tax_category(),
                 # Site-specific mandatory custom field; the key is ignored where it doesn't exist.
                 "customer_name_in_arabic": customer_name,
             }
@@ -166,9 +171,9 @@ def get_or_create_customer(customer_name: str = "Optima Test Customer") -> str:
 
 
 def get_test_tax_category() -> str | None:
-    """The Tax Category test suppliers carry, and so the category of every voucher made for them.
+    """The Tax Category test parties carry, and so the category of every voucher made for them.
 
-    KSA/ZATCA customizations on this site make tax_category mandatory on Supplier.
+    KSA/ZATCA customizations on some sites make tax_category mandatory on Customer and Supplier.
     """
     return frappe.db.get_value("Tax Category", {}, "name")
 
@@ -271,33 +276,56 @@ def get_item_tax_charge() -> tuple[str, float]:
 # REFERENCE SALES / PURCHASE ORDERS
 
 
-def make_reference_sales_order(company: str, customer: str) -> str:
-    """Create and submit a minimal Sales Order to use as a Bank Guarantee-BG reference."""
-    item = get_or_create_item()
+def get_sales_lines(company: str) -> dict:
+    """One item line and the pre-seeded taxes row of a Sales Order or Invoice, on the test cost center."""
     cost_center = get_or_create_cost_center(company)
     account_head, tax_rate = get_item_tax_charge()
+    return {
+        "items": [{"item_code": get_or_create_item(), "qty": 1, "rate": 100, "cost_center": cost_center}],
+        "taxes": [
+            {
+                "charge_type": "On Net Total",
+                "account_head": account_head,
+                "rate": tax_rate,
+                "cost_center": cost_center,
+                "description": account_head,
+            }
+        ],
+    }
+
+
+def make_sales_order(
+    *,
+    customer: str,
+    company: str | None = None,
+    do_not_insert: bool = False,
+    do_not_submit: bool = False,
+    **overrides,
+) -> frappe.model.document.Document:
+    company = company or erpnext.get_default_company()
     so = frappe.get_doc(
         {
             "doctype": "Sales Order",
             "company": company,
             "customer": customer,
-            "cost_center": cost_center,
+            "cost_center": get_or_create_cost_center(company),
             "delivery_date": nowdate(),
-            "items": [{"item_code": item, "qty": 1, "rate": 100, "cost_center": cost_center}],
-            "taxes": [
-                {
-                    "charge_type": "On Net Total",
-                    "account_head": account_head,
-                    "rate": tax_rate,
-                    "cost_center": cost_center,
-                    "description": account_head,
-                }
-            ],
+            **get_sales_lines(company),
+            **overrides,
         }
     )
+    if do_not_insert:
+        return so
+
     so.insert(ignore_permissions=True)
-    so.submit()
-    return so.name
+    if not do_not_submit:
+        so.submit()
+    return so
+
+
+def make_reference_sales_order(company: str, customer: str) -> str:
+    """Create and submit a minimal Sales Order to use as a Bank Guarantee-BG reference."""
+    return make_sales_order(customer=customer, company=company).name
 
 
 def make_reference_purchase_order(company: str, supplier: str) -> str:
@@ -798,3 +826,114 @@ def get_or_create_user(email: str, roles: list[str]) -> str:
     user.set("roles", [{"role": role} for role in roles])
     user.save(ignore_permissions=True)
     return email
+
+
+# ====================================================================================================
+# TIME BASED OVERDUE LIMIT FACTORIES
+
+
+def make_sales_invoice(
+    *,
+    customer: str,
+    company: str | None = None,
+    posting_date: str | None = None,
+    due_date: str | None = None,
+    do_not_insert: bool = False,
+    do_not_submit: bool = False,
+    **overrides,
+) -> frappe.model.document.Document:
+    """A one-line Sales Invoice, due on ``posting_date`` unless ``due_date`` says otherwise.
+
+    set_posting_time keeps a past posting date, which validate would otherwise reset to today. The
+    header has no cost center: a payment copies it onto balance sheet lines, which some sites refuse.
+    """
+    company = company or erpnext.get_default_company()
+    posting_date = posting_date or nowdate()
+    si = frappe.get_doc(
+        {
+            "doctype": "Sales Invoice",
+            "company": company,
+            "customer": customer,
+            "set_posting_time": 1,
+            "posting_date": posting_date,
+            "due_date": due_date or posting_date,
+            **get_sales_lines(company),
+            **overrides,
+        }
+    )
+    if do_not_insert:
+        return si
+
+    si.insert(ignore_permissions=True)
+    if not do_not_submit:
+        si.submit()
+    return si
+
+
+def make_invoice_overdue(invoice: str, days: int) -> None:
+    """Move the due date of ``invoice`` and of its payment schedule ``days`` into the past, then run
+    ERPNext's daily status job, which marks it Overdue as it would on a live site.
+
+    Only the due dates move, not the posting date, so the invoice stays in the fiscal year even in
+    January (CI's is the calendar year). Validate refuses a due date before the posting date, hence
+    the direct writes.
+    """
+    due_date = add_days(nowdate(), -days)
+    frappe.db.set_value("Sales Invoice", invoice, "due_date", due_date)
+    frappe.db.set_value("Payment Schedule", {"parenttype": "Sales Invoice", "parent": invoice}, "due_date", due_date)
+    update_invoice_status()
+
+
+def make_credit_note(invoice: str) -> frappe.model.document.Document:
+    """An unsaved full return of ``invoice``."""
+    credit_note = make_sales_return(invoice)
+    # Site-specific field, mandatory on returns; ignored where it doesn't exist.
+    credit_note.reason_for_issuance = "Optima test return"
+    return credit_note
+
+
+def make_invoice_payment(invoice: str, *, allocate: bool = True) -> frappe.model.document.Document:
+    """A submitted Payment Entry receiving the whole outstanding amount of ``invoice``.
+
+    Without ``allocate`` the payment names no invoice, so ``invoice`` stays outstanding while the
+    customer owes nothing.
+    """
+    company = frappe.db.get_value("Sales Invoice", invoice, "company")
+    pe = get_payment_entry("Sales Invoice", invoice, bank_account=get_payment_entry_account(company))
+    if not allocate:
+        pe.set("references", [])
+    pe.reference_no = "OPTIMA-TEST"
+    pe.reference_date = nowdate()
+    # Some sites make remarks mandatory on Payment Entry.
+    pe.remarks = "Optima test payment"
+    pe.insert(ignore_permissions=True)
+    pe.submit()
+    return pe
+
+
+def make_overdue_limit(
+    *,
+    party: str,
+    action: str,
+    threshold_days: int = 20,
+    applies_to: str = "Customer",
+    company: str | None = None,
+    exempt_roles: list[str] | None = None,
+    enabled: int = 1,
+    do_not_insert: bool = False,
+) -> frappe.model.document.Document:
+    rule = frappe.get_doc(
+        {
+            "doctype": "Time Based Overdue Limit",
+            "enabled": enabled,
+            "applies_to": applies_to,
+            "party": party,
+            "company": company,
+            "action": action,
+            "threshold_days": threshold_days,
+            "exempt_roles": [{"role": role} for role in exempt_roles or []],
+        }
+    )
+    if not do_not_insert:
+        rule.insert(ignore_permissions=True)
+    return rule

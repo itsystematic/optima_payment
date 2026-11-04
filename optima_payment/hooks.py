@@ -189,6 +189,16 @@ doc_events = {
     "Purchase Receipt": {
         "after_delete": "optima_payment.purchases_bulk.vouchers.unlink_tool_rows",
     },
+    "Sales Invoice": {
+        "validate": "optima_payment.doc_events.overdue_limit.validate",
+        "before_save": "optima_payment.doc_events.overdue_limit.before_save",
+        "before_submit": "optima_payment.doc_events.overdue_limit.before_submit",
+    },
+    "Sales Order": {
+        "validate": "optima_payment.doc_events.overdue_limit.validate",
+        "before_save": "optima_payment.doc_events.overdue_limit.before_save",
+        "before_submit": "optima_payment.doc_events.overdue_limit.before_submit",
+    },
     # "Expense Claim" : {
         # "on_submit" : "optima_payment.doc_events.expense_claim.on_submit",
         # "on_cancel" : "optima_payment.doc_events.expense_claim.on_cancel",
