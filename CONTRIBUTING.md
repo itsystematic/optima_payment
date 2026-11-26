@@ -1,0 +1,104 @@
+# Contributing to Optima Payment
+
+## Branches
+
+| Branch | Frappe / ERPNext | Role | Changes arrive by |
+|---|---|---|---|
+| `develop` (default) | 16 | Where all work lands. Never deployed to a site. | PRs from fix and feature branches |
+| `version-16` | 16 | Release branch for ERPNext 16 sites. Tags `v16.x.y`. | Release PRs from `develop`, version bumps |
+| `version-15` | 15 | Maintenance branch for ERPNext 15 sites. Tags `v15.x.y`. | Backport PRs, v15-only fixes, version bumps |
+
+```
+fix / feat branch
+      │ PR
+      ▼
+   develop ──── release PR (merge commit) ──────────────────────────────────► version-16   v16.x.y
+      │
+      └──── label "backport version-15": the bot cherry-picks, opens a PR ──► version-15   v15.x.y
+```
+
+Every change starts on `develop`. `version-16` receives all of it at the next release; `version-15` receives only what is labelled for it.
+
+## Making a change
+
+1. Branch from `develop`, named after the kind of change: `fix/cheque-status`, `feat/lc-report`.
+2. Write commit messages as `type(scope): summary`. The type is one of `fix`, `feat`, `refactor`, `docs`, `test` or `chore`; the scope is the area in kebab-case; the summary is imperative, with no trailing period. For example: `fix(overdue-limit): index Sales Invoice for the overdue invoice lookup`.
+3. Open the PR into `develop`, with its title in the same format. Release notes are built from PR titles.
+4. If ERPNext 15 sites need the change too, add the label `backport version-15` before merging.
+
+Don't open PRs into `version-15` or `version-16`, except in the cases described under Backporting and Releasing.
+
+## Backporting to version-15
+
+What to backport:
+
+- Bug fixes that affect v15 sites.
+
+What not to backport:
+
+- New features. `version-15` gets fixes.
+- Changes that only make sense on Frappe 16: Python 3.14, Frappe 16 API changes, the Frappe 16 test bootstrap, and `.github/workflows/ci.yml`, which each branch keeps for itself.
+
+How:
+
+1. Add `backport version-15` to the PR before merging it. When it merges, the backport bot cherry-picks its commits onto `version-15` and opens a PR titled `[Backport version-15] <original title>`. If you forgot the label, add it after merging and comment `/backport` on the PR.
+2. The bot opens its PR with GitHub's built-in token, so no CI run starts on it. **Close and reopen the backport PR** to run the v15 CI, and merge it once it passes.
+3. If the cherry-pick conflicts, the bot opens no PR. It comments on the original PR with the commands to finish the cherry-pick by hand; resolve the conflict, push the branch, and open the PR into `version-15` yourself.
+
+A change that ships a customization patch backports like any other: the patch and its `patches.txt` line travel with the cherry-pick.
+
+Two cases skip `develop`:
+
+- A fix only `version-15` needs, because the code has since changed on `develop`: branch from `version-15` and open the PR straight into it.
+- An urgent fix for v16 sites while `develop` holds work that isn't ready to release: label the fix's PR `backport version-16`, merge the backport PR, then make a patch release of `version-16`.
+
+## Releasing
+
+### Versions and tags
+
+| Branch | Version | Tags | GitHub "latest" release |
+|---|---|---|---|
+| `develop` | not maintained (stays `16.0.0`) | never | — |
+| `version-16` | `16.x.y` | `v16.x.y` | yes |
+| `version-15` | `15.x.y` | `v15.x.y` | no |
+
+- The first number is the Frappe line: `15` for Frappe 15, `16` for Frappe 16, `17` for Frappe 17. It never changes within a branch.
+- A release with only fixes bumps the last number (`16.1.0` → `16.1.1`); a release with any `feat` bumps the middle one (`16.1.1` → `16.2.0`).
+- `__version__` in `optima_payment/__init__.py` is bumped on the release branch, never on `develop`. Because `develop` never touches that line, release merges never conflict on it.
+- A tag marks the exact commit a release was made from. Never move or delete one.
+
+### version-16
+
+1. Open a PR from `develop` into `version-16` titled `chore: release v16.2.0`, and merge it once CI passes. The branch allows only **Create a merge commit**: a squashed release would give `version-16` a commit `develop` doesn't have, and the next release PR would then conflict.
+2. After that PR has merged, open a PR into `version-16` that sets `__version__ = "16.2.0"`, titled `chore(release): bump version to 16.2.0`, and merge it once CI passes. Branch it from `version-16` as it stands after the release merge. The quickest way is to edit the file on GitHub with `version-16` selected and choose **Create a new branch for this commit and start a pull request**.
+3. Add the release's section to `CHANGELOG.md` in the same PR.
+4. Under **Releases → Draft a new release**, create the tag `v16.2.0` on target `version-16`. Set **Previous tag** to the last `v16` tag yourself, because the automatic choice can pick a `v15` release. Click **Generate release notes**, add a short highlights and deploy section above the generated list, and publish with **Set as the latest release** ticked.
+
+The first release, `v16.0.0`, needs no bump PR: `develop` already carries `16.0.0`.
+
+### version-15
+
+1. Merge the backport PRs that make up the release.
+2. Open a PR into `version-15` that sets `__version__` (for example `"15.2.1"`), titled `chore(release): bump version to 15.2.1`, and merge it once CI passes.
+3. Draft a release with the tag `v15.2.1` on target `version-15`, set **Previous tag** to the last `v15` tag, and generate the notes. Publish with **Set as the latest release** unticked, so the newest `v16` release stays the latest.
+
+## Deploying
+
+Sites install from a release branch: `bench get-app --branch version-16 …` for ERPNext 16 and `--branch version-15 …` for ERPNext 15. Never deploy `develop`. A release branch only moves when a release is made, so update sites after a release rather than after every merge.
+
+Before migrating a client site, take a form snapshot (`setup/form_snapshot.py` `save`, then `diff` after the migrate); see [docs/setup/](docs/setup/README.md).
+
+## Tests and CI
+
+- CI (`.github/workflows/ci.yml`) runs on pushes and PRs to `develop` and `version-16` against Frappe 16, and to `version-15` against Frappe 15. Both discover every `test_*.py` in the app, so a new test file needs no CI change.
+- ERPNext 16 doesn't run the setup wizard before tests, so `optima_payment/tests/bootstrap.py` (the `before_tests` hook) creates a Saudi test company on a site that has none.
+- On Frappe 16, `bench run-tests` writes to the site it runs on: the test company, users, and settings changes. Run bench tests only on a throwaway site, never on one with real or restored data.
+
+See [docs/development/testing.md](docs/development/testing.md) for how the tests are written.
+
+## When Frappe 17 ships
+
+`develop` moves to Frappe 17 and a `version-17` branch is cut from it, with its own major version. `version-16` then becomes a maintenance branch like `version-15`, fed by `backport version-16` labels.
+
+- Update `[tool.bench.frappe-dependencies]` in `pyproject.toml` on each branch it changes: `develop` and `version-17` to `>=17.0.0-dev,<18.0.0-dev`; `version-16` keeps `>=16.0.0-dev,<17.0.0-dev`. Each branch states only its own Frappe line, so this section is never backported.
+- Set `__version__` on `develop` to `17.0.0`, and point CI on `develop` and `version-17` at Frappe 17.
