@@ -63,8 +63,9 @@
 
 1. استنساخ المستودع:
    ```bash
-   bench get-app https://github.com/itsystematic/optima_payment.git
+   bench get-app --branch version-16 https://github.com/itsystematic/optima_payment.git
    ```
+   استخدم `--branch version-15` مع ERPNext 15.
 2. تثبيت المتطلبات:
    ```bash
    bench setup requirements
@@ -93,7 +94,13 @@
 تم تصميم Optima Payment ليكون بسيطًا وسهل الاستخدام. يمكنك الرجوع إلى **[قناتنا على يوتيوب](https://www.youtube.com/@itsystematic)** للحصول على تعليمات مفصلة أو التواصل مع الدعم للحصول على المساعدة.
 
 ### الإصدارات المدعومة من ERPNext
-- ERPNext Version 15
+
+| ERPNext | الفرع | الإصدارات |
+|---|---|---|
+| 16 | [`version-16`](https://github.com/itsystematic/optima_payment/tree/version-16) | `16.x` |
+| 15 | [`version-15`](https://github.com/itsystematic/optima_payment/tree/version-15) | `15.x` |
+
+ثبّت التطبيق من الفرع المطابق لإصدار ERPNext لديك.
 
 ---
 

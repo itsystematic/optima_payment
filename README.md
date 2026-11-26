@@ -63,8 +63,9 @@ Follow these steps to install Optima Payment on your ERPNext setup:
 
 1. Clone the repository:
    ```bash
-   bench get-app https://github.com/itsystematic/optima_payment.git
+   bench get-app --branch version-16 https://github.com/itsystematic/optima_payment.git
    ```
+   Use `--branch version-15` on ERPNext 15.
 2. Install requirements:
    ```bash
    bench setup requirements
@@ -93,7 +94,14 @@ Follow these steps to install Optima Payment on your ERPNext setup:
 Optima Payment is designed to be simple and intuitive. Refer to our **[Youtube channel](https://www.youtube.com/@itsystematic)** for detailed instructions. or contact support for assistance.
 
 ### Supported ERPNext Versions
-- ERPNext Version 15
+
+| ERPNext | Branch | Versions |
+|---|---|---|
+| 16 | [`version-16`](https://github.com/itsystematic/optima_payment/tree/version-16) | `16.x` |
+| 15 | [`version-15`](https://github.com/itsystematic/optima_payment/tree/version-15) | `15.x` |
+
+Install from the branch that matches your ERPNext version. Each release and its notes are listed on the
+[Releases](https://github.com/itsystematic/optima_payment/releases) page.
 
 ---
 
@@ -130,7 +138,7 @@ We offer comprehensive support to ensure you have the best experience with Optim
 
 ## 🤝 Contributing
 
-We welcome contributions from the community! Please follow the contribution guidelines outlined in our Contributing Guide.
+We welcome contributions from the community! Please follow the [Contributing Guide](CONTRIBUTING.md): branches, backports and releases.
 
 ### Guidelines
 - Submit issues through GitHub Issues.
