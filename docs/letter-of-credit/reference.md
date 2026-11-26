@@ -149,6 +149,6 @@ erDiagram
 ## Tests
 
 See [testing.md](../development/testing.md). The suite lives at
-`optima_payment/optima_payment/doctype/letter_of_credit/test_letter_of_credit.py` and
+`optima_payment/tests/test_letter_of_credit.py` and
 asserts on the generated Payment Entries. Fixtures come from
 `optima_payment/tests/utils.py` (`make_letter_of_credit`, `make_optima_payment_setting`).

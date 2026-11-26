@@ -44,6 +44,11 @@ def get_property_setters() -> list[dict]:
 
 Omit `get_property_setters` entirely if the feature has none.
 
+A feature can also declare indexes, as `features/overdue_limit.py` does: `get_indexes()` returns
+`{doctype: [[fieldname, ...], ...]}`, and its registry entry passes `get_indexes=`. Declare only
+multi-column indexes. Frappe's schema sync drops a single-column index whose field lacks
+`search_index` at the next migrate, so the sync refuses one: set `search_index` on the field instead.
+
 ---
 
 ## Step 2 — Register it

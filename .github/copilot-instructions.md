@@ -7,9 +7,10 @@
 - Uses custom JS for desk/web views and hooks for lifecycle events, permissions, and scheduled tasks.
 
 ## 🛠️ Developer Workflows
-- **Install**: Use `bench get-app https://github.com/itsystematic/optima_payment.git`, then follow with `bench setup requirements`, `bench build --app optima_payment`, `bench restart`, `bench --site <site> install-app optima_payment`, and `bench --site <site> migrate`.
+- **Install**: Use `bench get-app --branch version-16 https://github.com/itsystematic/optima_payment.git` (`--branch version-15` on ERPNext 15), then follow with `bench setup requirements`, `bench build --app optima_payment`, `bench restart`, `bench --site <site> install-app optima_payment`, and `bench --site <site> migrate`.
 - **Build**: Always run `bench build --app optima_payment` after JS/CSS changes.
-- **Testing**: Validate with ERPNext v15. Use custom scripts and Frappe's test runner for DocType logic.
+- **Branches**: Work lands on `develop` (ERPNext 16); `version-16` gets it by release PRs, `version-15` by `backport version-15` labels. See `CONTRIBUTING.md`.
+- **Testing**: Validate with ERPNext 16 on `develop`, and with ERPNext 15 for anything backported. Use custom scripts and Frappe's test runner for DocType logic.
 - **Fixtures**: Roles and permissions are managed via fixtures in `hooks.py`.
 
 ## 📦 App-Specific Conventions

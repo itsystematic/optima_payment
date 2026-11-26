@@ -2,28 +2,37 @@
 
 No test runs a real custom field create or update: Frappe alters the table and commits, which the
 per-test rollback cannot undo. Custom Field rows are written with ``db_insert`` instead, and custom
-field syncing is checked through its dry-run plan.
+field syncing is checked through its dry-run plan. Indexes too: the plan, and the real Sales Invoice
+index that install or the patch created.
 """
 
 import json
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 
 import optima_payment.setup.sync as customization_sync
 from optima_payment.setup import form_snapshot
 from optima_payment.patches import adopt_existing_customizations as adoption_patch
-from optima_payment.setup.sync import custom_fields, property_setters, remove_customizations
+from optima_payment.setup.sync import (
+    custom_fields,
+    indexes,
+    property_setters,
+    remove_customizations,
+    remove_indexes,
+)
 from optima_payment.setup.sync.declarations import (
     DeclarationConflict,
     _merge_declarations,
     get_declared_custom_fields,
+    get_declared_indexes,
     get_declared_property_setters,
 )
 
 TEST_DOCTYPE = "Note"
 TEST_FIELD = {"fieldname": "optima_test_field", "label": "Optima Test", "fieldtype": "Data", "insert_after": "title"}
 LAYOUT_BREAKS = ("Section Break", "Column Break", "Tab Break")
+OVERDUE_INDEX = "customer_company_status_due_date_index"
 
 
 def make_setter(fieldname, property_name, value, property_type="Data", doctype=TEST_DOCTYPE):
@@ -70,7 +79,7 @@ def insert_custom_field_row(doctype, is_system_generated, **values):
     ).db_insert()
 
 
-class CustomizationTestCase(FrappeTestCase):
+class CustomizationTestCase(IntegrationTestCase):
     def setUp(self):
         frappe.db.delete("Property Setter", {"doc_type": TEST_DOCTYPE})
         frappe.db.delete("Custom Field", {"dt": TEST_DOCTYPE})
@@ -216,10 +225,11 @@ class TestRemoval(CustomizationTestCase):
         self.assertIsNone(get_setter_row(on_field))
 
 
-class TestDeclarations(FrappeTestCase):
+class TestDeclarations(IntegrationTestCase):
     def test_enabled_features_declare_without_conflicts(self):
         self.assertTrue(get_declared_custom_fields())
         self.assertTrue(get_declared_property_setters())
+        self.assertTrue(get_declared_indexes())
 
     def test_repeated_declarations_merge_when_they_agree(self):
         merged = _merge_declarations({"fieldname": "x", "label": "X"}, {"fieldname": "x", "hidden": 1}, "Note.x")
@@ -231,7 +241,32 @@ class TestDeclarations(FrappeTestCase):
             _merge_declarations({"label": "X"}, {"label": "Y"}, "Note.x")
 
 
-class TestAdoptExistingCustomizations(FrappeTestCase):
+class TestIndexSync(IntegrationTestCase):
+    def test_the_overdue_lookup_index_is_on_sales_invoice(self):
+        """Without it get_oldest_overdue_invoice reads every invoice the customer ever had. CI's fresh
+        site gets it at install, an upgraded site from the patch."""
+        index = frappe.db.sql(
+            f"SHOW INDEX FROM `tabSales Invoice` WHERE Key_name = '{OVERDUE_INDEX}'", as_dict=True
+        )
+        self.assertEqual(
+            [row.Column_name for row in sorted(index, key=lambda row: row.Seq_in_index)],
+            ["customer", "company", "status", "due_date"],
+        )
+
+    def test_sync_and_uninstall_find_the_index_by_its_name(self):
+        """A name mismatch would plan the index again on every sync and leave it behind on uninstall."""
+        self.assertEqual(indexes.sync(get_declared_indexes(), dry_run=True), [])
+        removed = [change.target for change in remove_indexes(dry_run=True)]
+        self.assertIn(f"Sales Invoice.{OVERDUE_INDEX}", removed)
+
+    def test_plans_a_missing_index_without_writing_it(self):
+        changes = indexes.sync({TEST_DOCTYPE: [["title", "public"]]}, dry_run=True)
+
+        self.assertEqual([change.action for change in changes], ["create"])
+        self.assertFalse(frappe.db.has_index(f"tab{TEST_DOCTYPE}", "title_public_index"))
+
+
+class TestAdoptExistingCustomizations(IntegrationTestCase):
     def tearDown(self):
         frappe.db.rollback()
         frappe.clear_cache()
@@ -310,7 +345,7 @@ class TestAdoptExistingCustomizations(FrappeTestCase):
         self.assertEqual(get_setter_row(field_orders[0]).is_system_generated, 0)
 
 
-class TestClientCustomizationsAreNeverTouched(FrappeTestCase):
+class TestClientCustomizationsAreNeverTouched(IntegrationTestCase):
     def tearDown(self):
         frappe.db.rollback()
         frappe.clear_cache()

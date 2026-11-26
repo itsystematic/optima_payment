@@ -157,6 +157,11 @@ customer = doc.customer, company = doc.company, status in ('Overdue', 'Overdue a
 ordered `due_date, name` and limited to one, so the message can name it. `days_overdue` is
 `today − due_date`, and a rule triggers when `overdue_days >= threshold_days`.
 
+Sales Invoice carries an index on `(customer, company, status, due_date)`, declared in
+`setup/features/overdue_limit.py`. It holds every column the lookup reads, so MariaDB answers it from
+the index alone. Without it, the lookup walked ERPNext's `customer` index through every invoice the
+customer ever had: about a second per check for a walk-in customer on a large site.
+
 What counts as overdue is ERPNext's decision, read from the invoice's `status`. ERPNext gives
 `Overdue` only to a submitted invoice with an outstanding amount, so drafts, cancelled and paid
 invoices and credit notes never count. An Unpaid invoice becomes Overdue in two ways:
@@ -242,13 +247,13 @@ The form still pre-fills the user's default company on a new rule (the client-si
 ## Tests
 
 See [testing.md](../development/testing.md). The check's tests come as a pair in
-`optima_payment/overdue_limit/tests/`, and the rule's own validation sits beside the doctype:
+`optima_payment/overdue_limit/tests/`, the rule's own validation included:
 
 | File | Layer | What it proves |
 |------|-------|----------------|
 | `test_limit.py` | Matrix: plain rules, nothing written | The documents never checked, tier precedence, the tier chosen before the action, other-company rules, a group named like the customer, the threshold day, how several triggered rules combine (including an exemption from only one), what the message says about exemption. The message wording is not pinned |
 | `test_limit_integration.py` | Integration: real saves | Each action at its own hook on Sales Invoice and Sales Order: Warn on Save warning at save and again at submit, Block on Save refusing the save but not an earlier draft's submit, Block on Submit saving silently and refusing the submit; the acting user's roles deciding the exemption, a credit note saving and submitting under both blocks, an ancestor group's rule applying, another company's rule not applying, an allocated payment lifting the block and an unallocated one not, a disabled rule |
-| `doctype/time_based_overdue_limit/test_time_based_overdue_limit.py` | Integration | Threshold above 0, the duplicate rule, what is not a duplicate, a blank company staying blank, re-saving a rule |
+| `test_time_based_overdue_limit.py` | Integration | Threshold above 0, the duplicate rule, what is not a duplicate, a blank company staying blank, re-saving a rule |
 
 Every integration test starts from a customer whose Sales Invoice fell due 25 days ago and that
 ERPNext's own `update_invoice_status` has marked Overdue (`make_invoice_overdue`). The fixtures come from `optima_payment/tests/utils.py`.

@@ -211,7 +211,7 @@ scheduler_events = {
 # Testing
 # -------
 
-# before_tests = "optima_payment.install.before_tests"
+before_tests = "optima_payment.tests.bootstrap.before_tests"
 
 # Overriding Methods
 # ------------------------------

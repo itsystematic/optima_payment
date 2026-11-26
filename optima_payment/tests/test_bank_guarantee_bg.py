@@ -14,12 +14,12 @@ that commission rows are excluded from reversal.
 
 import frappe
 from frappe.utils import add_days, nowdate
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 
 from optima_payment.tests.utils import make_bank_guarantee_bg, make_optima_payment_setting
 
 
-class TestBankGuaranteeBG(FrappeTestCase):
+class TestBankGuaranteeBG(IntegrationTestCase):
     def tearDown(self):
         frappe.db.rollback()
 

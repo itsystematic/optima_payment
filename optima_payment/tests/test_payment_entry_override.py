@@ -3,13 +3,13 @@
 from unittest.mock import patch
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 
 from optima_payment.tests.utils import make_payment_entry
 from optima_payment.override.doctype_class.payment_entry import CustomPaymentEntry
 
 
-class TestCustomPaymentEntry(FrappeTestCase):
+class TestCustomPaymentEntry(IntegrationTestCase):
     def tearDown(self):
         frappe.db.rollback()
 

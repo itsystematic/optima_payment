@@ -237,39 +237,66 @@ def get_or_create_mode_of_payment(
 # site's KSA/ZATCA mandatory-field customizations (see get_item_tax_charge).
 
 
-def get_or_create_item(item_code: str = "Optima Test Item") -> str:
-    """Find or create a non-stock Item usable on both Sales and Purchase Orders."""
+SALES_VAT_ACCOUNT = "Optima Test Sales VAT"
+SALES_VAT_RATE = 15.0
+TEST_ITEM = "Optima Test Item"
+
+
+def get_or_create_sales_item_tax_template(company: str, title: str = "Optima Test Sales VAT 15%") -> str:
+    """An Item Tax Template charging SALES_VAT_RATE on the suite's own VAT account."""
+    existing = frappe.db.get_value("Item Tax Template", {"title": title, "company": company}, "name")
+    if existing:
+        return existing
+
+    account = get_or_create_account(SALES_VAT_ACCOUNT, company, "Liability", account_type="Tax")
+    template = frappe.get_doc(
+        {
+            "doctype": "Item Tax Template",
+            "title": title,
+            "company": company,
+            "taxes": [{"tax_type": account, "tax_rate": SALES_VAT_RATE}],
+        }
+    )
+    template.insert(ignore_permissions=True)
+    return template.name
+
+
+def get_or_create_item(company: str, item_code: str = TEST_ITEM) -> str:
+    """Find or create a non-stock Item usable on both Sales and Purchase Orders.
+
+    KSA/ZATCA customizations on some sites make the Item Tax Template table mandatory, so a new
+    item carries the suite's own sales template; a fresh site has none of its own to lend.
+    """
     if not frappe.db.exists("Item", item_code):
-        item_group = frappe.db.get_value("Item Group", {"is_group": 0}, "name")
-        # KSA/ZATCA customizations on this site make the Item Tax Template table mandatory.
-        item_tax_template = frappe.db.get_value("Item Tax Template", {}, "name")
         frappe.get_doc(
             {
                 "doctype": "Item",
                 "item_code": item_code,
                 "item_name": item_code,
-                "item_group": item_group,
+                "item_group": frappe.db.get_value("Item Group", {"is_group": 0}, "name"),
                 "stock_uom": "Nos",
                 "is_stock_item": 0,
-                "taxes": [{"item_tax_template": item_tax_template}],
+                "is_fixed_asset": 0,
+                "taxes": [{"item_tax_template": get_or_create_sales_item_tax_template(company)}],
             }
         ).insert(ignore_permissions=True)
     return item_code
 
 
-def get_item_tax_charge() -> tuple[str, float]:
-    """Return (account_head, tax_rate) of an existing Item Tax Template's single tax row.
+def get_item_tax_charge(company: str, item_code: str = TEST_ITEM) -> tuple[str, float]:
+    """Return (account_head, tax_rate) of the item's own Item Tax Template for company.
 
     Used to pre-populate the order's own ``taxes`` table so that ERPNext's
     "Add taxes from item tax template" Accounts Settings option doesn't
     auto-append a Sales/Purchase Taxes and Charges row without a cost_center
-    (which this site's customizations make mandatory).
+    (which this site's customizations make mandatory). Read from the item, not
+    the site, so the row is on the account the item's template charges.
     """
-    item_tax_template = frappe.db.get_value("Item Tax Template", {}, "name")
-    detail = frappe.db.get_value(
-        "Item Tax Template Detail", {"parent": item_tax_template}, ["tax_type", "tax_rate"]
-    )
-    return detail
+    templates = frappe.get_all("Item Tax", {"parent": item_code, "parenttype": "Item"}, pluck="item_tax_template")
+    template = frappe.db.get_value("Item Tax Template", {"name": ("in", templates), "company": company}, "name")
+    if not template:
+        frappe.throw(f"Item {item_code} has no Item Tax Template for company {company}")
+    return frappe.db.get_value("Item Tax Template Detail", {"parent": template}, ["tax_type", "tax_rate"])
 
 
 # ====================================================================================================
@@ -279,9 +306,10 @@ def get_item_tax_charge() -> tuple[str, float]:
 def get_sales_lines(company: str) -> dict:
     """One item line and the pre-seeded taxes row of a Sales Order or Invoice, on the test cost center."""
     cost_center = get_or_create_cost_center(company)
-    account_head, tax_rate = get_item_tax_charge()
+    item = get_or_create_item(company)
+    account_head, tax_rate = get_item_tax_charge(company, item)
     return {
-        "items": [{"item_code": get_or_create_item(), "qty": 1, "rate": 100, "cost_center": cost_center}],
+        "items": [{"item_code": item, "qty": 1, "rate": 100, "cost_center": cost_center}],
         "taxes": [
             {
                 "charge_type": "On Net Total",
@@ -330,9 +358,9 @@ def make_reference_sales_order(company: str, customer: str) -> str:
 
 def make_reference_purchase_order(company: str, supplier: str) -> str:
     """Create and submit a minimal Purchase Order to use as a Bank Guarantee-BG reference."""
-    item = get_or_create_item()
+    item = get_or_create_item(company)
     cost_center = get_or_create_cost_center(company)
-    account_head, tax_rate = get_item_tax_charge()
+    account_head, tax_rate = get_item_tax_charge(company, item)
     po = frappe.get_doc(
         {
             "doctype": "Purchase Order",

@@ -2,12 +2,12 @@
 
 import erpnext
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 
 from optima_payment.api import get_or_filtered_accounts
 
 
-class TestOptimaPaymentApi(FrappeTestCase):
+class TestOptimaPaymentApi(IntegrationTestCase):
     def setUp(self):
         self.company = erpnext.get_default_company()
         self.expense_parent = frappe.db.get_value(
