@@ -122,10 +122,16 @@ covered only on real sites. See the `TODO` block in `test_letter_of_credit.py`.
 
 ## Continuous integration
 
-CI is defined in `.github/workflows/ci.yml` and runs on every push / pull request against
-`version-15`. It spins up MariaDB + Redis, installs `erpnext` + `optima_payment` on a fresh
-`test_site`, enables tests, and then **auto-discovers every `test_*.py` under the
-`optima_payment/` package** via `rglob`, running `bench run-tests --module …` for each.
+CI is defined in `.github/workflows/ci.yml`, which each branch keeps for itself: `develop` and
+`version-16` run against Frappe/ERPNext 16, `version-15` against 15. It spins up MariaDB +
+Redis, installs `erpnext` + `optima_payment` on a fresh `test_site`, enables tests, and then
+**auto-discovers every `test_*.py` under the `optima_payment/` package** via `rglob`, running
+`bench run-tests --module …` for each. The run lists every module that failed, not just the first.
+
+ERPNext 16 no longer runs the setup wizard before tests, so a fresh v16 site has no company. The
+app's own `before_tests` hook, `optima_payment/tests/bootstrap.py`, creates **Optima Payment Test
+Company** (Saudi Arabia, SAR) on a site without one and leaves any other site untouched. On
+`version-15`, ERPNext's own hook still creates the CI company.
 
 **You do not need to register new test files anywhere** — dropping a
 `test_<something>.py` under the package (including doctype-local `…/doctype/<x>/test_<x>.py`)

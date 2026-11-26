@@ -60,8 +60,6 @@ doctype_js = {
         "public/js/payment_entry.js" ,
         "public/js/controllink.js" ,
     ],
-    "Expense Claim": "public/js/expense_claim.js",
-    "Expense Claim Type" : "public/js/expense_claim_type.js",
     "Bank": "public/js/bank.js",
     "Bank Account": "public/js/bank_account.js",
     "Bank Guarantee" : "public/js/bank_guarantee.js",
@@ -199,11 +197,6 @@ doc_events = {
         "before_save": "optima_payment.doc_events.overdue_limit.before_save",
         "before_submit": "optima_payment.doc_events.overdue_limit.before_submit",
     },
-    # "Expense Claim" : {
-        # "on_submit" : "optima_payment.doc_events.expense_claim.on_submit",
-        # "on_cancel" : "optima_payment.doc_events.expense_claim.on_cancel",
-        # "validate" : "optima_payment.doc_events.expense_claim.validate"
-    # }
 }
 
 # Scheduled Tasks
@@ -218,7 +211,7 @@ scheduler_events = {
 # Testing
 # -------
 
-# before_tests = "optima_payment.install.before_tests"
+before_tests = "optima_payment.tests.bootstrap.before_tests"
 
 # Overriding Methods
 # ------------------------------

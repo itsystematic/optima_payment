@@ -2,80 +2,74 @@ name: CI
 
 on:
   push:
-    branches:
-      - version-15
+    branches: [develop, version-16]
   pull_request:
-    branches:
-      - version-15
+    branches: [develop, version-16]
 
 concurrency:
-  group: version-15-optima_payment-${{ github.event.pull_request.number || github.ref }}
+  group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
   tests:
     name: App tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     services:
       mariadb:
-        image: mariadb:10.6
+        image: mariadb:11.8
         env:
-          MYSQL_ROOT_PASSWORD: root
+          MARIADB_ROOT_PASSWORD: root
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping"
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
           --health-interval=5s
-          --health-timeout=2s
-          --health-retries=20
+          --health-timeout=5s
+          --health-retries=15
 
-      redis-cache:
+      redis:
         image: redis:7-alpine
         ports:
-          - 13000:6379
-
-      redis-queue:
-        image: redis:7-alpine
-        ports:
-          - 11000:6379
+          - 6379:6379
 
     steps:
       - name: Checkout app
         uses: actions/checkout@v5
 
+      # Importing any ERPNext test module runs its BootStrapTestData, which commits
+      # _Test Company, users and System Settings changes. Tests build their records
+      # with optima_payment's own factories instead.
+      - name: Refuse imports of ERPNext test modules
+        run: |
+          if grep -rnE "erpnext[.a-z_]*\.(tests|test_[a-z_]+)" --include=*.py optima_payment/; then
+            echo "::error::A test imports an ERPNext test module; use optima_payment's factories instead."
+            exit 1
+          fi
+
+      # Frappe 16 requires Python ">=3.14,<3.15" and Node ">=24".
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.10"
+          python-version: "3.14"
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 18
+          node-version: 24
 
       - name: Cache pip
         uses: actions/cache@v5
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml', '**/requirements*.txt', '**/setup.py', '**/setup.cfg') }}
+          key: ${{ runner.os }}-py3.14-pip-${{ hashFiles('**/pyproject.toml', '**/requirements*.txt', '**/setup.py', '**/setup.cfg') }}
           restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Get yarn cache directory
-        id: yarn-cache-dir
-        run: echo "dir=$(yarn cache dir)" >> "$GITHUB_OUTPUT"
-
-      - name: Cache yarn
-        uses: actions/cache@v5
-        with:
-          path: ${{ steps.yarn-cache-dir.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
+            ${{ runner.os }}-py3.14-pip-
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y mariadb-client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends mariadb-client libmariadb-dev
 
       - name: Initialize bench
         run: |
@@ -83,24 +77,31 @@ jobs:
           bench init \
             --skip-redis-config-generation \
             --skip-assets \
-            --frappe-branch version-15 \
+            --frappe-branch version-16 \
             --python "$(which python)" \
             ~/frappe-bench
-          mysql --host 127.0.0.1 --port 3306 -u root -proot -e "SET GLOBAL character_set_server = 'utf8mb4'"
-          mysql --host 127.0.0.1 --port 3306 -u root -proot -e "SET GLOBAL collation_server = 'utf8mb4_unicode_ci'"
 
       - name: Install apps
         working-directory: /home/runner/frappe-bench
         env:
           CI: "Yes"
         run: |
-          bench get-app https://github.com/frappe/erpnext --branch version-15 --resolve-deps
+          bench get-app https://github.com/frappe/erpnext --branch version-16 --resolve-deps
           bench get-app optima_payment "$GITHUB_WORKSPACE"
           bench setup requirements --dev
-          bench new-site --db-root-password root --admin-password admin test_site
+          bench set-config -g root_password root
+          # bench init skipped the redis config, so point cache, queue and socketio at the
+          # one CI redis service, or the after_install jobs fail with "Connection refused".
+          bench set-config -g redis_cache "redis://127.0.0.1:6379"
+          bench set-config -g redis_queue "redis://127.0.0.1:6379"
+          bench set-config -g redis_socketio "redis://127.0.0.1:6379"
+          bench new-site test_site \
+            --db-root-password root \
+            --admin-password admin \
+            --mariadb-user-host-login-scope='%'
           bench --site test_site install-app erpnext optima_payment
 
-      - name: Run shared test modules
+      - name: Run tests
         working-directory: /home/runner/frappe-bench
         run: |
           bench --site test_site set-config allow_tests true
@@ -119,7 +120,13 @@ jobs:
           PY
           )
 
+          failed=()
           for module in "${test_modules[@]}"; do
-            echo "Running ${module}"
-            bench --site test_site run-tests --module "${module}"
+            echo "::group::${module}"
+            bench --site test_site run-tests --module "${module}" || failed+=("${module}")
+            echo "::endgroup::"
           done
+          if (( ${#failed[@]} )); then
+            printf '::error::%s failed\n' "${failed[@]}"
+            exit 1
+          fi
