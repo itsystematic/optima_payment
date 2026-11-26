@@ -65,22 +65,23 @@ Two cases skip `develop`:
 - The first number is the Frappe line: `15` for Frappe 15, `16` for Frappe 16, `17` for Frappe 17. It never changes within a branch.
 - A release with only fixes bumps the last number (`16.1.0` → `16.1.1`); a release with any `feat` bumps the middle one (`16.1.1` → `16.2.0`).
 - `__version__` in `optima_payment/__init__.py` is bumped on the release branch, never on `develop`. Because `develop` never touches that line, release merges never conflict on it.
+- `CHANGELOG.md` works the same way: each release branch adds its release's section in the bump PR, and `develop` never edits the file. Its copy on `develop` is not kept current; read the changelog on a release branch.
 - A tag marks the exact commit a release was made from. Never move or delete one.
 
 ### version-16
 
 1. Open a PR from `develop` into `version-16` titled `chore: release v16.2.0`, and merge it once CI passes. The branch allows only **Create a merge commit**: a squashed release would give `version-16` a commit `develop` doesn't have, and the next release PR would then conflict.
 2. After that PR has merged, open a PR into `version-16` that sets `__version__ = "16.2.0"`, titled `chore(release): bump version to 16.2.0`, and merge it once CI passes. Branch it from `version-16` as it stands after the release merge. The quickest way is to edit the file on GitHub with `version-16` selected and choose **Create a new branch for this commit and start a pull request**.
-3. Add the release's section to `CHANGELOG.md` in the same PR.
+3. Add the release's section to `CHANGELOG.md` in the same PR, above the previous release's section.
 4. Under **Releases → Draft a new release**, create the tag `v16.2.0` on target `version-16`. Set **Previous tag** to the last `v16` tag yourself, because the automatic choice can pick a `v15` release. Click **Generate release notes**, add a short highlights and deploy section above the generated list, and publish with **Set as the latest release** ticked.
 
-The first release, `v16.0.0`, needs no bump PR: `develop` already carries `16.0.0`.
+The first release, `v16.0.0`, needed no bump PR, because `develop` already carried `16.0.0`; its changelog section came in a PR of its own.
 
 ### version-15
 
 1. Merge the backport PRs that make up the release.
-2. Open a PR into `version-15` that sets `__version__` (for example `"15.2.1"`), titled `chore(release): bump version to 15.2.1`, and merge it once CI passes.
-3. Draft a release with the tag `v15.2.1` on target `version-15`, set **Previous tag** to the last `v15` tag, and generate the notes. Publish with **Set as the latest release** unticked, so the newest `v16` release stays the latest.
+2. Open a PR into `version-15` that sets `__version__` (for example `"15.3.1"`) and adds the release's section to `CHANGELOG.md`, titled `chore(release): bump version to 15.3.1`, and merge it once CI passes.
+3. Draft a release with the tag `v15.3.1` on target `version-15`, set **Previous tag** to the last `v15` tag, and generate the notes. Publish with **Set as the latest release** unticked, so the newest `v16` release stays the latest.
 
 ## Deploying
 
