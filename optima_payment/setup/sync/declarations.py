@@ -54,6 +54,26 @@ def get_declared_property_setters() -> list[dict]:
     return list(merged.values())
 
 
+def get_declared_indexes() -> dict[str, list[list[str]]]:
+    """Collect the indexes enabled features declare, by doctype, each one once.
+
+    Only multi-column indexes: Frappe's schema sync drops a single-column index whose field lacks
+    ``search_index``, so one declared here would vanish at the next migrate. Set ``search_index`` on
+    the field instead.
+    """
+    declared: dict[str, list[list[str]]] = {}
+    for feature in get_enabled_features():
+        if not feature.get_indexes:
+            continue
+        for doctype, indexes in feature.get_indexes().items():
+            for fields in indexes:
+                if len(fields) < 2:
+                    raise ValueError(f"{doctype} index {fields}: declare search_index on the field instead")
+                if fields not in declared.setdefault(doctype, []):
+                    declared[doctype].append(fields)
+    return declared
+
+
 def property_setter_name(setter: dict) -> str:
     return f"{setter['doctype']}-{setter['fieldname'] or setter['row_name'] or 'main'}-{setter['property']}"
 

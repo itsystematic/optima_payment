@@ -73,7 +73,7 @@ the field stays where the client put it
 | `after_install` | `install.py → after_install()` | seeds print formats, patches Mode of Payment options, **`sync()`**, **`apply_starting_field_orders()`**, seeds roles and Custom DocPerms, imports any cheque artifact |
 | `after_app_install` | `install.py → after_app_install(app_name)` | fires for every app installed later; does nothing unless it is `hrms`, then **`sync()`** and the HRMS permission grid |
 | `after_migrate` | `migrate.py → after_migrate()` | re-applies the Mode of Payment option patch |
-| `before_uninstall` | `uninstall.py → before_uninstall()` | **`remove_customizations()`**, then removes access control |
+| `before_uninstall` | `uninstall.py → before_uninstall()` | **`remove_customizations()`** and **`remove_indexes()`**, then removes access control |
 
 Nothing runs the sync on every migrate. Customizations reach installed sites through **patches**, one
 per change — see [how-to-write-a-patch.md](how-to-write-a-patch.md).
@@ -85,7 +85,7 @@ bench install-app optima_payment
   └── install.py: after_install()
         ├── standard_data.add_standard_data()          # print formats (install only)
         ├── standard_data.update_fields_in_database()  # Mode of Payment type options
-        ├── sync.sync()                                # create every declared field and setter
+        ├── sync.sync()                                # create every declared field, setter and index
         ├── sync.apply_starting_field_orders()         # field_order, only where the site has none
         ├── permissions.apply_access_control()         # roles + Custom DocPerms (install only)
         └── migration_artifact.import_cheque_legacy_artifact()
@@ -110,6 +110,7 @@ bench uninstall-app optima_payment
         │     ├── every declared Custom Field   → deleted (Frappe deletes the setters on it too)
         │     └── every declared Property Setter → deleted only if flag 1, or flag 0 holding the
         │                                          declared value; a client value is kept
+        ├── sync.remove_indexes()                → every declared index dropped
         └── permissions.remove_access_control()
 ```
 
@@ -131,7 +132,8 @@ flowchart TD
     E -- no --> U[update to the declared value]
 ```
 
-`field_order` never enters this flow at all; see the Q&A.
+`field_order` never enters this flow at all; see the Q&A. Nor does a declared index: it has no row
+and no flag, so a missing one is created, and `remove_indexes()` drops it on uninstall.
 
 Every step returns a list of `Change(action, target, detail)` records and prints them:
 
@@ -154,10 +156,11 @@ install.py / migrate.py / uninstall.py     ← entry points, wired in hooks.py
 setup/registry.py                          ← the feature list and which features this site enables
 setup/sync/
     __init__.py                            ← sync, preview, apply_starting_field_orders,
-    │                                        remove_customizations + the ownership rules
+    │                                        remove_customizations, remove_indexes + the ownership rules
     declarations.py                        ← merge what the features declare, one entry per key
     custom_fields.py                       ← plan and apply Custom Field changes
     property_setters.py                    ← plan and apply Property Setter changes
+    indexes.py                             ← create declared indexes, drop them on uninstall
     report.py                              ← the Change record and the printed report
 setup/form_snapshot.py                     ← record every form before a migrate, compare after
 setup/features/
@@ -166,6 +169,7 @@ setup/features/
     bank_guarantee.py                      ← Bank Guarantee fields + property setters
     letter_of_credit.py                    ← Payment Entry LC fields + property setters
     hrms_integration.py                    ← Expense Claim Detail (only when hrms is installed)
+    overdue_limit.py                       ← the Sales Invoice index the overdue check reads through
 setup/permissions.py                       ← Optima roles + Custom DocPerm grid (install only)
 setup/standard_data.py                     ← print format seed + raw field option patches
 setup/runner.py                            ← step execution with savepoints (used by permissions)
@@ -173,7 +177,7 @@ patches/adopt_existing_customizations.py   ← the one-time flag 0 → 1 move; a
 ```
 
 A feature is a plain module: `get_custom_fields()` returns `dict[doctype, list[field]]`,
-`get_property_setters()` returns `list[setter]`. The registry lists them:
+`get_property_setters()` returns `list[setter]`, `get_indexes()` returns `dict[doctype, list[fields]]`. The registry lists them:
 
 ```python
 FeatureSpec(
@@ -194,7 +198,7 @@ declarations, not a site problem.
 
 | Kind | Declared in | Applied | Removed on uninstall? |
 |------|-------------|---------|----------------------|
-| **Customizations** — custom fields, property setters | `setup/features/*` | install + one patch per change | **Yes**, app-owned rows only |
+| **Customizations** — custom fields, property setters, indexes | `setup/features/*` | install + one patch per change | **Yes**, app-owned rows only |
 | **Access control** — roles, Custom DocPerms | `setup/permissions.py` | install only | **Yes** |
 | **Data seed** — print formats | `files/print_format.json` | install only | No — admins edit these per site |
 
