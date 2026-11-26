@@ -6,7 +6,7 @@ action."""
 
 import erpnext
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 
 from optima_payment.overdue_limit.limit import BLOCK_ON_SAVE, WARN_ON_SAVE
 from optima_payment.tests.utils import get_or_create_customer, make_overdue_limit
@@ -14,7 +14,7 @@ from optima_payment.tests.utils import get_or_create_customer, make_overdue_limi
 CUSTOMER = "Optima Overdue Test Customer"
 
 
-class TestTimeBasedOverdueLimit(FrappeTestCase):
+class TestTimeBasedOverdueLimit(IntegrationTestCase):
     def setUp(self):
         self.customer = get_or_create_customer(CUSTOMER)
 

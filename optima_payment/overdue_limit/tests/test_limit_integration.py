@@ -15,7 +15,7 @@ status job has marked Overdue.
 
 import erpnext
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 
 from optima_payment.overdue_limit.limit import BLOCK_ON_SAVE, BLOCK_ON_SUBMIT, WARN_ON_SAVE, OverdueLimitError
 from optima_payment.tests.utils import (
@@ -35,7 +35,7 @@ EXEMPT_ROLE = "Accounts Manager"
 SALES_DOCUMENTS = {"Sales Invoice": make_sales_invoice, "Sales Order": make_sales_order}
 
 
-class TestOverdueLimitIntegration(FrappeTestCase):
+class TestOverdueLimitIntegration(IntegrationTestCase):
     def setUp(self):
         self.company = erpnext.get_default_company()
         self.customer = get_or_create_customer(CUSTOMER)

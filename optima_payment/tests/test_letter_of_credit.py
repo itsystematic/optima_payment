@@ -33,13 +33,13 @@ TODO (future maintainability):
 """
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 from frappe.utils import add_days, getdate, nowdate
 
 from optima_payment.tests.utils import make_letter_of_credit, make_optima_payment_setting
 
 
-class TestLetterofCredit(FrappeTestCase):
+class TestLetterofCredit(IntegrationTestCase):
     def tearDown(self):
         frappe.db.rollback()
 

@@ -12,7 +12,7 @@ later voucher given the same name by the naming series stays out of the tool.
 
 import erpnext
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 from frappe.utils import add_days, getdate, nowdate
 
 from optima_payment.purchases_bulk import api, vouchers
@@ -26,7 +26,7 @@ from optima_payment.tests.utils import (
 )
 
 
-class TestPurchasesBulkToolIntegration(FrappeTestCase):
+class TestPurchasesBulkToolIntegration(IntegrationTestCase):
     def setUp(self):
         set_test_cost_center_default(erpnext.get_default_company())
         self.supplier_a = get_or_create_supplier("Optima Bulk Supplier A")

@@ -12,7 +12,7 @@ from dataclasses import replace
 from datetime import date
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import UnitTestCase
 from frappe.utils import fmt_money, formatdate, getdate
 
 from optima_payment.party_statement.statement import (
@@ -81,7 +81,7 @@ def make_header(party_type="Customer"):
     )
 
 
-class TestGlFilters(FrappeTestCase):
+class TestGlFilters(UnitTestCase):
     def test_one_party_one_row_per_voucher_after_an_opening_row(self):
         filters = gl_filters("Customer", CUSTOMER, COMPANY, FROM_DATE, TO_DATE)
 
@@ -121,7 +121,7 @@ def empty_statement(opening_debit=0.0, opening_credit=0.0):
     )
 
 
-class TestBuildStatement(FrappeTestCase):
+class TestBuildStatement(UnitTestCase):
     def test_an_empty_period_keeps_the_opening_as_the_closing(self):
         statement = build_statement([opening_row(debit=250), *trailing_rows()])
 
@@ -224,7 +224,7 @@ class TestBuildStatement(FrappeTestCase):
         self.assertEqual(statement.entries[0].debit, 10.01)
 
 
-class TestLedgerCurrency(FrappeTestCase):
+class TestLedgerCurrency(UnitTestCase):
     def test_the_first_currency_the_ledger_recorded_wins(self):
         cases = [
             ("presentation currency", {"presentation_currency": "USD", "account_currency": "EUR"}, "USD"),
@@ -236,7 +236,7 @@ class TestLedgerCurrency(FrappeTestCase):
                 self.assertEqual(ledger_currency(filters, CURRENCY), currency)
 
 
-class TestDrCr(FrappeTestCase):
+class TestDrCr(UnitTestCase):
     def test_the_sign_picks_the_side_and_zero_has_none(self):
         cases = [
             ("debit", 24495.0, (24495.0, DR)),
@@ -249,7 +249,7 @@ class TestDrCr(FrappeTestCase):
                 self.assertEqual(dr_cr(amount), expected)
 
 
-class TestBalanceText(FrappeTestCase):
+class TestBalanceText(UnitTestCase):
     def test_the_amount_and_its_side_or_the_amount_alone_when_settled(self):
         cases = [
             ("debit", 300.0, None, f"{fmt_money(300.0)} DR"),
@@ -262,7 +262,7 @@ class TestBalanceText(FrappeTestCase):
                 self.assertEqual(balance_text(amount, currency), expected)
 
 
-class TestBalanceIndicator(FrappeTestCase):
+class TestBalanceIndicator(UnitTestCase):
     def test_green_on_the_partys_normal_side_red_on_the_other_and_blue_when_settled(self):
         cases = [
             ("customer owes the company", "Customer", 100.0, "Green"),
@@ -277,7 +277,7 @@ class TestBalanceIndicator(FrappeTestCase):
                 self.assertEqual(balance_indicator(party_type, amount), indicator)
 
 
-class TestValidation(FrappeTestCase):
+class TestValidation(UnitTestCase):
     def test_customer_and_supplier_are_the_only_party_types(self):
         for party_type in ("Customer", "Supplier"):
             with self.subTest(party_type=party_type):
@@ -305,7 +305,7 @@ class TestValidation(FrappeTestCase):
             validate_filters("Customer", CUSTOMER, COMPANY, TO_DATE, FROM_DATE)
 
 
-class TestReportColumns(FrappeTestCase):
+class TestReportColumns(UnitTestCase):
     def test_amount_headers_name_the_currency_over_plain_numbers(self):
         amounts = report_columns(CURRENCY)[3:]
 
@@ -316,7 +316,7 @@ class TestReportColumns(FrappeTestCase):
         self.assertFalse(any("options" in column for column in amounts))
 
 
-class TestReportRows(FrappeTestCase):
+class TestReportRows(UnitTestCase):
     def setUp(self):
         self.statement = build_statement(
             [opening_row(debit=100), entry_row("PE-1", credit=150, voucher_type="Payment Entry")]
@@ -363,7 +363,7 @@ class TestReportRows(FrappeTestCase):
                 self.assertEqual([row["indicator"] for row in rows], indicators)
 
 
-class TestReportSummary(FrappeTestCase):
+class TestReportSummary(UnitTestCase):
     def setUp(self):
         # Opening 100 DR, then 300 owed and 120 paid: closing 280 DR.
         self.statement = build_statement(
@@ -404,7 +404,7 @@ class TestReportSummary(FrappeTestCase):
         self.assertFalse(closing_balance["value"].endswith(DR))
 
 
-class TestReportMessage(FrappeTestCase):
+class TestReportMessage(UnitTestCase):
     def test_the_period_alone_with_each_date_left_to_right(self):
         statement = build_statement(
             [opening_row(debit=100), entry_row("SINV-1", debit=300), entry_row("PE-1", credit=120)]
@@ -433,7 +433,7 @@ class TestReportMessage(FrappeTestCase):
                 self.assertTrue(report_message(build_statement(rows), make_header()).endswith(f" net: {net}."))
 
 
-class TestBand(FrappeTestCase):
+class TestBand(UnitTestCase):
     def test_party_period_and_currency(self):
         self.assertEqual(
             band(make_header("Supplier")),
@@ -445,7 +445,7 @@ class TestBand(FrappeTestCase):
         )
 
 
-class TestRenderHtml(FrappeTestCase):
+class TestRenderHtml(UnitTestCase):
     def test_the_page_names_the_company_in_arabic(self):
         header = replace(make_header(), company_name_in_arabic="شركة كشف الحساب")
 
@@ -462,7 +462,7 @@ class TestRenderHtml(FrappeTestCase):
         self.assertLess(html.index("Closing Debit"), html.index('<table class="statement-table"'))
 
 
-class TestExcelRows(FrappeTestCase):
+class TestExcelRows(UnitTestCase):
     def test_the_sheet_reads_like_the_pdf(self):
         statement = build_statement(
             [
@@ -495,7 +495,7 @@ class TestExcelRows(FrappeTestCase):
         self.assertEqual(rows[10][-2:], [0.0, None])
 
 
-class TestFileName(FrappeTestCase):
+class TestFileName(UnitTestCase):
     def test_the_party_and_end_date_name_the_file(self):
         cases = [
             ("plain", "Al Noor Trading", "Statement-Al Noor Trading-2026-06-30.pdf"),

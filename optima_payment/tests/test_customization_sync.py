@@ -9,7 +9,7 @@ index that install or the patch created.
 import json
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 
 import optima_payment.setup.sync as customization_sync
 from optima_payment.setup import form_snapshot
@@ -79,7 +79,7 @@ def insert_custom_field_row(doctype, is_system_generated, **values):
     ).db_insert()
 
 
-class CustomizationTestCase(FrappeTestCase):
+class CustomizationTestCase(IntegrationTestCase):
     def setUp(self):
         frappe.db.delete("Property Setter", {"doc_type": TEST_DOCTYPE})
         frappe.db.delete("Custom Field", {"dt": TEST_DOCTYPE})
@@ -225,7 +225,7 @@ class TestRemoval(CustomizationTestCase):
         self.assertIsNone(get_setter_row(on_field))
 
 
-class TestDeclarations(FrappeTestCase):
+class TestDeclarations(IntegrationTestCase):
     def test_enabled_features_declare_without_conflicts(self):
         self.assertTrue(get_declared_custom_fields())
         self.assertTrue(get_declared_property_setters())
@@ -241,7 +241,7 @@ class TestDeclarations(FrappeTestCase):
             _merge_declarations({"label": "X"}, {"label": "Y"}, "Note.x")
 
 
-class TestIndexSync(FrappeTestCase):
+class TestIndexSync(IntegrationTestCase):
     def test_the_overdue_lookup_index_is_on_sales_invoice(self):
         """Without it get_oldest_overdue_invoice reads every invoice the customer ever had. CI's fresh
         site gets it at install, an upgraded site from the patch."""
@@ -266,7 +266,7 @@ class TestIndexSync(FrappeTestCase):
         self.assertFalse(frappe.db.has_index(f"tab{TEST_DOCTYPE}", "title_public_index"))
 
 
-class TestAdoptExistingCustomizations(FrappeTestCase):
+class TestAdoptExistingCustomizations(IntegrationTestCase):
     def tearDown(self):
         frappe.db.rollback()
         frappe.clear_cache()
@@ -345,7 +345,7 @@ class TestAdoptExistingCustomizations(FrappeTestCase):
         self.assertEqual(get_setter_row(field_orders[0]).is_system_generated, 0)
 
 
-class TestClientCustomizationsAreNeverTouched(FrappeTestCase):
+class TestClientCustomizationsAreNeverTouched(IntegrationTestCase):
     def tearDown(self):
         frappe.db.rollback()
         frappe.clear_cache()

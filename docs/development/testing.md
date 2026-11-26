@@ -6,10 +6,19 @@ How the automated tests for Optima Payment are written, run locally, and run in 
 
 ## Framework & style
 
-Tests use Frappe's `FrappeTestCase` (unittest-based) and run against a **live site** — they
-insert and submit real documents, then assert on the accounting they produce. There is no
-mocking. Each test isolates itself with `frappe.db.rollback()` in `tearDown`, so nothing it
-creates survives the test.
+Tests use Frappe 16's `IntegrationTestCase` and run against a **live site** — they insert and
+submit real documents, then assert on the accounting they produce. There is no mocking. Each
+test isolates itself with `frappe.db.rollback()` in `tearDown`, so nothing it creates survives
+the test. Suites that write nothing (the matrix files below) use `UnitTestCase`. `version-15`
+keeps `FrappeTestCase`, the only class Frappe 15 has, so a backported test may need its base
+class changed.
+
+Suites that build their own data live **outside `doctype/` folders**, in `optima_payment/tests/`
+or the feature's own `tests/` folder. Frappe 16 generates test records for a test module inside
+`doctype/<x>/`: every record type the doctype links to, then everything those link to. That
+walk pulls in ERPNext's `_Test Company` fixtures and fails on doctypes ERPNext 16 no longer
+ships, such as `Payment Gateway`. A mocked test that writes nothing (`UnitTestCase`) can stay
+beside its doctype, because `UnitTestCase` generates no records.
 
 - **Bank Guarantee-BG** posts raw `GL Entry` rows, so its tests assert GL rows
   (`get_gle` / `validate_gl_entries`).
@@ -68,8 +77,8 @@ Always pass the site you are working on (this bench hosts several):
 
 ```bash
 # One module (recommended — this is what CI runs)
-bench --site <site> run-tests --module optima_payment.optima_payment.doctype.letter_of_credit.test_letter_of_credit
-bench --site <site> run-tests --module optima_payment.optima_payment.doctype.bank_guarantee_bg.test_bank_guarantee_bg
+bench --site <site> run-tests --module optima_payment.tests.test_letter_of_credit
+bench --site <site> run-tests --module optima_payment.tests.test_bank_guarantee_bg
 bench --site <site> run-tests --module optima_payment.purchases_bulk.tests.test_vouchers
 bench --site <site> run-tests --module optima_payment.purchases_bulk.tests.test_vouchers_integration
 bench --site <site> run-tests --module optima_payment.overdue_limit.tests.test_limit
@@ -134,5 +143,4 @@ Company** (Saudi Arabia, SAR) on a site without one and leaves any other site un
 `version-15`, ERPNext's own hook still creates the CI company.
 
 **You do not need to register new test files anywhere** — dropping a
-`test_<something>.py` under the package (including doctype-local `…/doctype/<x>/test_<x>.py`)
-is enough for CI to pick it up on the next run.
+`test_<something>.py` anywhere under the package is enough for CI to pick it up on the next run.

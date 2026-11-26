@@ -13,7 +13,7 @@ User gets the print page naming the company and the party, and the Excel downloa
 import erpnext
 import frappe
 from erpnext.accounts.utils import get_fiscal_year
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import IntegrationTestCase
 from frappe.utils import add_days, flt, fmt_money, getdate, nowdate
 
 from optima_payment.optima_payment.report.customer_statement.customer_statement import execute
@@ -27,7 +27,7 @@ from optima_payment.tests.utils import (
 )
 
 
-class TestPartyStatementIntegration(FrappeTestCase):
+class TestPartyStatementIntegration(IntegrationTestCase):
     def setUp(self):
         self.company = erpnext.get_default_company()
         self.customer = get_or_create_customer("Optima Statement Customer")

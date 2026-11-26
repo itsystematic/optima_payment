@@ -8,7 +8,7 @@ exist on the site. The wiring through real saves is in test_vouchers_integration
 """
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import UnitTestCase
 from frappe.utils import formatdate, getdate
 
 from optima_payment.purchases_bulk.vouchers import (
@@ -69,7 +69,7 @@ def key(supplier=SUPPLIER, posting_date=DATE, vat=VAT):
     return GroupKey(supplier, getdate(posting_date), vat)
 
 
-class TestRowAmount(FrappeTestCase):
+class TestRowAmount(UnitTestCase):
     def test_vat_is_added_on_top_of_qty_times_rate(self):
         cases = [
             ("fifteen percent", 1, 100, 15, 115.0),
@@ -87,7 +87,7 @@ class TestRowAmount(FrappeTestCase):
         self.assertEqual(_row_amount(1, 33.33, 15, 2), 38.33)
 
 
-class TestGroupRows(FrappeTestCase):
+class TestGroupRows(UnitTestCase):
     def test_rows_sharing_supplier_date_and_vat_share_a_voucher_in_first_seen_order(self):
         groups = _group_rows([row(1), row(2, supplier=OTHER_SUPPLIER), row(3)])
 
@@ -112,7 +112,7 @@ class TestGroupRows(FrappeTestCase):
         self.assertEqual(list(groups), [key()])
 
 
-class TestVoucherFields(FrappeTestCase):
+class TestVoucherFields(UnitTestCase):
     def test_the_header_comes_from_the_group_and_each_row_is_one_line_at_its_typed_rate(self):
         fields = _voucher_fields(
             "Purchase Invoice", COMPANY, None, key(), [row(1, rate=100), row(2, item="Sand", rate=300)]
@@ -178,7 +178,7 @@ class TestVoucherFields(FrappeTestCase):
         self.assertEqual(fields["set_warehouse"], WAREHOUSE)
 
 
-class TestRowStatus(FrappeTestCase):
+class TestRowStatus(UnitTestCase):
     def test_a_voucher_marks_its_rows_by_its_docstatus(self):
         cases = [(0, DRAFT), (1, SUBMITTED), (2, CANCELLED), (None, DELETED)]
         for docstatus, status in cases:
@@ -209,7 +209,7 @@ class TestRowStatus(FrappeTestCase):
                 self.assertEqual(_rollback_action(docstatus), expected)
 
 
-class TestBulkStep(FrappeTestCase):
+class TestBulkStep(UnitTestCase):
     def test_which_vouchers_each_action_takes_and_where_their_rows_end(self):
         cases = [
             (SUBMIT, 0, (True, SUBMITTED)),
@@ -230,7 +230,7 @@ class TestBulkStep(FrappeTestCase):
                 self.assertEqual(_bulk_step(action, docstatus), expected)
 
 
-class TestVoucherOrder(FrappeTestCase):
+class TestVoucherOrder(UnitTestCase):
     def test_vouchers_come_in_creation_order_with_all_their_rows(self):
         vouchers = _rows_by_voucher([row(1, voucher="PINV-1"), row(2, voucher="PINV-2"), row(3, voucher="PINV-1")])
 
@@ -261,7 +261,7 @@ class TestVoucherOrder(FrappeTestCase):
         self.assertEqual(_vouchers_newest_first([row(1), row(2)]), [])
 
 
-class TestMessages(FrappeTestCase):
+class TestMessages(UnitTestCase):
     def test_a_creation_failure_names_the_voucher_type_supplier_date_and_rows(self):
         message = _failure_message("Purchase Invoice", key(), [row(1), row(3)])
 

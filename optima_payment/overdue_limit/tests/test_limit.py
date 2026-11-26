@@ -10,7 +10,7 @@ Which hook checks which action is wiring, in test_limit_integration.py.
 """
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import UnitTestCase
 
 from optima_payment.overdue_limit.limit import (
     BLOCK,
@@ -68,7 +68,7 @@ def hit_names(verdict):
     return [hit.rule.name for hit in verdict.hits]
 
 
-class TestIsExemptDocument(FrappeTestCase):
+class TestIsExemptDocument(UnitTestCase):
     def test_credit_notes_pos_consolidations_and_system_writes_are_never_checked(self):
         """Flags by their literal names: looping over SKIP_FLAGS cannot catch a misspelt one."""
         self.assertFalse(is_exempt_document(None, None, frappe._dict()))
@@ -79,7 +79,7 @@ class TestIsExemptDocument(FrappeTestCase):
                 self.assertTrue(is_exempt_document(0, 0, frappe._dict({flag: True})))
 
 
-class TestSelectRules(FrappeTestCase):
+class TestSelectRules(UnitTestCase):
     def select(self, rules, company=COMPANY, action=WARN_ON_SAVE):
         return [rule.name for rule in select_rules(rules, CUSTOMER_NAME, GROUP_CHAIN, company, action)]
 
@@ -124,7 +124,7 @@ class TestSelectRules(FrappeTestCase):
         self.assertEqual(self.select([group_rule("GROUP", CUSTOMER_NAME)]), [])
 
 
-class TestDecide(FrappeTestCase):
+class TestDecide(UnitTestCase):
     def outcome_on(self, today, rules):
         return decide(rules, days_overdue(INVOICE.due_date, today), SALES_ROLES).outcome
 
@@ -147,7 +147,7 @@ class TestDecide(FrappeTestCase):
         self.assertEqual((verdict.outcome, hit_names(verdict)), (WARN, ["WARN"]))
 
 
-class TestMessage(FrappeTestCase):
+class TestMessage(UnitTestCase):
     def render(self, action, user_roles):
         verdict = decide([rule(action=action, exempt_roles=[EXEMPT_ROLE])], 30, user_roles)
         return message(verdict, CUSTOMER_NAME, INVOICE, 30)
