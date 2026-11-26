@@ -5,9 +5,11 @@ All notable changes to the Optima Payment app will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [16.0.0] - 2026-11-26
 
 ### Added
+- **ERPNext 16**: this line installs on Frappe and ERPNext 16 from `version-16`; ERPNext 15
+  sites stay on `version-15` (#14).
 - **Statement of Account** (كشف حساب) for customers and suppliers: **Customer Statement** and
   **Supplier Statement** reports, opened from **View ▸ Statement of Account** on the party, list one
   party's vouchers for one company and period with the opening, running and closing balance read
@@ -15,8 +17,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   General Ledger report, whichever app provides it, so its rows and its Opening and Closing rows
   always equal the General Ledger's.
 - A **Statement of Account** preview page with Send Email (the PDF attached, logged on the party's
-  timeline), Download PDF, Print and Export to Excel. The statement is translated and right to left
-  in Arabic.
+  timeline), Print (Save as PDF from the print window) and Export to Excel. The statement is
+  translated and right to left in Arabic, with the company's Arabic name under its name.
+- **Time Based Overdue Limit**: rules for a customer or a customer group that warn on save, block
+  on save or block on submit of a Sales Invoice or Sales Order once the customer has an invoice
+  overdue a set number of days, whatever the customer's balance. Users with an exempt role get the
+  warning without the block (#3).
+- **Purchases Bulk Tool**: one line per purchase (date, supplier, item, qty, rate, VAT template and
+  an optional warehouse). Submitting the tool creates Purchase Orders, Purchase Invoices or Purchase
+  Receipts, one per supplier, and its **Vouchers** buttons submit, cancel or delete them in bulk.
+  The tool is in the Optima Payment workspace.
+
+### Changed
+- The app tells its own custom fields and property setters apart from a site's Customize Form
+  changes, and a migrate creates what is missing and updates only its own rows. The
+  `adopt_existing_customizations` patch takes ownership of the ones created before, and
+  `setup/form_snapshot.py` saves and compares a site's forms around a migrate.
+- The role **Optima Payment Manger** is renamed **Optima Payment Manager**; the users and
+  permissions that had it keep it.
+- The Bank Guarantee override extends ERPNext's own Bank Guarantee controller instead of
+  replacing it.
+- The tests run on Frappe 16's test classes, and CI runs the whole suite on Frappe 16 (#16).
+
+### Fixed
+- The overdue invoice lookup reads a new index on Sales Invoice (#13, #14).
+- A blank company on an overdue rule stays blank, so the rule keeps applying to every company.
+- A deleted voucher's Purchases Bulk Tool rows are unlinked before its name is reused.
+- Statement of Account: the Opening and Closing rows match the site's General Ledger, a zero debit
+  or credit is left empty, and the report's columns fill the page.
+- The Arabic translations of the Bank Guarantee labels apply again; their rows carried a fieldname
+  column that made Frappe read the Arabic as a context.
+
+### Removed
+- The obsolete Expense Claim and Expense Claim Type scripts.
 
 ## [15.2.0] - 2026-07-06
 
