@@ -12,11 +12,13 @@ from .features import (
     banking,
     hrms_integration,
     letter_of_credit,
+    overdue_limit,
     payment_workflow,
 )
 
 CustomFieldFactory = Callable[[], dict[str, list[dict]]]
 PropertySetterFactory = Callable[[], list[dict]]
+IndexFactory = Callable[[], dict[str, list[list[str]]]]
 EnabledPredicate = Callable[[], bool]
 
 
@@ -39,6 +41,7 @@ class FeatureSpec:
     key: str
     get_custom_fields: CustomFieldFactory | None = None
     get_property_setters: PropertySetterFactory | None = None
+    get_indexes: IndexFactory | None = None
     enabled: EnabledPredicate = _always_enabled
 
 
@@ -67,6 +70,10 @@ def get_feature_specs() -> list[FeatureSpec]:
             key="hrms_integration",
             get_custom_fields=hrms_integration.get_custom_fields,
             enabled=lambda: _is_installed("hrms"),
+        ),
+        FeatureSpec(
+            key="overdue_limit",
+            get_indexes=overdue_limit.get_indexes,
         ),
     ]
 
