@@ -26,13 +26,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Purchases Bulk Tool**: one line per purchase (date, supplier, item, qty, rate, VAT template and
   an optional warehouse). Submitting the tool creates Purchase Orders, Purchase Invoices or Purchase
   Receipts, one per supplier, and its **Vouchers** buttons submit, cancel or delete them in bulk.
-  The tool is in the Optima Payment workspace.
+- An **Optima Payment workspace** with shortcuts to Bank Guarantee-BG, Letter of Credit, Cheque
+  Deposit Slip, Cheque Action Log, Optima Payment Setting and the Purchases Bulk Tool, the
+  dashboards below, and the reports.
+- **Dashboards** for Bank Guarantee-BG and Letter of Credit: a status breakdown chart and an
+  expiring-soon card counting the active documents that end within 90 days.
+- **Status colours** for Bank Guarantee-BG and Letter of Credit, the same on the form, the list and
+  the report.
+- A **Project** filter and column on the Bank Guarantee-BG Report and the Letter of Credit Report.
 
 ### Changed
 - The app tells its own custom fields and property setters apart from a site's Customize Form
   changes, and a migrate creates what is missing and updates only its own rows. The
   `adopt_existing_customizations` patch takes ownership of the ones created before, and
-  `setup/form_snapshot.py` saves and compares a site's forms around a migrate.
+  `setup/form_snapshot.py` saves and compares a site's forms around a migrate. Uninstall removes
+  only the app's own rows, so a site's own property setter values stay.
+- The roles **Optima Payment User** and **Optima Payment Manager** and their permissions come from
+  code instead of JSON files. They are applied on install, never by a migrate, so a site's own
+  permission changes stay, and removed on uninstall (a role only when no user has it). The
+  permissions on HRMS doctypes apply when HRMS is installed, also when it is installed after
+  Optima Payment.
 - The role **Optima Payment Manger** is renamed **Optima Payment Manager**; the users and
   permissions that had it keep it.
 - The Bank Guarantee override extends ERPNext's own Bank Guarantee controller instead of
@@ -40,6 +53,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The tests run on Frappe 16's test classes, and CI runs the whole suite on Frappe 16 (#16).
 
 ### Fixed
+- Installs and the Letter of Credit close/reopen patch no longer delete the Payment Entry field
+  order a site saved in Customize Form.
+- Installing on a site without HRMS no longer fails.
+- The Letter of Credit account rename patch no longer stops a migrate with "Unknown column", and
+  keeps a value already entered in the new field.
+- The Bank Guarantee-BG and Letter of Credit reports' Reference Doctype and Status filters offer the
+  documents' real values, and Reference Name picks from submitted documents.
+- The cheque amount in words (`money_to_words`) no longer fails on missing imports.
 - The overdue invoice lookup reads a new index on Sales Invoice (#13, #14).
 - A blank company on an overdue rule stays blank, so the rule keeps applying to every company.
 - A deleted voucher's Purchases Bulk Tool rows are unlinked before its name is reused.
