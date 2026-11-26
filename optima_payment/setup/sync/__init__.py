@@ -1,5 +1,5 @@
-"""Bring a site's Optima Payment custom fields and property setters in line with the feature
-declarations, without overwriting what the client changed in Customize Form.
+"""Bring a site's Optima Payment custom fields, property setters and indexes in line with the
+feature declarations, without overwriting what the client changed in Customize Form.
 
 Ownership follows Frappe v15's ``is_system_generated`` flag:
 
@@ -12,25 +12,28 @@ Ownership follows Frappe v15's ``is_system_generated`` flag:
 - ``field_order`` stores a doctype's whole form order, so it is never synced; it is only written
   at install where the site has none.
 - A fieldtype change is never applied in place; it is reported as a conflict.
+- An index has no Customize Form row and no owner: a declared one missing from its table is
+  created, and ``remove_indexes`` drops it on uninstall.
 - Nothing here adopts flag-0 rows. The one-time patch ``adopt_existing_customizations`` did that for
   customizations created before ownership was tracked.
 
 The entry points below are what the install and uninstall hooks and patches call.
-``declarations`` reads the features, ``custom_fields`` and ``property_setters`` compare them with
-the site, and ``report`` prints the outcome.
+``declarations`` reads the features, ``custom_fields``, ``property_setters`` and ``indexes`` compare
+them with the site, and ``report`` prints the outcome.
 """
 
 from __future__ import annotations
 
 from .report import Change, report
-from . import custom_fields, property_setters
-from .declarations import get_declared_custom_fields, get_declared_property_setters
+from . import custom_fields, indexes, property_setters
+from .declarations import get_declared_custom_fields, get_declared_indexes, get_declared_property_setters
 
 
 def sync(dry_run: bool = False) -> list[Change]:
     """Create missing customizations and update app-owned ones that drifted from their declaration."""
     changes = custom_fields.sync(get_declared_custom_fields(), dry_run)
     changes += property_setters.sync(get_declared_property_setters(), dry_run)
+    changes += indexes.sync(get_declared_indexes(), dry_run)
     report("Optima Payment customization sync", changes, dry_run)
     return changes
 
@@ -61,4 +64,15 @@ def remove_customizations(dry_run: bool = False) -> list[Change]:
     changes = custom_fields.remove(declared_fields, dry_run)
     changes += property_setters.remove(get_declared_property_setters(), declared_fields, dry_run)
     report("Optima Payment customization removal", changes, dry_run)
+    return changes
+
+
+def remove_indexes(dry_run: bool = False) -> list[Change]:
+    """Drop the declared indexes, on uninstall.
+
+    Kept apart from ``remove_customizations``, which only deletes rows and so can run inside a
+    transaction that is then rolled back, as its tests do. Dropping an index is DDL, which commits.
+    """
+    changes = indexes.remove(get_declared_indexes(), dry_run)
+    report("Optima Payment index removal", changes, dry_run)
     return changes

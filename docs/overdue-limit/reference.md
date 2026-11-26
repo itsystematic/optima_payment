@@ -157,6 +157,11 @@ customer = doc.customer, company = doc.company, status in ('Overdue', 'Overdue a
 ordered `due_date, name` and limited to one, so the message can name it. `days_overdue` is
 `today − due_date`, and a rule triggers when `overdue_days >= threshold_days`.
 
+Sales Invoice carries an index on `(customer, company, status, due_date)`, declared in
+`setup/features/overdue_limit.py`. It holds every column the lookup reads, so MariaDB answers it from
+the index alone. Without it, the lookup walked ERPNext's `customer` index through every invoice the
+customer ever had: about a second per check for a walk-in customer on a large site.
+
 What counts as overdue is ERPNext's decision, read from the invoice's `status`. ERPNext gives
 `Overdue` only to a submitted invoice with an outstanding amount, so drafts, cancelled and paid
 invoices and credit notes never count. An Unpaid invoice becomes Overdue in two ways:
