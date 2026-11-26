@@ -103,6 +103,6 @@ erDiagram
 ## Tests
 
 See [../development/testing.md](../development/testing.md). The suite lives at
-`optima_payment/optima_payment/doctype/bank_guarantee_bg/test_bank_guarantee_bg.py` and
+`optima_payment/tests/test_bank_guarantee_bg.py` and
 asserts on the generated GL rows (`get_gle` / `validate_gl_entries`). Fixtures come from
 `optima_payment/tests/utils.py` (`make_bank_guarantee_bg`, `make_optima_payment_setting`).

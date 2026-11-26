@@ -67,7 +67,10 @@ mandatory before submit. Issue **commission is never reversed** on return/cancel
 
 ## Tests
 
-- `FrappeTestCase` (unittest), isolated by `frappe.db.rollback()` in `tearDown`. No mocking.
+- `IntegrationTestCase` for suites that save, `UnitTestCase` for ones that write nothing
+  (`version-15` still uses `FrappeTestCase`). Integration suites roll back in `tearDown`. No mocking.
+- Keep suites that build their own data **out of `doctype/` folders**: on Frappe 16, a test there
+  makes Frappe generate test records for the doctype's whole link graph.
 - Most suites are live-DB integration tests. Code that keeps its decisions in plain functions
   pairs two files instead: `test_<x>.py` checks those decisions with plain rows and writes
   nothing, and `test_<x>_integration.py` covers only what a real save shows. A matrix case must
@@ -76,7 +79,7 @@ mandatory before submit. Issue **commission is never reversed** on return/cancel
 - Build fixtures with the factories in `optima_payment/tests/utils.py`
   (`make_optima_payment_setting`, `make_bank_guarantee_bg`, `make_letter_of_credit`). They
   are defensive and work around this bench's KSA/ZATCA mandatory-field customizations.
-- Run: `bench --site <site> run-tests --module optima_payment.optima_payment.doctype.letter_of_credit.test_letter_of_credit`
+- Run: `bench --site <site> run-tests --module optima_payment.tests.test_letter_of_credit`
 - CI (`.github/workflows/ci.yml`: Frappe 16 on `develop` and `version-16`, Frappe 15 on
   `version-15`) **auto-discovers every `test_*.py`**
   under the package via `rglob` — new test files need no registration. Some assertions skip

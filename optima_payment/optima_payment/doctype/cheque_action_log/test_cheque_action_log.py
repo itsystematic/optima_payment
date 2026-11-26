@@ -5,7 +5,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from frappe.tests import UnitTestCase
 
 from optima_payment.optima_payment.doctype.cheque_action_log.cheque_action_log import (
     ChequeActionLog,
@@ -13,7 +13,7 @@ from optima_payment.optima_payment.doctype.cheque_action_log.cheque_action_log i
 )
 
 
-class TestChequeActionLog(FrappeTestCase):
+class TestChequeActionLog(UnitTestCase):
     def tearDown(self):
         frappe.db.rollback()
 
